@@ -69,11 +69,12 @@ const Contact = () => {
       });
 
       setFormData({ name: "", email: "", subject: "", message: "" });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Contact form error:", error);
+      const errorMessage = error instanceof Error ? error.message : "Please try again later.";
       toast({
         title: "Failed to send message",
-        description: error.message || "Please try again later.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
