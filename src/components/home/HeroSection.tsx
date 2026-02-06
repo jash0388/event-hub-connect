@@ -56,8 +56,8 @@ export function HeroSection() {
             loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
           }`}
         >
-          <span className="text-foreground">JASH</span>{" "}
-          <span className="text-primary glow-green">TECHTOONS</span>
+          <span className="text-foreground">Data</span>{" "}
+          <span className="text-primary glow-green">nauts</span>
         </h1>
 
         {/* Subtitle */}
