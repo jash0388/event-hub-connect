@@ -8,6 +8,7 @@ const navItems = [
   { path: "/events", label: "EVENTS" },
   { path: "/projects", label: "PROJECTS" },
   { path: "/about", label: "ABOUT" },
+  { path: "/contact", label: "CONTACT" },
 ];
 
 export function Header() {
