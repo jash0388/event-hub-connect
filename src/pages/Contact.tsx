@@ -57,9 +57,14 @@ const Contact = () => {
     setIsSubmitting(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke("send-contact-email", {
-        body: result.data,
-      });
+      const { error } = await supabase
+        .from('contact_messages')
+        .insert([{
+          name: result.data.name,
+          email: result.data.email,
+          subject: result.data.subject,
+          message: result.data.message,
+        }]);
 
       if (error) throw error;
 

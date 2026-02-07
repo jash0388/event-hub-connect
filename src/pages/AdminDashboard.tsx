@@ -73,11 +73,23 @@ interface SocialLink {
   is_active: boolean;
 }
 
+interface ContactMessage {
+  id: string;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  reply_text: string | null;
+  replied: boolean;
+  created_at: string;
+}
+
 const AdminDashboard = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [polls, setPolls] = useState<Poll[]>([]);
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
+  const [messages, setMessages] = useState<ContactMessage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('events');
@@ -86,10 +98,13 @@ const AdminDashboard = () => {
   const [projectDialogOpen, setProjectDialogOpen] = useState(false);
   const [pollDialogOpen, setPollDialogOpen] = useState(false);
   const [socialDialogOpen, setSocialDialogOpen] = useState(false);
+  const [replyDialogOpen, setReplyDialogOpen] = useState(false);
   
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [editingSocial, setEditingSocial] = useState<SocialLink | null>(null);
+  const [selectedMessage, setSelectedMessage] = useState<ContactMessage | null>(null);
+  const [replyText, setReplyText] = useState('');
   
   const [eventForm, setEventForm] = useState({
     title: '',
@@ -135,7 +150,7 @@ const AdminDashboard = () => {
 
   const fetchAllData = async () => {
     setIsLoading(true);
-    await Promise.all([fetchEvents(), fetchProjects(), fetchPolls(), fetchSocialLinks()]);
+    await Promise.all([fetchEvents(), fetchProjects(), fetchPolls(), fetchSocialLinks(), fetchMessages()]);
     setIsLoading(false);
   };
 
@@ -202,6 +217,20 @@ const AdminDashboard = () => {
       setSocialLinks(data || []);
     } catch (error: any) {
       console.error('Error fetching social links:', error);
+    }
+  };
+
+  const fetchMessages = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('contact_messages')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setMessages(data || []);
+    } catch (error: any) {
+      console.error('Error fetching messages:', error);
     }
   };
 
@@ -504,6 +533,49 @@ const AdminDashboard = () => {
         description: error.message,
         variant: "destructive",
       });
+    }
+  };
+
+  const handleReplyDialog = (message: ContactMessage) => {
+    setSelectedMessage(message);
+    setReplyText(message.reply_text || '');
+    setReplyDialogOpen(true);
+  };
+
+  const handleReplySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedMessage) return;
+    setIsSaving(true);
+
+    try {
+      const { error } = await supabase
+        .from('contact_messages')
+        .update({
+          reply_text: replyText,
+          replied: true,
+        })
+        .eq('id', selectedMessage.id);
+
+      if (error) throw error;
+      toast({ title: "Success", description: "Reply saved" });
+      setReplyDialogOpen(false);
+      fetchMessages();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
     } finally {
       setIsSaving(false);
     }
@@ -532,11 +604,12 @@ const AdminDashboard = () => {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-4 max-w-2xl">
+            <TabsList className="grid w-full grid-cols-5 max-w-3xl">
               <TabsTrigger value="events">Events</TabsTrigger>
               <TabsTrigger value="projects">Projects</TabsTrigger>
               <TabsTrigger value="polls">Polls</TabsTrigger>
               <TabsTrigger value="social">Social</TabsTrigger>
+              <TabsTrigger value="messages">Messages</TabsTrigger>
             </TabsList>
 
             <TabsContent value="events" className="mt-6">
@@ -1083,6 +1156,109 @@ const AdminDashboard = () => {
                   </Table>
                 )}
               </div>
+            </TabsContent>
+
+            <TabsContent value="messages" className="mt-6">
+              <div className="mb-4">
+                <h2 className="text-xl font-semibold">Contact Messages</h2>
+              </div>
+
+              <div className="bg-card border border-border rounded-lg overflow-hidden">
+                {isLoading ? (
+                  <div className="p-8 text-center">
+                    <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
+                  </div>
+                ) : messages.length === 0 ? (
+                  <div className="p-8 text-center text-muted-foreground">
+                    No messages yet.
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Subject</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {messages.map((msg) => (
+                        <TableRow key={msg.id}>
+                          <TableCell className="font-medium">{msg.name}</TableCell>
+                          <TableCell>
+                            <a href={`mailto:${msg.email}`} className="text-xs text-primary hover:underline">
+                              {msg.email}
+                            </a>
+                          </TableCell>
+                          <TableCell>{msg.subject}</TableCell>
+                          <TableCell>
+                            <span className={`text-xs px-2 py-1 rounded ${msg.replied ? 'bg-green-500/20 text-green-500' : 'bg-yellow-500/20 text-yellow-500'}`}>
+                              {msg.replied ? 'Replied' : 'Pending'}
+                            </span>
+                          </TableCell>
+                          <TableCell>{format(new Date(msg.created_at), 'PP')}</TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleReplyDialog(msg)}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </div>
+
+              <Dialog open={replyDialogOpen} onOpenChange={setReplyDialogOpen}>
+                <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Reply to Message</DialogTitle>
+                  </DialogHeader>
+                  {selectedMessage && (
+                    <div className="space-y-4 mt-4">
+                      <div className="p-4 bg-muted rounded-lg space-y-2">
+                        <div><strong>From:</strong> {selectedMessage.name} ({selectedMessage.email})</div>
+                        <div><strong>Subject:</strong> {selectedMessage.subject}</div>
+                        <div><strong>Message:</strong></div>
+                        <p className="text-sm text-muted-foreground">{selectedMessage.message}</p>
+                      </div>
+                      <form onSubmit={handleReplySubmit} className="space-y-4">
+                        <div>
+                          <Label htmlFor="reply_text">Your Reply</Label>
+                          <Textarea
+                            id="reply_text"
+                            value={replyText}
+                            onChange={(e) => setReplyText(e.target.value)}
+                            rows={5}
+                            placeholder="Type your reply here..."
+                          />
+                        </div>
+                        <div className="flex justify-end gap-3">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                              window.location.href = `mailto:${selectedMessage.email}?subject=Re: ${selectedMessage.subject}`;
+                            }}
+                          >
+                            Open in Email
+                          </Button>
+                          <Button type="submit" disabled={isSaving}>
+                            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Reply'}
+                          </Button>
+                        </div>
+                      </form>
+                    </div>
+                  )}
+                </DialogContent>
+              </Dialog>
             </TabsContent>
           </Tabs>
         </div>

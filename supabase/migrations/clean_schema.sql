@@ -349,6 +349,54 @@ CREATE POLICY "Only admins can manage social links"
   );
 
 -- =====================================================
+-- CONTACT_MESSAGES TABLE
+-- =====================================================
+CREATE TABLE contact_messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  subject TEXT NOT NULL,
+  message TEXT NOT NULL,
+  reply_text TEXT,
+  replied BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT now() NOT NULL
+);
+
+ALTER TABLE contact_messages ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Anyone can submit contact messages"
+  ON contact_messages FOR INSERT
+  WITH CHECK (true);
+
+CREATE POLICY "Only admins can view contact messages"
+  ON contact_messages FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM user_roles
+      WHERE user_roles.user_id = auth.uid()
+      AND user_roles.role = 'admin'
+    )
+  );
+
+CREATE POLICY "Only admins can update contact messages"
+  ON contact_messages FOR UPDATE
+  USING (
+    EXISTS (
+      SELECT 1 FROM user_roles
+      WHERE user_roles.user_id = auth.uid()
+      AND user_roles.role = 'admin'
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM user_roles
+      WHERE user_roles.user_id = auth.uid()
+      AND user_roles.role = 'admin'
+    )
+  );
+
+-- =====================================================
 -- 8. TRIGGERS
 -- =====================================================
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -380,6 +428,11 @@ CREATE TRIGGER update_projects_updated_at
 
 CREATE TRIGGER update_social_links_updated_at
   BEFORE UPDATE ON social_links
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_contact_messages_updated_at
+  BEFORE UPDATE ON contact_messages
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
@@ -479,6 +532,8 @@ CREATE INDEX IF NOT EXISTS idx_votes_poll_id ON votes(poll_id);
 CREATE INDEX IF NOT EXISTS idx_votes_user_id ON votes(user_id);
 CREATE INDEX IF NOT EXISTS idx_social_links_order ON social_links(display_order);
 CREATE INDEX IF NOT EXISTS idx_social_links_active ON social_links(is_active);
+CREATE INDEX IF NOT EXISTS idx_contact_messages_replied ON contact_messages(replied);
+CREATE INDEX IF NOT EXISTS idx_contact_messages_created ON contact_messages(created_at);
 
 -- =====================================================
 -- VERIFICATION
