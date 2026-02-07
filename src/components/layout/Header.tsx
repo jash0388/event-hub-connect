@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 const navItems = [
   { path: "/", label: "HOME" },
@@ -58,9 +59,21 @@ export function Header() {
             ))}
           </nav>
 
-          {/* Time Display */}
-          <div className="hidden md:block font-mono text-sm text-muted-foreground">
-            {formattedTime}
+          {/* Desktop Right Section */}
+          <div className="hidden md:flex items-center gap-4">
+            <Link to="/admin/login">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="font-mono text-xs"
+              >
+                <Shield className="w-3 h-3 mr-2" />
+                Login
+              </Button>
+            </Link>
+            <div className="font-mono text-sm text-muted-foreground">
+              {formattedTime}
+            </div>
           </div>
 
           {/* Mobile Menu Button */}
@@ -92,6 +105,16 @@ export function Header() {
                 {item.label}
               </Link>
             ))}
+            <Link to="/admin/login" onClick={() => setIsOpen(false)}>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="font-mono text-xs w-full"
+              >
+                <Shield className="w-3 h-3 mr-2" />
+                Login
+              </Button>
+            </Link>
             <div className="font-mono text-sm text-muted-foreground pt-2 border-t border-border">
               {formattedTime}
             </div>

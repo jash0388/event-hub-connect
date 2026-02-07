@@ -12,15 +12,19 @@ export async function isAdmin(): Promise<boolean> {
       return false;
     }
 
+    // Query the profiles table directly
     const { data, error } = await supabase
-      .rpc('is_admin');
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
 
     if (error) {
       console.error('Error checking admin status:', error);
       return false;
     }
 
-    return data === true;
+    return data?.role === 'admin';
   } catch (error) {
     console.error('Error in isAdmin check:', error);
     return false;
@@ -33,14 +37,17 @@ export async function isAdmin(): Promise<boolean> {
 export async function hasRole(userId: string, role: 'admin' | 'moderator' | 'user'): Promise<boolean> {
   try {
     const { data, error } = await supabase
-      .rpc('has_role', { _user_id: userId, _role: role });
+      .from('profiles')
+      .select('role')
+      .eq('id', userId)
+      .single();
 
     if (error) {
       console.error('Error checking role:', error);
       return false;
     }
 
-    return data === true;
+    return data?.role === role;
   } catch (error) {
     console.error('Error in hasRole check:', error);
     return false;
