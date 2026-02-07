@@ -15,7 +15,7 @@ export function Footer() {
           {/* Logo & Copyright */}
           <div className="flex flex-col items-center md:items-start gap-2">
             <span className="font-display text-lg font-bold tracking-wider text-primary">
-              JASH TECHTOONS
+              DATANAUTS SPHN
             </span>
             <p className="text-sm text-muted-foreground">
               A PROJECT BY ALPHA TEAM © 2026

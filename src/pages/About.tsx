@@ -5,10 +5,10 @@ import { CyberCard } from "@/components/ui/CyberCard";
 
 const teamMembers = [
   {
-    name: "JASH",
+    name: "DATANAUTS",
     role: "FOUNDER & LEAD DEV",
-    avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=jash&backgroundColor=00ff88",
-    bio: "Full-stack developer with a passion for cyberpunk aesthetics and innovative tech.",
+    avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=datanauts&backgroundColor=00ff88",
+    bio: "Full-stack developer with a passion for data science and innovative tech.",
   },
   {
     name: "ALPHA-01",
@@ -56,9 +56,8 @@ export default function About() {
             </h1>
             <div className="space-y-4 font-mono text-muted-foreground">
               <p>
-                We are <span className="text-primary">JASH TECHTOONS</span>, a collective of tech enthusiasts, 
-                developers, and designers united by our passion for innovation and the 
-                cyberpunk aesthetic.
+                We are <span className="text-primary">DATANAUTS SPHN</span>, a collective of tech enthusiasts, 
+                developers, and designers united by our passion for innovation and data science.
               </p>
               <p>
                 Founded in 2024, our mission is to build cutting-edge projects, host 

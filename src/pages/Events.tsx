@@ -13,7 +13,7 @@ interface Event {
   title: string;
   description: string | null;
   date: string;
-  venue: string | null;
+  location: string | null;
   image_url: string | null;
   created_at: string;
 }
@@ -177,10 +177,10 @@ export default function Events() {
                           <Clock size={12} className="text-secondary" />
                           {format(new Date(event.date), "p")}
                         </div>
-                        {event.venue && (
+                        {event.location && (
                           <div className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
                             <MapPin size={12} className="text-accent" />
-                            {event.venue}
+                            {event.location}
                           </div>
                         )}
                       </div>

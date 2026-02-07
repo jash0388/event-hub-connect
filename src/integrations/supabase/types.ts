@@ -15,7 +15,7 @@ export type Database = {
           title: string
           description: string | null
           date: string
-          venue: string | null
+          location: string | null
           image_url: string | null
           created_by: string | null
           created_at: string
@@ -26,7 +26,7 @@ export type Database = {
           title: string
           description?: string | null
           date: string
-          venue?: string | null
+          location?: string | null
           image_url?: string | null
           created_by?: string | null
           created_at?: string
@@ -37,7 +37,7 @@ export type Database = {
           title?: string
           description?: string | null
           date?: string
-          venue?: string | null
+          location?: string | null
           image_url?: string | null
           created_by?: string | null
           created_at?: string
@@ -46,52 +46,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "events_created_by_fkey"
-            columns: ["created_by"]
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
-      projects: {
-        Row: {
-          id: string
-          title: string
-          description: string | null
-          image_url: string | null
-          github_url: string | null
-          demo_url: string | null
-          tags: string[] | null
-          created_by: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          title: string
-          description?: string | null
-          image_url?: string | null
-          github_url?: string | null
-          demo_url?: string | null
-          tags?: string[] | null
-          created_by?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          title?: string
-          description?: string | null
-          image_url?: string | null
-          github_url?: string | null
-          demo_url?: string | null
-          tags?: string[] | null
-          created_by?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "projects_created_by_fkey"
             columns: ["created_by"]
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -180,6 +134,52 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      projects: {
+        Row: {
+          id: string
+          title: string
+          description: string | null
+          image_url: string | null
+          github_url: string | null
+          demo_url: string | null
+          tags: string[] | null
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          title: string
+          description?: string | null
+          image_url?: string | null
+          github_url?: string | null
+          demo_url?: string | null
+          tags?: string[] | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          title?: string
+          description?: string | null
+          image_url?: string | null
+          github_url?: string | null
+          demo_url?: string | null
+          tags?: string[] | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_created_by_fkey"
+            columns: ["created_by"]
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       user_roles: {
         Row: {

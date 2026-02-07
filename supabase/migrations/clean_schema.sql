@@ -92,7 +92,7 @@ CREATE TABLE events (
   title TEXT NOT NULL,
   description TEXT,
   date TIMESTAMPTZ NOT NULL,
-  venue TEXT,
+  location TEXT,
   image_url TEXT,
   created_by UUID REFERENCES profiles(id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ DEFAULT now() NOT NULL,

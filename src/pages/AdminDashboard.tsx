@@ -31,11 +31,7 @@ import {
   Edit,
   Trash2,
   LogOut,
-  Calendar,
-  MapPin,
   Loader2,
-  FolderKanban,
-  BarChart3,
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -44,7 +40,7 @@ interface Event {
   title: string;
   description: string | null;
   date: string;
-  venue: string | null;
+  location: string | null;
   image_url: string | null;
 }
 
@@ -73,21 +69,18 @@ const AdminDashboard = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('events');
   
-  // Dialog states
   const [eventDialogOpen, setEventDialogOpen] = useState(false);
   const [projectDialogOpen, setProjectDialogOpen] = useState(false);
   const [pollDialogOpen, setPollDialogOpen] = useState(false);
   
-  // Edit states
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   
-  // Form data
   const [eventForm, setEventForm] = useState({
     title: '',
     description: '',
     datetime: '',
-    venue: '',
+    location: '',
     image_url: '',
   });
   
@@ -177,18 +170,15 @@ const AdminDashboard = () => {
     navigate('/');
   };
 
-  // ============ EVENT HANDLERS ============
   const handleEventDialog = (event?: Event) => {
     if (event) {
       setEditingEvent(event);
-      // Convert ISO date to datetime-local format
-      const dateObj = new Date(event.date);
-      const localDateTime = format(dateObj, "yyyy-MM-dd'T'HH:mm");
+      const localDateTime = format(new Date(event.date), "yyyy-MM-dd'T'HH:mm");
       setEventForm({
         title: event.title,
         description: event.description || '',
         datetime: localDateTime,
-        venue: event.venue || '',
+        location: event.location || '',
         image_url: event.image_url || '',
       });
     } else {
@@ -197,7 +187,7 @@ const AdminDashboard = () => {
         title: '',
         description: '',
         datetime: '',
-        venue: '',
+        location: '',
         image_url: '',
       });
     }
@@ -209,14 +199,13 @@ const AdminDashboard = () => {
     setIsSaving(true);
 
     try {
-      // Combine date and time into ISO timestamp
-      const dateTimeISO = new Date(eventForm.datetime).toISOString();
+      const dateISO = new Date(eventForm.datetime).toISOString();
       
-      const eventData = {
+      const payload = {
         title: eventForm.title,
         description: eventForm.description || null,
-        date: dateTimeISO,
-        venue: eventForm.venue || null,
+        date: dateISO,
+        location: eventForm.location || null,
         image_url: eventForm.image_url || null,
         created_by: user?.id,
       };
@@ -224,12 +213,12 @@ const AdminDashboard = () => {
       if (editingEvent) {
         const { error } = await supabase
           .from('events')
-          .update(eventData)
+          .update(payload)
           .eq('id', editingEvent.id);
         if (error) throw error;
         toast({ title: "Success", description: "Event updated" });
       } else {
-        const { error } = await supabase.from('events').insert([eventData]);
+        const { error } = await supabase.from('events').insert([payload]);
         if (error) throw error;
         toast({ title: "Success", description: "Event created" });
       }
@@ -264,7 +253,6 @@ const AdminDashboard = () => {
     }
   };
 
-  // ============ PROJECT HANDLERS ============
   const handleProjectDialog = (project?: Project) => {
     if (project) {
       setEditingProject(project);
@@ -295,7 +283,7 @@ const AdminDashboard = () => {
     setIsSaving(true);
 
     try {
-      const projectData = {
+      const payload = {
         title: projectForm.title,
         description: projectForm.description || null,
         image_url: projectForm.image_url || null,
@@ -308,12 +296,12 @@ const AdminDashboard = () => {
       if (editingProject) {
         const { error } = await supabase
           .from('projects')
-          .update(projectData)
+          .update(payload)
           .eq('id', editingProject.id);
         if (error) throw error;
         toast({ title: "Success", description: "Project updated" });
       } else {
-        const { error } = await supabase.from('projects').insert([projectData]);
+        const { error } = await supabase.from('projects').insert([payload]);
         if (error) throw error;
         toast({ title: "Success", description: "Project created" });
       }
@@ -348,13 +336,11 @@ const AdminDashboard = () => {
     }
   };
 
-  // ============ POLL HANDLERS ============
   const handlePollSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
 
     try {
-      // Create poll
       const { data: pollData, error: pollError } = await supabase
         .from('polls')
         .insert([{
@@ -366,7 +352,6 @@ const AdminDashboard = () => {
 
       if (pollError) throw pollError;
 
-      // Create poll options
       const optionsData = pollForm.options
         .filter(opt => opt.trim())
         .map(option_text => ({
@@ -401,7 +386,6 @@ const AdminDashboard = () => {
       <Header />
       <main className="flex-1 pt-24 pb-16">
         <div className="container mx-auto px-4 max-w-7xl">
-          {/* Header */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
@@ -419,7 +403,6 @@ const AdminDashboard = () => {
             </Button>
           </div>
 
-          {/* Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-3 max-w-md">
               <TabsTrigger value="events">Events</TabsTrigger>
@@ -427,7 +410,6 @@ const AdminDashboard = () => {
               <TabsTrigger value="polls">Polls</TabsTrigger>
             </TabsList>
 
-            {/* EVENTS TAB */}
             <TabsContent value="events" className="mt-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold">Manage Events</h2>
@@ -472,11 +454,11 @@ const AdminDashboard = () => {
                         />
                       </div>
                       <div>
-                        <Label htmlFor="venue">Venue</Label>
+                        <Label htmlFor="location">Location</Label>
                         <Input
-                          id="venue"
-                          value={eventForm.venue}
-                          onChange={(e) => setEventForm({ ...eventForm, venue: e.target.value })}
+                          id="location"
+                          value={eventForm.location}
+                          onChange={(e) => setEventForm({ ...eventForm, location: e.target.value })}
                         />
                       </div>
                       <div>
@@ -516,7 +498,7 @@ const AdminDashboard = () => {
                       <TableRow>
                         <TableHead>Title</TableHead>
                         <TableHead>Date</TableHead>
-                        <TableHead>Venue</TableHead>
+                        <TableHead>Location</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -525,7 +507,7 @@ const AdminDashboard = () => {
                         <TableRow key={event.id}>
                           <TableCell className="font-medium">{event.title}</TableCell>
                           <TableCell>{format(new Date(event.date), 'PPP p')}</TableCell>
-                          <TableCell>{event.venue || '—'}</TableCell>
+                          <TableCell>{event.location || '—'}</TableCell>
                           <TableCell className="text-right">
                             <Button
                               variant="ghost"
@@ -551,7 +533,6 @@ const AdminDashboard = () => {
               </div>
             </TabsContent>
 
-            {/* PROJECTS TAB */}
             <TabsContent value="projects" className="mt-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold">Manage Projects</h2>
@@ -699,7 +680,6 @@ const AdminDashboard = () => {
               </div>
             </TabsContent>
 
-            {/* POLLS TAB */}
             <TabsContent value="polls" className="mt-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold">Manage Polls</h2>
