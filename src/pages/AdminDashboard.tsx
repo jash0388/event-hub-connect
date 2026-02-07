@@ -570,16 +570,6 @@ const AdminDashboard = () => {
       setIsSaving(false);
     }
   };
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
