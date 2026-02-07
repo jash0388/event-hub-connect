@@ -12,7 +12,7 @@ export async function isAdmin(): Promise<boolean> {
       return false;
     }
 
-    // Query the profiles table directly
+    // Query the profiles table directly for role
     const { data, error } = await supabase
       .from('profiles')
       .select('role')

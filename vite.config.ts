@@ -6,11 +6,16 @@ import path from "path";
 export default defineConfig(({ mode }) => ({
   server: {
     host: "0.0.0.0",
-    port: 3001,
+    port: 3000,
     hmr: {
       overlay: false,
     },
     strictPort: true,
+    allowedHosts: [
+      'connect-staging.preview.emergentagent.com',
+      '.emergentagent.com',
+      'localhost'
+    ],
   },
   plugins: [react()],
   resolve: {
