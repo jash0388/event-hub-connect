@@ -15,7 +15,6 @@ export type Database = {
           title: string
           description: string | null
           date: string
-          time: string | null
           venue: string | null
           image_url: string | null
           created_by: string | null
@@ -27,7 +26,6 @@ export type Database = {
           title: string
           description?: string | null
           date: string
-          time?: string | null
           venue?: string | null
           image_url?: string | null
           created_by?: string | null
@@ -39,7 +37,6 @@ export type Database = {
           title?: string
           description?: string | null
           date?: string
-          time?: string | null
           venue?: string | null
           image_url?: string | null
           created_by?: string | null

@@ -44,7 +44,6 @@ interface Event {
   title: string;
   description: string | null;
   date: string;
-  time: string | null;
   venue: string | null;
   image_url: string | null;
 }
@@ -87,8 +86,7 @@ const AdminDashboard = () => {
   const [eventForm, setEventForm] = useState({
     title: '',
     description: '',
-    date: '',
-    time: '',
+    datetime: '',
     venue: '',
     image_url: '',
   });
@@ -183,11 +181,13 @@ const AdminDashboard = () => {
   const handleEventDialog = (event?: Event) => {
     if (event) {
       setEditingEvent(event);
+      // Convert ISO date to datetime-local format
+      const dateObj = new Date(event.date);
+      const localDateTime = format(dateObj, "yyyy-MM-dd'T'HH:mm");
       setEventForm({
         title: event.title,
         description: event.description || '',
-        date: event.date || '',
-        time: event.time || '',
+        datetime: localDateTime,
         venue: event.venue || '',
         image_url: event.image_url || '',
       });
@@ -196,8 +196,7 @@ const AdminDashboard = () => {
       setEventForm({
         title: '',
         description: '',
-        date: '',
-        time: '',
+        datetime: '',
         venue: '',
         image_url: '',
       });
@@ -210,10 +209,13 @@ const AdminDashboard = () => {
     setIsSaving(true);
 
     try {
+      // Combine date and time into ISO timestamp
+      const dateTimeISO = new Date(eventForm.datetime).toISOString();
+      
       const eventData = {
-        ...eventForm,
+        title: eventForm.title,
         description: eventForm.description || null,
-        time: eventForm.time || null,
+        date: dateTimeISO,
         venue: eventForm.venue || null,
         image_url: eventForm.image_url || null,
         created_by: user?.id,
@@ -460,22 +462,13 @@ const AdminDashboard = () => {
                         />
                       </div>
                       <div>
-                        <Label htmlFor="date">Date *</Label>
+                        <Label htmlFor="datetime">Date & Time *</Label>
                         <Input
-                          id="date"
-                          type="date"
-                          value={eventForm.date}
-                          onChange={(e) => setEventForm({ ...eventForm, date: e.target.value })}
+                          id="datetime"
+                          type="datetime-local"
+                          value={eventForm.datetime}
+                          onChange={(e) => setEventForm({ ...eventForm, datetime: e.target.value })}
                           required
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="time">Time</Label>
-                        <Input
-                          id="time"
-                          type="time"
-                          value={eventForm.time}
-                          onChange={(e) => setEventForm({ ...eventForm, time: e.target.value })}
                         />
                       </div>
                       <div>
@@ -531,7 +524,7 @@ const AdminDashboard = () => {
                       {events.map((event) => (
                         <TableRow key={event.id}>
                           <TableCell className="font-medium">{event.title}</TableCell>
-                          <TableCell>{event.date}</TableCell>
+                          <TableCell>{format(new Date(event.date), 'PPP p')}</TableCell>
                           <TableCell>{event.venue || '—'}</TableCell>
                           <TableCell className="text-right">
                             <Button
