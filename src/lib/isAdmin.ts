@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 /**
  * Check if the current user has admin role
+ * Checks user_roles table (NOT profiles.role)
  * Fails closed - returns false on any error
  */
 export async function isAdmin(): Promise<boolean> {
@@ -12,11 +13,11 @@ export async function isAdmin(): Promise<boolean> {
       return false;
     }
 
-    // Query the profiles table directly for role
+    // Query user_roles table for role
     const { data, error } = await supabase
-      .from('profiles')
+      .from('user_roles')
       .select('role')
-      .eq('id', user.id)
+      .eq('user_id', user.id)
       .single();
 
     if (error) {
@@ -37,9 +38,9 @@ export async function isAdmin(): Promise<boolean> {
 export async function hasRole(userId: string, role: 'admin' | 'moderator' | 'user'): Promise<boolean> {
   try {
     const { data, error } = await supabase
-      .from('profiles')
+      .from('user_roles')
       .select('role')
-      .eq('id', userId)
+      .eq('user_id', userId)
       .single();
 
     if (error) {

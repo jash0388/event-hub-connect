@@ -1,41 +1,34 @@
 -- =====================================================
--- CLEAN SCHEMA MIGRATION FOR EVENT HUB CONNECT
--- Run this in Supabase SQL Editor
+-- SCHEMA MIGRATION FOR EVENT HUB CONNECT
+-- Works with EXISTING user_roles table
 -- =====================================================
 
--- Drop existing tables (clean slate)
+-- Drop existing tables (except profiles and user_roles)
 DROP TABLE IF EXISTS votes CASCADE;
 DROP TABLE IF EXISTS poll_options CASCADE;
 DROP TABLE IF EXISTS polls CASCADE;
 DROP TABLE IF EXISTS projects CASCADE;
 DROP TABLE IF EXISTS events CASCADE;
-DROP TABLE IF EXISTS user_roles CASCADE;
-DROP TABLE IF EXISTS profiles CASCADE;
-
--- Drop existing types
-DROP TYPE IF EXISTS app_role CASCADE;
 
 -- =====================================================
--- 1. CREATE ENUMS
+-- 1. ENSURE PROFILES TABLE EXISTS
 -- =====================================================
-CREATE TYPE app_role AS ENUM ('admin', 'moderator', 'user');
-
--- =====================================================
--- 2. PROFILES TABLE
--- =====================================================
-CREATE TABLE profiles (
+CREATE TABLE IF NOT EXISTS profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   email TEXT,
   full_name TEXT,
-  role app_role DEFAULT 'user' NOT NULL,
   created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
   updated_at TIMESTAMPTZ DEFAULT now() NOT NULL
 );
 
--- Enable RLS
+-- Enable RLS on profiles
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
--- Policies for profiles
+-- Drop existing policies
+DROP POLICY IF EXISTS "Public profiles are viewable by everyone" ON profiles;
+DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
+
+-- Recreate policies
 CREATE POLICY "Public profiles are viewable by everyone"
   ON profiles FOR SELECT
   USING (true);
@@ -44,6 +37,52 @@ CREATE POLICY "Users can update own profile"
   ON profiles FOR UPDATE
   USING (auth.uid() = id)
   WITH CHECK (auth.uid() = id);
+
+-- =====================================================
+-- 2. ENSURE USER_ROLES TABLE EXISTS
+-- =====================================================
+DO $$ 
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'app_role') THEN
+    CREATE TYPE app_role AS ENUM ('admin', 'moderator', 'user');
+  END IF;
+END $$;
+
+CREATE TABLE IF NOT EXISTS user_roles (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  role app_role DEFAULT 'user' NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
+  UNIQUE(user_id)
+);
+
+-- Enable RLS
+ALTER TABLE user_roles ENABLE ROW LEVEL SECURITY;
+
+-- Policies for user_roles
+DROP POLICY IF EXISTS "User roles are viewable by everyone" ON user_roles;
+DROP POLICY IF EXISTS "Only admins can manage user roles" ON user_roles;
+
+CREATE POLICY "User roles are viewable by everyone"
+  ON user_roles FOR SELECT
+  USING (true);
+
+CREATE POLICY "Only admins can manage user roles"
+  ON user_roles FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM user_roles ur
+      WHERE ur.user_id = auth.uid()
+      AND ur.role = 'admin'
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM user_roles ur
+      WHERE ur.user_id = auth.uid()
+      AND ur.role = 'admin'
+    )
+  );
 
 -- =====================================================
 -- 3. EVENTS TABLE
@@ -61,10 +100,8 @@ CREATE TABLE events (
   updated_at TIMESTAMPTZ DEFAULT now() NOT NULL
 );
 
--- Enable RLS
 ALTER TABLE events ENABLE ROW LEVEL SECURITY;
 
--- Policies for events
 CREATE POLICY "Events are viewable by everyone"
   ON events FOR SELECT
   USING (true);
@@ -73,9 +110,9 @@ CREATE POLICY "Only admins can insert events"
   ON events FOR INSERT
   WITH CHECK (
     EXISTS (
-      SELECT 1 FROM profiles
-      WHERE profiles.id = auth.uid()
-      AND profiles.role = 'admin'
+      SELECT 1 FROM user_roles
+      WHERE user_roles.user_id = auth.uid()
+      AND user_roles.role = 'admin'
     )
   );
 
@@ -83,16 +120,16 @@ CREATE POLICY "Only admins can update events"
   ON events FOR UPDATE
   USING (
     EXISTS (
-      SELECT 1 FROM profiles
-      WHERE profiles.id = auth.uid()
-      AND profiles.role = 'admin'
+      SELECT 1 FROM user_roles
+      WHERE user_roles.user_id = auth.uid()
+      AND user_roles.role = 'admin'
     )
   )
   WITH CHECK (
     EXISTS (
-      SELECT 1 FROM profiles
-      WHERE profiles.id = auth.uid()
-      AND profiles.role = 'admin'
+      SELECT 1 FROM user_roles
+      WHERE user_roles.user_id = auth.uid()
+      AND user_roles.role = 'admin'
     )
   );
 
@@ -100,9 +137,9 @@ CREATE POLICY "Only admins can delete events"
   ON events FOR DELETE
   USING (
     EXISTS (
-      SELECT 1 FROM profiles
-      WHERE profiles.id = auth.uid()
-      AND profiles.role = 'admin'
+      SELECT 1 FROM user_roles
+      WHERE user_roles.user_id = auth.uid()
+      AND user_roles.role = 'admin'
     )
   );
 
@@ -122,10 +159,8 @@ CREATE TABLE projects (
   updated_at TIMESTAMPTZ DEFAULT now() NOT NULL
 );
 
--- Enable RLS
 ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
 
--- Policies for projects
 CREATE POLICY "Projects are viewable by everyone"
   ON projects FOR SELECT
   USING (true);
@@ -134,9 +169,9 @@ CREATE POLICY "Only admins can insert projects"
   ON projects FOR INSERT
   WITH CHECK (
     EXISTS (
-      SELECT 1 FROM profiles
-      WHERE profiles.id = auth.uid()
-      AND profiles.role = 'admin'
+      SELECT 1 FROM user_roles
+      WHERE user_roles.user_id = auth.uid()
+      AND user_roles.role = 'admin'
     )
   );
 
@@ -144,16 +179,16 @@ CREATE POLICY "Only admins can update projects"
   ON projects FOR UPDATE
   USING (
     EXISTS (
-      SELECT 1 FROM profiles
-      WHERE profiles.id = auth.uid()
-      AND profiles.role = 'admin'
+      SELECT 1 FROM user_roles
+      WHERE user_roles.user_id = auth.uid()
+      AND user_roles.role = 'admin'
     )
   )
   WITH CHECK (
     EXISTS (
-      SELECT 1 FROM profiles
-      WHERE profiles.id = auth.uid()
-      AND profiles.role = 'admin'
+      SELECT 1 FROM user_roles
+      WHERE user_roles.user_id = auth.uid()
+      AND user_roles.role = 'admin'
     )
   );
 
@@ -161,9 +196,9 @@ CREATE POLICY "Only admins can delete projects"
   ON projects FOR DELETE
   USING (
     EXISTS (
-      SELECT 1 FROM profiles
-      WHERE profiles.id = auth.uid()
-      AND profiles.role = 'admin'
+      SELECT 1 FROM user_roles
+      WHERE user_roles.user_id = auth.uid()
+      AND user_roles.role = 'admin'
     )
   );
 
@@ -177,10 +212,8 @@ CREATE TABLE polls (
   created_at TIMESTAMPTZ DEFAULT now() NOT NULL
 );
 
--- Enable RLS
 ALTER TABLE polls ENABLE ROW LEVEL SECURITY;
 
--- Policies for polls
 CREATE POLICY "Polls are viewable by everyone"
   ON polls FOR SELECT
   USING (true);
@@ -189,9 +222,9 @@ CREATE POLICY "Only admins can insert polls"
   ON polls FOR INSERT
   WITH CHECK (
     EXISTS (
-      SELECT 1 FROM profiles
-      WHERE profiles.id = auth.uid()
-      AND profiles.role = 'admin'
+      SELECT 1 FROM user_roles
+      WHERE user_roles.user_id = auth.uid()
+      AND user_roles.role = 'admin'
     )
   );
 
@@ -199,9 +232,9 @@ CREATE POLICY "Only admins can update polls"
   ON polls FOR UPDATE
   USING (
     EXISTS (
-      SELECT 1 FROM profiles
-      WHERE profiles.id = auth.uid()
-      AND profiles.role = 'admin'
+      SELECT 1 FROM user_roles
+      WHERE user_roles.user_id = auth.uid()
+      AND user_roles.role = 'admin'
     )
   );
 
@@ -209,9 +242,9 @@ CREATE POLICY "Only admins can delete polls"
   ON polls FOR DELETE
   USING (
     EXISTS (
-      SELECT 1 FROM profiles
-      WHERE profiles.id = auth.uid()
-      AND profiles.role = 'admin'
+      SELECT 1 FROM user_roles
+      WHERE user_roles.user_id = auth.uid()
+      AND user_roles.role = 'admin'
     )
   );
 
@@ -226,10 +259,8 @@ CREATE TABLE poll_options (
   created_at TIMESTAMPTZ DEFAULT now() NOT NULL
 );
 
--- Enable RLS
 ALTER TABLE poll_options ENABLE ROW LEVEL SECURITY;
 
--- Policies for poll_options
 CREATE POLICY "Poll options are viewable by everyone"
   ON poll_options FOR SELECT
   USING (true);
@@ -238,16 +269,16 @@ CREATE POLICY "Only admins can manage poll options"
   ON poll_options FOR ALL
   USING (
     EXISTS (
-      SELECT 1 FROM profiles
-      WHERE profiles.id = auth.uid()
-      AND profiles.role = 'admin'
+      SELECT 1 FROM user_roles
+      WHERE user_roles.user_id = auth.uid()
+      AND user_roles.role = 'admin'
     )
   )
   WITH CHECK (
     EXISTS (
-      SELECT 1 FROM profiles
-      WHERE profiles.id = auth.uid()
-      AND profiles.role = 'admin'
+      SELECT 1 FROM user_roles
+      WHERE user_roles.user_id = auth.uid()
+      AND user_roles.role = 'admin'
     )
   );
 
@@ -260,13 +291,11 @@ CREATE TABLE votes (
   option_id UUID REFERENCES poll_options(id) ON DELETE CASCADE NOT NULL,
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
-  UNIQUE(poll_id, user_id) -- One vote per poll per user
+  UNIQUE(poll_id, user_id)
 );
 
--- Enable RLS
 ALTER TABLE votes ENABLE ROW LEVEL SECURITY;
 
--- Policies for votes
 CREATE POLICY "Votes are viewable by everyone"
   ON votes FOR SELECT
   USING (true);
@@ -281,7 +310,7 @@ CREATE POLICY "Users can update their own votes"
   WITH CHECK (auth.uid() = user_id);
 
 -- =====================================================
--- 8. TRIGGERS FOR UPDATED_AT
+-- 8. TRIGGERS
 -- =====================================================
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -290,6 +319,10 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS update_profiles_updated_at ON profiles;
+DROP TRIGGER IF EXISTS update_events_updated_at ON events;
+DROP TRIGGER IF EXISTS update_projects_updated_at ON projects;
 
 CREATE TRIGGER update_profiles_updated_at
   BEFORE UPDATE ON profiles
@@ -307,7 +340,7 @@ CREATE TRIGGER update_projects_updated_at
   EXECUTE FUNCTION update_updated_at_column();
 
 -- =====================================================
--- 9. FUNCTION TO INCREMENT VOTE COUNT
+-- 9. VOTE COUNT INCREMENT
 -- =====================================================
 CREATE OR REPLACE FUNCTION increment_vote_count()
 RETURNS TRIGGER AS $$
@@ -318,6 +351,8 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS vote_added ON votes;
 
 CREATE TRIGGER vote_added
   AFTER INSERT ON votes
@@ -330,66 +365,78 @@ CREATE TRIGGER vote_added
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.profiles (id, email, full_name, role)
+  -- Create profile
+  INSERT INTO public.profiles (id, email, full_name)
   VALUES (
     NEW.id,
     NEW.email,
-    NEW.raw_user_meta_data->>'full_name',
-    'user'
-  );
+    NEW.raw_user_meta_data->>'full_name'
+  )
+  ON CONFLICT (id) DO NOTHING;
+  
+  -- Create user role (default to 'user')
+  INSERT INTO public.user_roles (user_id, role)
+  VALUES (NEW.id, 'user')
+  ON CONFLICT (user_id) DO NOTHING;
+  
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-CREATE OR REPLACE TRIGGER on_auth_user_created
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+
+CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW
   EXECUTE FUNCTION public.handle_new_user();
 
 -- =====================================================
--- 11. CREATE ADMIN USER (jashwanth038@gmail.com)
+-- 11. SET ADMIN USER (jashwanth038@gmail.com)
 -- =====================================================
--- First, check if profile exists and update role
 DO $$
 DECLARE
   admin_id UUID;
 BEGIN
-  -- Get user ID from auth.users
   SELECT id INTO admin_id
   FROM auth.users
   WHERE email = 'jashwanth038@gmail.com'
   LIMIT 1;
 
   IF admin_id IS NOT NULL THEN
-    -- Insert or update profile with admin role
-    INSERT INTO profiles (id, email, role)
-    VALUES (admin_id, 'jashwanth038@gmail.com', 'admin')
+    -- Ensure profile exists
+    INSERT INTO profiles (id, email)
+    VALUES (admin_id, 'jashwanth038@gmail.com')
     ON CONFLICT (id) DO UPDATE
-    SET role = 'admin',
-        email = 'jashwanth038@gmail.com',
-        updated_at = now();
+    SET email = 'jashwanth038@gmail.com';
     
-    RAISE NOTICE 'Admin user created/updated successfully: %', admin_id;
+    -- Set admin role in user_roles
+    INSERT INTO user_roles (user_id, role)
+    VALUES (admin_id, 'admin')
+    ON CONFLICT (user_id) DO UPDATE
+    SET role = 'admin';
+    
+    RAISE NOTICE 'Admin user setup complete: %', admin_id;
   ELSE
-    RAISE NOTICE 'User with email jashwanth038@gmail.com not found in auth.users';
+    RAISE NOTICE 'User with email jashwanth038@gmail.com not found';
   END IF;
 END $$;
 
 -- =====================================================
--- 12. CREATE INDEXES FOR PERFORMANCE
+-- 12. CREATE INDEXES
 -- =====================================================
-CREATE INDEX idx_profiles_role ON profiles(role);
-CREATE INDEX idx_events_date ON events(date);
-CREATE INDEX idx_events_created_by ON events(created_by);
-CREATE INDEX idx_projects_created_by ON projects(created_by);
-CREATE INDEX idx_polls_event_id ON polls(event_id);
-CREATE INDEX idx_poll_options_poll_id ON poll_options(poll_id);
-CREATE INDEX idx_votes_poll_id ON votes(poll_id);
-CREATE INDEX idx_votes_user_id ON votes(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_roles_user_id ON user_roles(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_roles_role ON user_roles(role);
+CREATE INDEX IF NOT EXISTS idx_events_date ON events(date);
+CREATE INDEX IF NOT EXISTS idx_events_created_by ON events(created_by);
+CREATE INDEX IF NOT EXISTS idx_projects_created_by ON projects(created_by);
+CREATE INDEX IF NOT EXISTS idx_polls_event_id ON polls(event_id);
+CREATE INDEX IF NOT EXISTS idx_poll_options_poll_id ON poll_options(poll_id);
+CREATE INDEX IF NOT EXISTS idx_votes_poll_id ON votes(poll_id);
+CREATE INDEX IF NOT EXISTS idx_votes_user_id ON votes(user_id);
 
 -- =====================================================
--- VERIFICATION QUERIES (run these after migration)
+-- VERIFICATION
 -- =====================================================
--- SELECT * FROM profiles WHERE role = 'admin';
--- SELECT * FROM events;
+-- Run these to verify:
+-- SELECT user_id, role FROM user_roles WHERE role = 'admin';
 -- SELECT tablename FROM pg_tables WHERE schemaname = 'public';
