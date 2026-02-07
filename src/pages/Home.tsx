@@ -24,7 +24,7 @@ const Home = () => {
           </h1>
           
           <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            ALPHAB AY X / 2026 EDITION
+            ALPHABAY X / 2026 EDITION
           </p>
           
           <p className="text-muted-foreground mb-12 max-w-xl mx-auto">

@@ -251,13 +251,13 @@ CREATE POLICY "Only admins can delete polls"
   );
 
 -- =====================================================
--- 6. POLL_OPTIONS TABLE
+-- POLL_OPTIONS TABLE
 -- =====================================================
 CREATE TABLE poll_options (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   poll_id UUID REFERENCES polls(id) ON DELETE CASCADE NOT NULL,
   option_text TEXT NOT NULL,
-  vote_count INTEGER DEFAULT 0 NOT NULL,
+  votes INTEGER DEFAULT 0 NOT NULL,
   created_at TIMESTAMPTZ DEFAULT now() NOT NULL
 );
 
@@ -285,7 +285,7 @@ CREATE POLICY "Only admins can manage poll options"
   );
 
 -- =====================================================
--- 7. VOTES TABLE
+-- VOTES TABLE
 -- =====================================================
 CREATE TABLE votes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -310,6 +310,43 @@ CREATE POLICY "Users can update their own votes"
   ON votes FOR UPDATE
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
+
+-- =====================================================
+-- SOCIAL_LINKS TABLE
+-- =====================================================
+CREATE TABLE social_links (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  platform TEXT NOT NULL,
+  url TEXT NOT NULL,
+  icon TEXT,
+  display_order INTEGER DEFAULT 0,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT now() NOT NULL
+);
+
+ALTER TABLE social_links ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Social links are viewable by everyone"
+  ON social_links FOR SELECT
+  USING (true);
+
+CREATE POLICY "Only admins can manage social links"
+  ON social_links FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM user_roles
+      WHERE user_roles.user_id = auth.uid()
+      AND user_roles.role = 'admin'
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM user_roles
+      WHERE user_roles.user_id = auth.uid()
+      AND user_roles.role = 'admin'
+    )
+  );
 
 -- =====================================================
 -- 8. TRIGGERS
@@ -341,6 +378,11 @@ CREATE TRIGGER update_projects_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
+CREATE TRIGGER update_social_links_updated_at
+  BEFORE UPDATE ON social_links
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
 -- =====================================================
 -- 9. VOTE COUNT INCREMENT
 -- =====================================================
@@ -348,7 +390,7 @@ CREATE OR REPLACE FUNCTION increment_vote_count()
 RETURNS TRIGGER AS $$
 BEGIN
   UPDATE poll_options
-  SET vote_count = vote_count + 1
+  SET votes = votes + 1
   WHERE id = NEW.option_id;
   RETURN NEW;
 END;
@@ -435,6 +477,8 @@ CREATE INDEX IF NOT EXISTS idx_polls_event_id ON polls(event_id);
 CREATE INDEX IF NOT EXISTS idx_poll_options_poll_id ON poll_options(poll_id);
 CREATE INDEX IF NOT EXISTS idx_votes_poll_id ON votes(poll_id);
 CREATE INDEX IF NOT EXISTS idx_votes_user_id ON votes(user_id);
+CREATE INDEX IF NOT EXISTS idx_social_links_order ON social_links(display_order);
+CREATE INDEX IF NOT EXISTS idx_social_links_active ON social_links(is_active);
 
 -- =====================================================
 -- VERIFICATION

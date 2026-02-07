@@ -60,21 +60,21 @@ export type Database = {
           id: string
           poll_id: string
           option_text: string
-          vote_count: number
+          votes: number
           created_at: string
         }
         Insert: {
           id?: string
           poll_id: string
           option_text: string
-          vote_count?: number
+          votes?: number
           created_at?: string
         }
         Update: {
           id?: string
           poll_id?: string
           option_text?: string
-          vote_count?: number
+          votes?: number
           created_at?: string
         }
         Relationships: [
@@ -189,6 +189,39 @@ export type Database = {
             referencedColumns: ["id"]
           }
         ]
+      }
+      social_links: {
+        Row: {
+          id: string
+          platform: string
+          url: string
+          icon: string | null
+          display_order: number
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          platform: string
+          url: string
+          icon?: string | null
+          display_order?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          platform?: string
+          url?: string
+          icon?: string | null
+          display_order?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {

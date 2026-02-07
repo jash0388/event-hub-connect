@@ -64,10 +64,20 @@ interface Poll {
   created_at: string;
 }
 
+interface SocialLink {
+  id: string;
+  platform: string;
+  url: string;
+  icon: string | null;
+  display_order: number;
+  is_active: boolean;
+}
+
 const AdminDashboard = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [polls, setPolls] = useState<Poll[]>([]);
+  const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('events');
@@ -75,9 +85,11 @@ const AdminDashboard = () => {
   const [eventDialogOpen, setEventDialogOpen] = useState(false);
   const [projectDialogOpen, setProjectDialogOpen] = useState(false);
   const [pollDialogOpen, setPollDialogOpen] = useState(false);
+  const [socialDialogOpen, setSocialDialogOpen] = useState(false);
   
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [editingSocial, setEditingSocial] = useState<SocialLink | null>(null);
   
   const [eventForm, setEventForm] = useState({
     title: '',
@@ -104,6 +116,14 @@ const AdminDashboard = () => {
     registration_link: '',
     options: ['', ''],
   });
+
+  const [socialForm, setSocialForm] = useState({
+    platform: '',
+    url: '',
+    icon: '',
+    display_order: 0,
+    is_active: true,
+  });
   
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
@@ -115,7 +135,7 @@ const AdminDashboard = () => {
 
   const fetchAllData = async () => {
     setIsLoading(true);
-    await Promise.all([fetchEvents(), fetchProjects(), fetchPolls()]);
+    await Promise.all([fetchEvents(), fetchProjects(), fetchPolls(), fetchSocialLinks()]);
     setIsLoading(false);
   };
 
@@ -168,6 +188,20 @@ const AdminDashboard = () => {
       setPolls(data || []);
     } catch (error: any) {
       console.error('Error fetching polls:', error);
+    }
+  };
+
+  const fetchSocialLinks = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('social_links')
+        .select('*')
+        .order('display_order', { ascending: true });
+
+      if (error) throw error;
+      setSocialLinks(data || []);
+    } catch (error: any) {
+      console.error('Error fetching social links:', error);
     }
   };
 
@@ -370,7 +404,7 @@ const AdminDashboard = () => {
         .map(option_text => ({
           poll_id: pollData.id,
           option_text,
-          vote_count: 0,
+          votes: 0,
         }));
 
       const { error: optionsError } = await supabase
@@ -383,6 +417,87 @@ const AdminDashboard = () => {
       setPollDialogOpen(false);
       setPollForm({ event_id: '', question: '', registration_link: '', options: ['', ''] });
       fetchPolls();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSocialDialog = (social?: SocialLink) => {
+    if (social) {
+      setEditingSocial(social);
+      setSocialForm({
+        platform: social.platform,
+        url: social.url,
+        icon: social.icon || '',
+        display_order: social.display_order,
+        is_active: social.is_active,
+      });
+    } else {
+      setEditingSocial(null);
+      setSocialForm({
+        platform: '',
+        url: '',
+        icon: '',
+        display_order: 0,
+        is_active: true,
+      });
+    }
+    setSocialDialogOpen(true);
+  };
+
+  const handleSocialSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+
+    try {
+      const payload = {
+        platform: socialForm.platform,
+        url: socialForm.url,
+        icon: socialForm.icon || null,
+        display_order: socialForm.display_order,
+        is_active: socialForm.is_active,
+      };
+
+      if (editingSocial) {
+        const { error } = await supabase
+          .from('social_links')
+          .update(payload)
+          .eq('id', editingSocial.id);
+        if (error) throw error;
+        toast({ title: "Success", description: "Social link updated" });
+      } else {
+        const { error } = await supabase.from('social_links').insert([payload]);
+        if (error) throw error;
+        toast({ title: "Success", description: "Social link added" });
+      }
+
+      setSocialDialogOpen(false);
+      fetchSocialLinks();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSocialDelete = async (id: string) => {
+    if (!confirm('Delete this social link?')) return;
+
+    try {
+      const { error } = await supabase.from('social_links').delete().eq('id', id);
+      if (error) throw error;
+      toast({ title: "Success", description: "Social link deleted" });
+      fetchSocialLinks();
     } catch (error: any) {
       toast({
         title: "Error",
@@ -417,10 +532,11 @@ const AdminDashboard = () => {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3 max-w-md">
+            <TabsList className="grid w-full grid-cols-4 max-w-2xl">
               <TabsTrigger value="events">Events</TabsTrigger>
               <TabsTrigger value="projects">Projects</TabsTrigger>
               <TabsTrigger value="polls">Polls</TabsTrigger>
+              <TabsTrigger value="social">Social</TabsTrigger>
             </TabsList>
 
             <TabsContent value="events" className="mt-6">
@@ -825,6 +941,142 @@ const AdminDashboard = () => {
                           <TableCell className="font-medium">{poll.question}</TableCell>
                           <TableCell>{poll.events?.title || '—'}</TableCell>
                           <TableCell>{format(new Date(poll.created_at), 'PPP')}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="social" className="mt-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold">Manage Social Links</h2>
+                <Dialog open={socialDialogOpen} onOpenChange={setSocialDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button onClick={() => handleSocialDialog()}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Social Link
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-lg">
+                    <DialogHeader>
+                      <DialogTitle>{editingSocial ? 'Edit Social Link' : 'Add Social Link'}</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handleSocialSubmit} className="space-y-4 mt-4">
+                      <div>
+                        <Label htmlFor="platform">Platform *</Label>
+                        <Input
+                          id="platform"
+                          value={socialForm.platform}
+                          onChange={(e) => setSocialForm({ ...socialForm, platform: e.target.value })}
+                          placeholder="Twitter, GitHub, LinkedIn"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="social_url">URL *</Label>
+                        <Input
+                          id="social_url"
+                          type="url"
+                          value={socialForm.url}
+                          onChange={(e) => setSocialForm({ ...socialForm, url: e.target.value })}
+                          placeholder="https://twitter.com/..."
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="icon">Icon (Optional)</Label>
+                        <Input
+                          id="icon"
+                          value={socialForm.icon}
+                          onChange={(e) => setSocialForm({ ...socialForm, icon: e.target.value })}
+                          placeholder="twitter, github, linkedin"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="display_order">Display Order</Label>
+                        <Input
+                          id="display_order"
+                          type="number"
+                          value={socialForm.display_order}
+                          onChange={(e) => setSocialForm({ ...socialForm, display_order: parseInt(e.target.value) })}
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id="is_active"
+                          checked={socialForm.is_active}
+                          onChange={(e) => setSocialForm({ ...socialForm, is_active: e.target.checked })}
+                        />
+                        <Label htmlFor="is_active">Active</Label>
+                      </div>
+                      <div className="flex justify-end gap-3 pt-4">
+                        <Button type="button" variant="outline" onClick={() => setSocialDialogOpen(false)}>
+                          Cancel
+                        </Button>
+                        <Button type="submit" disabled={isSaving}>
+                          {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : (editingSocial ? 'Update' : 'Add')}
+                        </Button>
+                      </div>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+              </div>
+
+              <div className="bg-card border border-border rounded-lg overflow-hidden">
+                {isLoading ? (
+                  <div className="p-8 text-center">
+                    <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
+                  </div>
+                ) : socialLinks.length === 0 ? (
+                  <div className="p-8 text-center text-muted-foreground">
+                    No social links yet. Add your social media accounts!
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Platform</TableHead>
+                        <TableHead>URL</TableHead>
+                        <TableHead>Order</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {socialLinks.map((link) => (
+                        <TableRow key={link.id}>
+                          <TableCell className="font-medium">{link.platform}</TableCell>
+                          <TableCell>
+                            <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">
+                              {link.url.substring(0, 40)}...
+                            </a>
+                          </TableCell>
+                          <TableCell>{link.display_order}</TableCell>
+                          <TableCell>
+                            <span className={`text-xs px-2 py-1 rounded ${link.is_active ? 'bg-green-500/20 text-green-500' : 'bg-gray-500/20 text-gray-500'}`}>
+                              {link.is_active ? 'Active' : 'Inactive'}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleSocialDialog(link)}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleSocialDelete(link.id)}
+                              className="text-destructive"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
