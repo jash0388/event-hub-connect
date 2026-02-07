@@ -17,6 +17,7 @@ export type Database = {
           date: string
           location: string | null
           image_url: string | null
+          registration_link: string | null
           created_by: string | null
           created_at: string
           updated_at: string
@@ -28,6 +29,7 @@ export type Database = {
           date: string
           location?: string | null
           image_url?: string | null
+          registration_link?: string | null
           created_by?: string | null
           created_at?: string
           updated_at?: string
@@ -39,6 +41,7 @@ export type Database = {
           date?: string
           location?: string | null
           image_url?: string | null
+          registration_link?: string | null
           created_by?: string | null
           created_at?: string
           updated_at?: string
@@ -88,18 +91,21 @@ export type Database = {
           id: string
           event_id: string
           question: string
+          registration_link: string | null
           created_at: string
         }
         Insert: {
           id?: string
           event_id: string
           question: string
+          registration_link?: string | null
           created_at?: string
         }
         Update: {
           id?: string
           event_id?: string
           question?: string
+          registration_link?: string | null
           created_at?: string
         }
         Relationships: [
@@ -143,6 +149,7 @@ export type Database = {
           image_url: string | null
           github_url: string | null
           demo_url: string | null
+          registration_link: string | null
           tags: string[] | null
           created_by: string | null
           created_at: string
@@ -155,6 +162,7 @@ export type Database = {
           image_url?: string | null
           github_url?: string | null
           demo_url?: string | null
+          registration_link?: string | null
           tags?: string[] | null
           created_by?: string | null
           created_at?: string
@@ -167,6 +175,7 @@ export type Database = {
           image_url?: string | null
           github_url?: string | null
           demo_url?: string | null
+          registration_link?: string | null
           tags?: string[] | null
           created_by?: string | null
           created_at?: string

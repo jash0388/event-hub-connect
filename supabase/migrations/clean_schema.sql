@@ -94,6 +94,7 @@ CREATE TABLE events (
   date TIMESTAMPTZ NOT NULL,
   location TEXT,
   image_url TEXT,
+  registration_link TEXT,
   created_by UUID REFERENCES profiles(id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
   updated_at TIMESTAMPTZ DEFAULT now() NOT NULL
@@ -152,6 +153,7 @@ CREATE TABLE projects (
   image_url TEXT,
   github_url TEXT,
   demo_url TEXT,
+  registration_link TEXT,
   tags TEXT[],
   created_by UUID REFERENCES profiles(id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
@@ -208,6 +210,7 @@ CREATE TABLE polls (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   event_id UUID REFERENCES events(id) ON DELETE CASCADE NOT NULL,
   question TEXT NOT NULL,
+  registration_link TEXT,
   created_at TIMESTAMPTZ DEFAULT now() NOT NULL
 );
 

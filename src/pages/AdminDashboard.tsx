@@ -42,6 +42,7 @@ interface Event {
   date: string;
   location: string | null;
   image_url: string | null;
+  registration_link: string | null;
 }
 
 interface Project {
@@ -51,6 +52,7 @@ interface Project {
   image_url: string | null;
   github_url: string | null;
   demo_url: string | null;
+  registration_link: string | null;
   tags: string[] | null;
 }
 
@@ -58,6 +60,7 @@ interface Poll {
   id: string;
   event_id: string;
   question: string;
+  registration_link: string | null;
   created_at: string;
 }
 
@@ -82,6 +85,7 @@ const AdminDashboard = () => {
     datetime: '',
     location: '',
     image_url: '',
+    registration_link: '',
   });
   
   const [projectForm, setProjectForm] = useState({
@@ -90,12 +94,14 @@ const AdminDashboard = () => {
     image_url: '',
     github_url: '',
     demo_url: '',
+    registration_link: '',
     tags: '',
   });
   
   const [pollForm, setPollForm] = useState({
     event_id: '',
     question: '',
+    registration_link: '',
     options: ['', ''],
   });
   
@@ -180,6 +186,7 @@ const AdminDashboard = () => {
         datetime: localDateTime,
         location: event.location || '',
         image_url: event.image_url || '',
+        registration_link: event.registration_link || '',
       });
     } else {
       setEditingEvent(null);
@@ -189,6 +196,7 @@ const AdminDashboard = () => {
         datetime: '',
         location: '',
         image_url: '',
+        registration_link: '',
       });
     }
     setEventDialogOpen(true);
@@ -207,6 +215,7 @@ const AdminDashboard = () => {
         date: dateISO,
         location: eventForm.location || null,
         image_url: eventForm.image_url || null,
+        registration_link: eventForm.registration_link || null,
         created_by: user?.id,
       };
 
@@ -262,6 +271,7 @@ const AdminDashboard = () => {
         image_url: project.image_url || '',
         github_url: project.github_url || '',
         demo_url: project.demo_url || '',
+        registration_link: project.registration_link || '',
         tags: project.tags?.join(', ') || '',
       });
     } else {
@@ -272,6 +282,7 @@ const AdminDashboard = () => {
         image_url: '',
         github_url: '',
         demo_url: '',
+        registration_link: '',
         tags: '',
       });
     }
@@ -289,6 +300,7 @@ const AdminDashboard = () => {
         image_url: projectForm.image_url || null,
         github_url: projectForm.github_url || null,
         demo_url: projectForm.demo_url || null,
+        registration_link: projectForm.registration_link || null,
         tags: projectForm.tags ? projectForm.tags.split(',').map(t => t.trim()) : null,
         created_by: user?.id,
       };
@@ -346,6 +358,7 @@ const AdminDashboard = () => {
         .insert([{
           event_id: pollForm.event_id,
           question: pollForm.question,
+          registration_link: pollForm.registration_link || null,
         }])
         .select()
         .single();
@@ -368,7 +381,7 @@ const AdminDashboard = () => {
 
       toast({ title: "Success", description: "Poll created" });
       setPollDialogOpen(false);
-      setPollForm({ event_id: '', question: '', options: ['', ''] });
+      setPollForm({ event_id: '', question: '', registration_link: '', options: ['', ''] });
       fetchPolls();
     } catch (error: any) {
       toast({
@@ -468,6 +481,16 @@ const AdminDashboard = () => {
                           type="url"
                           value={eventForm.image_url}
                           onChange={(e) => setEventForm({ ...eventForm, image_url: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="registration_link">Registration Link (Optional)</Label>
+                        <Input
+                          id="registration_link"
+                          type="url"
+                          value={eventForm.registration_link}
+                          onChange={(e) => setEventForm({ ...eventForm, registration_link: e.target.value })}
+                          placeholder="https://forms.google.com/..."
                         />
                       </div>
                       <div className="flex justify-end gap-3 pt-4">
@@ -602,6 +625,16 @@ const AdminDashboard = () => {
                           placeholder="React, TypeScript, AI"
                         />
                       </div>
+                      <div>
+                        <Label htmlFor="project_registration_link">Registration Link (Optional)</Label>
+                        <Input
+                          id="project_registration_link"
+                          type="url"
+                          value={projectForm.registration_link}
+                          onChange={(e) => setProjectForm({ ...projectForm, registration_link: e.target.value })}
+                          placeholder="https://forms.google.com/..."
+                        />
+                      </div>
                       <div className="flex justify-end gap-3 pt-4">
                         <Button type="button" variant="outline" onClick={() => setProjectDialogOpen(false)}>
                           Cancel
@@ -719,6 +752,16 @@ const AdminDashboard = () => {
                           value={pollForm.question}
                           onChange={(e) => setPollForm({ ...pollForm, question: e.target.value })}
                           required
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="poll_registration_link">Registration Link (Optional)</Label>
+                        <Input
+                          id="poll_registration_link"
+                          type="url"
+                          value={pollForm.registration_link}
+                          onChange={(e) => setPollForm({ ...pollForm, registration_link: e.target.value })}
+                          placeholder="https://forms.google.com/..."
                         />
                       </div>
                       <div>
