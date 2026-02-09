@@ -175,7 +175,7 @@ const AdminDashboard = () => {
 
   const fetchAllData = async () => {
     setIsLoading(true);
-    await Promise.all([fetchEvents(), fetchProjects(), fetchPolls(), fetchSocialLinks(), fetchMessages()]);
+    await Promise.all([fetchEvents(), fetchProjects(), fetchPolls(), fetchSocialLinks(), fetchMessages(), fetchAdminUsers()]);
     setIsLoading(false);
   };
 
