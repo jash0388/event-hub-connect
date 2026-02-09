@@ -1395,6 +1395,167 @@ const AdminDashboard = () => {
                 </DialogContent>
               </Dialog>
             </TabsContent>
+
+            <TabsContent value="admins" className="mt-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold">Manage Admins</h2>
+                <Dialog open={adminDialogOpen} onOpenChange={setAdminDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button onClick={handleAdminDialog} data-testid="create-admin-button">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create Admin
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-lg">
+                    <DialogHeader>
+                      <DialogTitle>Create New Admin</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handleAdminSubmit} className="space-y-4 mt-4">
+                      <div>
+                        <Label htmlFor="admin_email">Email *</Label>
+                        <Input
+                          id="admin_email"
+                          type="email"
+                          value={adminForm.email}
+                          onChange={(e) => setAdminForm({ ...adminForm, email: e.target.value })}
+                          placeholder="admin@example.com"
+                          required
+                          data-testid="admin-email-input"
+                        />
+                      </div>
+
+                      <div className="flex items-center gap-2 p-3 bg-muted rounded-md">
+                        <input
+                          type="checkbox"
+                          id="createWithPassword"
+                          checked={adminForm.createWithPassword}
+                          onChange={(e) => setAdminForm({ ...adminForm, createWithPassword: e.target.checked })}
+                          data-testid="create-with-password-checkbox"
+                        />
+                        <Label htmlFor="createWithPassword" className="cursor-pointer">
+                          Create with password (uncheck to send invite email)
+                        </Label>
+                      </div>
+
+                      {adminForm.createWithPassword && (
+                        <div>
+                          <Label htmlFor="admin_password">Password * (min 6 characters)</Label>
+                          <Input
+                            id="admin_password"
+                            type="password"
+                            value={adminForm.password}
+                            onChange={(e) => setAdminForm({ ...adminForm, password: e.target.value })}
+                            placeholder="••••••••"
+                            required={adminForm.createWithPassword}
+                            minLength={6}
+                            data-testid="admin-password-input"
+                          />
+                        </div>
+                      )}
+
+                      {!adminForm.createWithPassword && (
+                        <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-md">
+                          <div className="flex items-start gap-2">
+                            <Mail className="w-5 h-5 text-blue-500 mt-0.5" />
+                            <div>
+                              <p className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                                Invite Email Mode
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                An invite email will be sent to the user. They can set their own password.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex justify-end gap-3 pt-4">
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          onClick={() => setAdminDialogOpen(false)}
+                          data-testid="cancel-admin-button"
+                        >
+                          Cancel
+                        </Button>
+                        <Button type="submit" disabled={isSaving} data-testid="submit-admin-button">
+                          {isSaving ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : adminForm.createWithPassword ? (
+                            'Create Admin'
+                          ) : (
+                            'Send Invite'
+                          )}
+                        </Button>
+                      </div>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+              </div>
+
+              <div className="bg-card border border-border rounded-lg overflow-hidden">
+                {isLoading ? (
+                  <div className="p-8 text-center">
+                    <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
+                  </div>
+                ) : admins.length === 0 ? (
+                  <div className="p-8 text-center text-muted-foreground">
+                    No admin users found.
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Role</TableHead>
+                        <TableHead>Created</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {admins.map((admin) => (
+                        <TableRow key={admin.user_id} data-testid={`admin-row-${admin.user_id}`}>
+                          <TableCell className="font-medium">
+                            {admin.profiles?.email || 'N/A'}
+                          </TableCell>
+                          <TableCell>{admin.profiles?.full_name || '—'}</TableCell>
+                          <TableCell>
+                            <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded bg-primary/20 text-primary">
+                              <Shield className="w-3 h-3" />
+                              Admin
+                            </span>
+                          </TableCell>
+                          <TableCell>{format(new Date(admin.created_at), 'PPP')}</TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRevokeAdmin(admin.user_id, admin.profiles?.email || 'this user')}
+                              title="Revoke admin access"
+                              data-testid={`revoke-admin-${admin.user_id}`}
+                            >
+                              <UserMinus className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteAdmin(admin.user_id, admin.profiles?.email || 'this user')}
+                              className="text-destructive"
+                              title="Delete admin user"
+                              disabled={admin.user_id === user?.id}
+                              data-testid={`delete-admin-${admin.user_id}`}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </div>
+            </TabsContent>
           </Tabs>
         </div>
       </main>
