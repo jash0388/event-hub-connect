@@ -50,21 +50,56 @@ const AdminLogin = () => {
           description: error.message,
           variant: "destructive",
         });
+        setIsLoading(false);
         return;
       }
 
-      // The useEffect will handle navigation once isAdmin is determined
+      // Show success message
       toast({
         title: "Login Successful",
         description: "Verifying admin access...",
       });
+
+      // Wait a moment for auth state to update, then check admin status
+      setTimeout(async () => {
+        // Re-check if user is admin after successful login
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        
+        if (!currentUser) {
+          toast({
+            title: "Error",
+            description: "Authentication failed. Please try again.",
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return;
+        }
+
+        // Check admin status
+        const { data: roleData } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', currentUser.id)
+          .single();
+
+        if (roleData?.role === 'admin') {
+          // Navigate to dashboard
+          navigate(from, { replace: true });
+        } else {
+          toast({
+            title: "Access Denied",
+            description: "You don't have admin permissions.",
+            variant: "destructive",
+          });
+          setIsLoading(false);
+        }
+      }, 1000);
     } catch (error) {
       toast({
         title: "Error",
         description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
-    } finally {
       setIsLoading(false);
     }
   };
