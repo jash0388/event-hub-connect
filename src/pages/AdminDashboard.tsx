@@ -262,6 +262,21 @@ const AdminDashboard = () => {
     }
   };
 
+  const fetchAdmins = async () => {
+    try {
+      const { data, error } = await getAllAdmins();
+      if (error) throw error;
+      setAdmins(data || []);
+    } catch (error: any) {
+      console.error('Error fetching admins:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to load admins",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleLogout = async () => {
     await signOut();
     navigate('/');
