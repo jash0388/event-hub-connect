@@ -94,6 +94,16 @@ interface ContactMessage {
   created_at: string;
 }
 
+interface AdminUser {
+  user_id: string;
+  role: string;
+  created_at: string;
+  profiles: {
+    email: string;
+    full_name: string | null;
+  } | null;
+}
+
 const AdminDashboard = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
