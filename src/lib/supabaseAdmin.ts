@@ -95,22 +95,38 @@ export async function sendAdminInvite(email: string) {
  */
 export async function getAllAdmins() {
   try {
-    const { data, error } = await supabaseAdmin
+    // First get all admin user_roles
+    const { data: userRoles, error: rolesError } = await supabaseAdmin
       .from('user_roles')
-      .select(`
-        user_id,
-        role,
-        created_at,
-        profiles:user_id (
-          email,
-          full_name
-        )
-      `)
+      .select('user_id, role, created_at')
       .eq('role', 'admin')
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
-    return { data, error: null };
+    if (rolesError) throw rolesError;
+    if (!userRoles || userRoles.length === 0) {
+      return { data: [], error: null };
+    }
+
+    // Get user IDs
+    const userIds = userRoles.map(ur => ur.user_id);
+
+    // Fetch profiles for these users
+    const { data: profiles, error: profilesError } = await supabaseAdmin
+      .from('profiles')
+      .select('id, email, full_name')
+      .in('id', userIds);
+
+    if (profilesError) throw profilesError;
+
+    // Combine the data
+    const admins = userRoles.map(role => ({
+      user_id: role.user_id,
+      role: role.role,
+      created_at: role.created_at,
+      profiles: profiles?.find(p => p.id === role.user_id) || null
+    }));
+
+    return { data: admins, error: null };
   } catch (error: any) {
     console.error('Error fetching admins:', error);
     return { data: null, error };
