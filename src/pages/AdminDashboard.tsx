@@ -107,6 +107,7 @@ const AdminDashboard = () => {
   const [polls, setPolls] = useState<Poll[]>([]);
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
   const [messages, setMessages] = useState<ContactMessage[]>([]);
+  const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('events');
@@ -116,6 +117,7 @@ const AdminDashboard = () => {
   const [pollDialogOpen, setPollDialogOpen] = useState(false);
   const [socialDialogOpen, setSocialDialogOpen] = useState(false);
   const [replyDialogOpen, setReplyDialogOpen] = useState(false);
+  const [adminDialogOpen, setAdminDialogOpen] = useState(false);
   
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
