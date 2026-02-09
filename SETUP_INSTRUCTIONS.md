@@ -50,7 +50,7 @@ jashwanth038@gmail.com | admin
 ## 🎯 STEP 2: TEST THE APP
 
 ### A) Test Admin Login
-1. Open preview: https://connect-staging.preview.emergentagent.com
+1. Open preview: https://admin-manager-17.preview.emergentagent.com
 2. Click "Login" button (top right)
 3. Login with:
    - Email: jashwanth038@gmail.com
