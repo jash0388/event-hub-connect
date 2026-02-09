@@ -1404,6 +1404,143 @@ const AdminDashboard = () => {
                 </DialogContent>
               </Dialog>
             </TabsContent>
+
+            <TabsContent value="admins" className="mt-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold">Manage Admins</h2>
+                <Dialog open={adminDialogOpen} onOpenChange={setAdminDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button data-testid="create-admin-btn">
+                      <UserPlus className="w-4 h-4 mr-2" />
+                      Create Admin
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-lg">
+                    <DialogHeader>
+                      <DialogTitle>Create New Admin</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handleCreateAdmin} className="space-y-4 mt-4">
+                      <div>
+                        <Label htmlFor="admin_email">Email *</Label>
+                        <Input
+                          id="admin_email"
+                          type="email"
+                          value={adminForm.email}
+                          onChange={(e) => setAdminForm({ ...adminForm, email: e.target.value })}
+                          placeholder="admin@example.com"
+                          required
+                          data-testid="admin-email-input"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="admin_password">Password *</Label>
+                        <Input
+                          id="admin_password"
+                          type="password"
+                          value={adminForm.password}
+                          onChange={(e) => setAdminForm({ ...adminForm, password: e.target.value })}
+                          placeholder="••••••••"
+                          required
+                          minLength={6}
+                          data-testid="admin-password-input"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="admin_role">Role *</Label>
+                        <select
+                          id="admin_role"
+                          value={adminForm.role}
+                          onChange={(e) => setAdminForm({ ...adminForm, role: e.target.value as 'admin' | 'moderator' | 'user' })}
+                          className="w-full px-3 py-2 bg-background border border-border rounded-md"
+                          data-testid="admin-role-select"
+                        >
+                          <option value="admin">Admin</option>
+                          <option value="moderator">Moderator</option>
+                          <option value="user">User</option>
+                        </select>
+                      </div>
+                      <div className="flex justify-end gap-3 pt-4">
+                        <Button type="button" variant="outline" onClick={() => setAdminDialogOpen(false)}>
+                          Cancel
+                        </Button>
+                        <Button type="submit" disabled={isSaving} data-testid="submit-admin-btn">
+                          {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Create'}
+                        </Button>
+                      </div>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+              </div>
+
+              <div className="bg-card border border-border rounded-lg overflow-hidden">
+                {isLoading ? (
+                  <div className="p-8 text-center">
+                    <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
+                  </div>
+                ) : adminUsers.length === 0 ? (
+                  <div className="p-8 text-center text-muted-foreground">
+                    No admin users yet. Create one to get started!
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Role</TableHead>
+                        <TableHead>Created</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {adminUsers.map((adminUser: any) => (
+                        <TableRow key={adminUser.id} data-testid={`admin-row-${adminUser.email}`}>
+                          <TableCell className="font-medium">
+                            <div className="flex items-center gap-2">
+                              <Shield className="w-4 h-4 text-primary" />
+                              {adminUser.email}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <span className={`text-xs px-2 py-1 rounded ${
+                              adminUser.role === 'admin' 
+                                ? 'bg-red-500/20 text-red-500' 
+                                : adminUser.role === 'moderator'
+                                ? 'bg-yellow-500/20 text-yellow-500'
+                                : 'bg-blue-500/20 text-blue-500'
+                            }`}>
+                              {adminUser.role}
+                            </span>
+                          </TableCell>
+                          <TableCell>{format(new Date(adminUser.created_at), 'PPP')}</TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveAdmin(adminUser)}
+                              className="text-yellow-500 hover:text-yellow-400"
+                              title="Remove admin role"
+                              data-testid={`remove-role-${adminUser.email}`}
+                            >
+                              <UserMinus className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteAdminUser(adminUser)}
+                              className="text-destructive"
+                              title="Delete user permanently"
+                              data-testid={`delete-user-${adminUser.email}`}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </div>
+            </TabsContent>
           </Tabs>
         </div>
       </main>
