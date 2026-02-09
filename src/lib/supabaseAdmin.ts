@@ -77,19 +77,26 @@ export async function sendAdminInvite(email: string) {
     if (error) throw error;
 
     // The user will be created on invite, so we need to set their role
-    // We'll do this after they accept the invite through a database trigger
-    // or we can set it now if we have the user ID
     if (data.user) {
-      const { error: roleError } = await supabaseAdmin
+      // Try update first, then insert if needed
+      const { error: updateError } = await supabaseAdmin
         .from('user_roles')
-        .upsert({
-          user_id: data.user.id,
-          role: 'admin'
-        }, {
-          onConflict: 'user_id'
-        });
+        .update({ role: 'admin' })
+        .eq('user_id', data.user.id);
 
-      if (roleError) throw roleError;
+      // If no rows updated, insert new record
+      if (updateError || updateError === null) {
+        const { error: insertError } = await supabaseAdmin
+          .from('user_roles')
+          .insert({
+            user_id: data.user.id,
+            role: 'admin'
+          });
+
+        if (insertError && !insertError.message.includes('duplicate')) {
+          throw insertError;
+        }
+      }
     }
 
     return { data, error: null };
