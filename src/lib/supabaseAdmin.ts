@@ -24,11 +24,11 @@ export const supabaseAdmin = createClient(
  */
 export async function createAdminUser(email: string, password?: string) {
   try {
-    // Create the user in auth.users
+    // Create the user in auth.users with email confirmed
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password: password || undefined,
-      email_confirm: !password, // Auto-confirm if no password (invite flow)
+      email_confirm: true, // Always auto-confirm admin users
       user_metadata: {
         full_name: email.split('@')[0], // Default name from email
       }
@@ -38,16 +38,25 @@ export async function createAdminUser(email: string, password?: string) {
     if (!authData.user) throw new Error('Failed to create user');
 
     // Set admin role in user_roles table
+    // First try to update, if not exists then insert
     const { error: roleError } = await supabaseAdmin
       .from('user_roles')
-      .upsert({
-        user_id: authData.user.id,
-        role: 'admin'
-      }, {
-        onConflict: 'user_id'
-      });
+      .update({ role: 'admin' })
+      .eq('user_id', authData.user.id);
 
-    if (roleError) throw roleError;
+    // If update didn't work (no rows), insert new record
+    if (roleError || roleError === null) {
+      const { error: insertError } = await supabaseAdmin
+        .from('user_roles')
+        .insert({
+          user_id: authData.user.id,
+          role: 'admin'
+        });
+
+      if (insertError && !insertError.message.includes('duplicate')) {
+        throw insertError;
+      }
+    }
 
     return { data: authData.user, error: null };
   } catch (error: any) {
