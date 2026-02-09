@@ -32,18 +32,8 @@ import {
   Trash2,
   LogOut,
   Loader2,
-  Shield,
-  UserMinus,
-  Mail,
 } from 'lucide-react';
 import { format } from 'date-fns';
-import {
-  createAdminUser,
-  sendAdminInvite,
-  getAllAdmins,
-  revokeAdminAccess,
-  deleteAdminUser,
-} from '@/lib/supabaseAdmin';
 
 interface Event {
   id: string;
@@ -94,23 +84,12 @@ interface ContactMessage {
   created_at: string;
 }
 
-interface AdminUser {
-  user_id: string;
-  role: string;
-  created_at: string;
-  profiles: {
-    email: string;
-    full_name: string | null;
-  } | null;
-}
-
 const AdminDashboard = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [polls, setPolls] = useState<Poll[]>([]);
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
   const [messages, setMessages] = useState<ContactMessage[]>([]);
-  const [admins, setAdmins] = useState<AdminUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('events');
@@ -120,19 +99,12 @@ const AdminDashboard = () => {
   const [pollDialogOpen, setPollDialogOpen] = useState(false);
   const [socialDialogOpen, setSocialDialogOpen] = useState(false);
   const [replyDialogOpen, setReplyDialogOpen] = useState(false);
-  const [adminDialogOpen, setAdminDialogOpen] = useState(false);
   
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [editingSocial, setEditingSocial] = useState<SocialLink | null>(null);
   const [selectedMessage, setSelectedMessage] = useState<ContactMessage | null>(null);
   const [replyText, setReplyText] = useState('');
-  
-  const [adminForm, setAdminForm] = useState({
-    email: '',
-    password: '',
-    createWithPassword: true,
-  });
   
   const [eventForm, setEventForm] = useState({
     title: '',
@@ -178,7 +150,7 @@ const AdminDashboard = () => {
 
   const fetchAllData = async () => {
     setIsLoading(true);
-    await Promise.all([fetchEvents(), fetchProjects(), fetchPolls(), fetchSocialLinks(), fetchMessages(), fetchAdmins()]);
+    await Promise.all([fetchEvents(), fetchProjects(), fetchPolls(), fetchSocialLinks(), fetchMessages()]);
     setIsLoading(false);
   };
 
@@ -259,21 +231,6 @@ const AdminDashboard = () => {
       setMessages(data || []);
     } catch (error: any) {
       console.error('Error fetching messages:', error);
-    }
-  };
-
-  const fetchAdmins = async () => {
-    try {
-      const { data, error } = await getAllAdmins();
-      if (error) throw error;
-      setAdmins(data || []);
-    } catch (error: any) {
-      console.error('Error fetching admins:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to load admins",
-        variant: "destructive",
-      });
     }
   };
 
@@ -614,107 +571,6 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleAdminDialog = () => {
-    setAdminForm({
-      email: '',
-      password: '',
-      createWithPassword: true,
-    });
-    setAdminDialogOpen(true);
-  };
-
-  const handleAdminSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSaving(true);
-
-    try {
-      let result;
-      
-      if (adminForm.createWithPassword) {
-        // Create admin with password
-        if (!adminForm.password || adminForm.password.length < 6) {
-          toast({
-            title: "Error",
-            description: "Password must be at least 6 characters",
-            variant: "destructive",
-          });
-          setIsSaving(false);
-          return;
-        }
-        result = await createAdminUser(adminForm.email, adminForm.password);
-      } else {
-        // Send invite email
-        result = await sendAdminInvite(adminForm.email);
-      }
-
-      if (result.error) throw result.error;
-
-      toast({
-        title: "Success",
-        description: adminForm.createWithPassword 
-          ? "Admin user created successfully" 
-          : "Invite email sent successfully",
-      });
-      
-      setAdminDialogOpen(false);
-      fetchAdmins();
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create admin",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleRevokeAdmin = async (userId: string, userEmail: string) => {
-    if (!confirm(`Revoke admin access for ${userEmail}? They will become a regular user.`)) return;
-
-    try {
-      const { error } = await revokeAdminAccess(userId);
-      if (error) throw error;
-      
-      toast({ title: "Success", description: "Admin access revoked" });
-      fetchAdmins();
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to revoke admin access",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleDeleteAdmin = async (userId: string, userEmail: string) => {
-    if (!confirm(`Delete admin user ${userEmail}? This action cannot be undone.`)) return;
-
-    // Prevent deleting yourself
-    if (userId === user?.id) {
-      toast({
-        title: "Error",
-        description: "You cannot delete your own admin account",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      const { error } = await deleteAdminUser(userId);
-      if (error) throw error;
-      
-      toast({ title: "Success", description: "Admin user deleted" });
-      fetchAdmins();
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to delete admin user",
-        variant: "destructive",
-      });
-    }
-  };
-
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
@@ -738,13 +594,12 @@ const AdminDashboard = () => {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-6 max-w-4xl">
+            <TabsList className="grid w-full grid-cols-5 max-w-3xl">
               <TabsTrigger value="events">Events</TabsTrigger>
               <TabsTrigger value="projects">Projects</TabsTrigger>
               <TabsTrigger value="polls">Polls</TabsTrigger>
               <TabsTrigger value="social">Social</TabsTrigger>
               <TabsTrigger value="messages">Messages</TabsTrigger>
-              <TabsTrigger value="admins" data-testid="admins-tab">Admins</TabsTrigger>
             </TabsList>
 
             <TabsContent value="events" className="mt-6">
@@ -830,119 +685,54 @@ const AdminDashboard = () => {
                 </Dialog>
               </div>
 
-              {isLoading ? (
-                <div className="p-8 text-center bg-card border border-border rounded-lg">
-                  <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
-                </div>
-              ) : events.length === 0 ? (
-                <div className="p-8 text-center text-muted-foreground bg-card border border-border rounded-lg">
-                  No events yet. Create one to get started!
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  {/* Upcoming Events */}
-                  <div className="bg-card border border-border rounded-lg overflow-hidden">
-                    <div className="px-4 py-3 bg-primary/10 border-b border-border">
-                      <h3 className="font-semibold text-lg">🚀 Upcoming Events</h3>
-                    </div>
-                    {events.filter(event => new Date(event.date) >= new Date()).length === 0 ? (
-                      <div className="p-8 text-center text-muted-foreground">
-                        No upcoming events
-                      </div>
-                    ) : (
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Title</TableHead>
-                            <TableHead>Date</TableHead>
-                            <TableHead>Location</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {events
-                            .filter(event => new Date(event.date) >= new Date())
-                            .map((event) => (
-                              <TableRow key={event.id}>
-                                <TableCell className="font-medium">{event.title}</TableCell>
-                                <TableCell>{format(new Date(event.date), 'PPP p')}</TableCell>
-                                <TableCell>{event.location || '—'}</TableCell>
-                                <TableCell className="text-right">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleEventDialog(event)}
-                                  >
-                                    <Edit className="w-4 h-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleEventDelete(event.id)}
-                                    className="text-destructive"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                        </TableBody>
-                      </Table>
-                    )}
+              <div className="bg-card border border-border rounded-lg overflow-hidden">
+                {isLoading ? (
+                  <div className="p-8 text-center">
+                    <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
                   </div>
-
-                  {/* Past Events */}
-                  <div className="bg-card border border-border rounded-lg overflow-hidden">
-                    <div className="px-4 py-3 bg-muted border-b border-border">
-                      <h3 className="font-semibold text-lg">📅 Past Events</h3>
-                    </div>
-                    {events.filter(event => new Date(event.date) < new Date()).length === 0 ? (
-                      <div className="p-8 text-center text-muted-foreground">
-                        No past events
-                      </div>
-                    ) : (
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Title</TableHead>
-                            <TableHead>Date</TableHead>
-                            <TableHead>Location</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {events
-                            .filter(event => new Date(event.date) < new Date())
-                            .map((event) => (
-                              <TableRow key={event.id} className="opacity-60">
-                                <TableCell className="font-medium">{event.title}</TableCell>
-                                <TableCell>{format(new Date(event.date), 'PPP p')}</TableCell>
-                                <TableCell>{event.location || '—'}</TableCell>
-                                <TableCell className="text-right">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleEventDialog(event)}
-                                  >
-                                    <Edit className="w-4 h-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleEventDelete(event.id)}
-                                    className="text-destructive"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                        </TableBody>
-                      </Table>
-                    )}
+                ) : events.length === 0 ? (
+                  <div className="p-8 text-center text-muted-foreground">
+                    No events yet. Create one to get started!
                   </div>
-                </div>
-              )}
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Title</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Location</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {events.map((event) => (
+                        <TableRow key={event.id}>
+                          <TableCell className="font-medium">{event.title}</TableCell>
+                          <TableCell>{format(new Date(event.date), 'PPP p')}</TableCell>
+                          <TableCell>{event.location || '—'}</TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEventDialog(event)}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEventDelete(event.id)}
+                              className="text-destructive"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </div>
             </TabsContent>
 
             <TabsContent value="projects" className="mt-6">
@@ -1459,167 +1249,6 @@ const AdminDashboard = () => {
                   )}
                 </DialogContent>
               </Dialog>
-            </TabsContent>
-
-            <TabsContent value="admins" className="mt-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold">Manage Admins</h2>
-                <Dialog open={adminDialogOpen} onOpenChange={setAdminDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button onClick={handleAdminDialog} data-testid="create-admin-button">
-                      <Plus className="w-4 h-4 mr-2" />
-                      Create Admin
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-lg">
-                    <DialogHeader>
-                      <DialogTitle>Create New Admin</DialogTitle>
-                    </DialogHeader>
-                    <form onSubmit={handleAdminSubmit} className="space-y-4 mt-4">
-                      <div>
-                        <Label htmlFor="admin_email">Email *</Label>
-                        <Input
-                          id="admin_email"
-                          type="email"
-                          value={adminForm.email}
-                          onChange={(e) => setAdminForm({ ...adminForm, email: e.target.value })}
-                          placeholder="admin@example.com"
-                          required
-                          data-testid="admin-email-input"
-                        />
-                      </div>
-
-                      <div className="flex items-center gap-2 p-3 bg-muted rounded-md">
-                        <input
-                          type="checkbox"
-                          id="createWithPassword"
-                          checked={adminForm.createWithPassword}
-                          onChange={(e) => setAdminForm({ ...adminForm, createWithPassword: e.target.checked })}
-                          data-testid="create-with-password-checkbox"
-                        />
-                        <Label htmlFor="createWithPassword" className="cursor-pointer">
-                          Create with password (uncheck to send invite email)
-                        </Label>
-                      </div>
-
-                      {adminForm.createWithPassword && (
-                        <div>
-                          <Label htmlFor="admin_password">Password * (min 6 characters)</Label>
-                          <Input
-                            id="admin_password"
-                            type="password"
-                            value={adminForm.password}
-                            onChange={(e) => setAdminForm({ ...adminForm, password: e.target.value })}
-                            placeholder="••••••••"
-                            required={adminForm.createWithPassword}
-                            minLength={6}
-                            data-testid="admin-password-input"
-                          />
-                        </div>
-                      )}
-
-                      {!adminForm.createWithPassword && (
-                        <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-md">
-                          <div className="flex items-start gap-2">
-                            <Mail className="w-5 h-5 text-blue-500 mt-0.5" />
-                            <div>
-                              <p className="text-sm font-medium text-blue-700 dark:text-blue-300">
-                                Invite Email Mode
-                              </p>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                An invite email will be sent to the user. They can set their own password.
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="flex justify-end gap-3 pt-4">
-                        <Button 
-                          type="button" 
-                          variant="outline" 
-                          onClick={() => setAdminDialogOpen(false)}
-                          data-testid="cancel-admin-button"
-                        >
-                          Cancel
-                        </Button>
-                        <Button type="submit" disabled={isSaving} data-testid="submit-admin-button">
-                          {isSaving ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : adminForm.createWithPassword ? (
-                            'Create Admin'
-                          ) : (
-                            'Send Invite'
-                          )}
-                        </Button>
-                      </div>
-                    </form>
-                  </DialogContent>
-                </Dialog>
-              </div>
-
-              <div className="bg-card border border-border rounded-lg overflow-hidden">
-                {isLoading ? (
-                  <div className="p-8 text-center">
-                    <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
-                  </div>
-                ) : admins.length === 0 ? (
-                  <div className="p-8 text-center text-muted-foreground">
-                    No admin users found.
-                  </div>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Role</TableHead>
-                        <TableHead>Created</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {admins.map((admin) => (
-                        <TableRow key={admin.user_id} data-testid={`admin-row-${admin.user_id}`}>
-                          <TableCell className="font-medium">
-                            {admin.profiles?.email || 'N/A'}
-                          </TableCell>
-                          <TableCell>{admin.profiles?.full_name || '—'}</TableCell>
-                          <TableCell>
-                            <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded bg-primary/20 text-primary">
-                              <Shield className="w-3 h-3" />
-                              Admin
-                            </span>
-                          </TableCell>
-                          <TableCell>{format(new Date(admin.created_at), 'PPP')}</TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleRevokeAdmin(admin.user_id, admin.profiles?.email || 'this user')}
-                              title="Revoke admin access"
-                              data-testid={`revoke-admin-${admin.user_id}`}
-                            >
-                              <UserMinus className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteAdmin(admin.user_id, admin.profiles?.email || 'this user')}
-                              className="text-destructive"
-                              title="Delete admin user"
-                              disabled={admin.user_id === user?.id}
-                              data-testid={`delete-admin-${admin.user_id}`}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
-              </div>
             </TabsContent>
           </Tabs>
         </div>
