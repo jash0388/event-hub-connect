@@ -830,54 +830,119 @@ const AdminDashboard = () => {
                 </Dialog>
               </div>
 
-              <div className="bg-card border border-border rounded-lg overflow-hidden">
-                {isLoading ? (
-                  <div className="p-8 text-center">
-                    <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
+              {isLoading ? (
+                <div className="p-8 text-center bg-card border border-border rounded-lg">
+                  <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
+                </div>
+              ) : events.length === 0 ? (
+                <div className="p-8 text-center text-muted-foreground bg-card border border-border rounded-lg">
+                  No events yet. Create one to get started!
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* Upcoming Events */}
+                  <div className="bg-card border border-border rounded-lg overflow-hidden">
+                    <div className="px-4 py-3 bg-primary/10 border-b border-border">
+                      <h3 className="font-semibold text-lg">🚀 Upcoming Events</h3>
+                    </div>
+                    {events.filter(event => new Date(event.date) >= new Date()).length === 0 ? (
+                      <div className="p-8 text-center text-muted-foreground">
+                        No upcoming events
+                      </div>
+                    ) : (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Title</TableHead>
+                            <TableHead>Date</TableHead>
+                            <TableHead>Location</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {events
+                            .filter(event => new Date(event.date) >= new Date())
+                            .map((event) => (
+                              <TableRow key={event.id}>
+                                <TableCell className="font-medium">{event.title}</TableCell>
+                                <TableCell>{format(new Date(event.date), 'PPP p')}</TableCell>
+                                <TableCell>{event.location || '—'}</TableCell>
+                                <TableCell className="text-right">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleEventDialog(event)}
+                                  >
+                                    <Edit className="w-4 h-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleEventDelete(event.id)}
+                                    className="text-destructive"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                        </TableBody>
+                      </Table>
+                    )}
                   </div>
-                ) : events.length === 0 ? (
-                  <div className="p-8 text-center text-muted-foreground">
-                    No events yet. Create one to get started!
+
+                  {/* Past Events */}
+                  <div className="bg-card border border-border rounded-lg overflow-hidden">
+                    <div className="px-4 py-3 bg-muted border-b border-border">
+                      <h3 className="font-semibold text-lg">📅 Past Events</h3>
+                    </div>
+                    {events.filter(event => new Date(event.date) < new Date()).length === 0 ? (
+                      <div className="p-8 text-center text-muted-foreground">
+                        No past events
+                      </div>
+                    ) : (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Title</TableHead>
+                            <TableHead>Date</TableHead>
+                            <TableHead>Location</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {events
+                            .filter(event => new Date(event.date) < new Date())
+                            .map((event) => (
+                              <TableRow key={event.id} className="opacity-60">
+                                <TableCell className="font-medium">{event.title}</TableCell>
+                                <TableCell>{format(new Date(event.date), 'PPP p')}</TableCell>
+                                <TableCell>{event.location || '—'}</TableCell>
+                                <TableCell className="text-right">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleEventDialog(event)}
+                                  >
+                                    <Edit className="w-4 h-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleEventDelete(event.id)}
+                                    className="text-destructive"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                        </TableBody>
+                      </Table>
+                    )}
                   </div>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Title</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Location</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {events.map((event) => (
-                        <TableRow key={event.id}>
-                          <TableCell className="font-medium">{event.title}</TableCell>
-                          <TableCell>{format(new Date(event.date), 'PPP p')}</TableCell>
-                          <TableCell>{event.location || '—'}</TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEventDialog(event)}
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEventDelete(event.id)}
-                              className="text-destructive"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
-              </div>
+                </div>
+              )}
             </TabsContent>
 
             <TabsContent value="projects" className="mt-6">
