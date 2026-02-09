@@ -4,6 +4,7 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { createClient } from '@supabase/supabase-js';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -32,8 +33,17 @@ import {
   Trash2,
   LogOut,
   Loader2,
+  UserPlus,
+  Shield,
+  UserMinus,
 } from 'lucide-react';
 import { format } from 'date-fns';
+
+// Create admin client for user management
+const supabaseAdmin = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY
+);
 
 interface Event {
   id: string;
