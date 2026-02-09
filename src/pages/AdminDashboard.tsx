@@ -158,6 +158,12 @@ const AdminDashboard = () => {
     display_order: 0,
     is_active: true,
   });
+
+  const [adminForm, setAdminForm] = useState({
+    email: '',
+    password: '',
+    role: 'admin' as 'admin' | 'moderator' | 'user',
+  });
   
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
