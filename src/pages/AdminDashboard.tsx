@@ -614,6 +614,107 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleAdminDialog = () => {
+    setAdminForm({
+      email: '',
+      password: '',
+      createWithPassword: true,
+    });
+    setAdminDialogOpen(true);
+  };
+
+  const handleAdminSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+
+    try {
+      let result;
+      
+      if (adminForm.createWithPassword) {
+        // Create admin with password
+        if (!adminForm.password || adminForm.password.length < 6) {
+          toast({
+            title: "Error",
+            description: "Password must be at least 6 characters",
+            variant: "destructive",
+          });
+          setIsSaving(false);
+          return;
+        }
+        result = await createAdminUser(adminForm.email, adminForm.password);
+      } else {
+        // Send invite email
+        result = await sendAdminInvite(adminForm.email);
+      }
+
+      if (result.error) throw result.error;
+
+      toast({
+        title: "Success",
+        description: adminForm.createWithPassword 
+          ? "Admin user created successfully" 
+          : "Invite email sent successfully",
+      });
+      
+      setAdminDialogOpen(false);
+      fetchAdmins();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create admin",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleRevokeAdmin = async (userId: string, userEmail: string) => {
+    if (!confirm(`Revoke admin access for ${userEmail}? They will become a regular user.`)) return;
+
+    try {
+      const { error } = await revokeAdminAccess(userId);
+      if (error) throw error;
+      
+      toast({ title: "Success", description: "Admin access revoked" });
+      fetchAdmins();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to revoke admin access",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteAdmin = async (userId: string, userEmail: string) => {
+    if (!confirm(`Delete admin user ${userEmail}? This action cannot be undone.`)) return;
+
+    // Prevent deleting yourself
+    if (userId === user?.id) {
+      toast({
+        title: "Error",
+        description: "You cannot delete your own admin account",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await deleteAdminUser(userId);
+      if (error) throw error;
+      
+      toast({ title: "Success", description: "Admin user deleted" });
+      fetchAdmins();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete admin user",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
