@@ -32,8 +32,18 @@ import {
   Trash2,
   LogOut,
   Loader2,
+  Shield,
+  UserMinus,
+  Mail,
 } from 'lucide-react';
 import { format } from 'date-fns';
+import {
+  createAdminUser,
+  sendAdminInvite,
+  getAllAdmins,
+  revokeAdminAccess,
+  deleteAdminUser,
+} from '@/lib/supabaseAdmin';
 
 interface Event {
   id: string;
