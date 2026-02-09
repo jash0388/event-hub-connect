@@ -259,6 +259,134 @@ const AdminDashboard = () => {
     }
   };
 
+  const fetchAdminUsers = async () => {
+    try {
+      // Fetch all user roles
+      const { data: rolesData, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (rolesError) throw rolesError;
+
+      // Fetch user details from auth using admin client
+      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.listUsers();
+      
+      if (authError) throw authError;
+
+      // Combine roles with user emails
+      const adminsWithDetails = (rolesData || []).map(role => {
+        const authUser = authData.users.find(u => u.id === role.user_id);
+        return {
+          id: role.id,
+          email: authUser?.email || 'Unknown',
+          role: role.role,
+          created_at: role.created_at,
+          user_id: role.user_id,
+        };
+      });
+
+      setAdminUsers(adminsWithDetails);
+    } catch (error: any) {
+      console.error('Error fetching admin users:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to load admin users",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCreateAdmin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+
+    try {
+      // Create user using admin client
+      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+        email: adminForm.email,
+        password: adminForm.password,
+        email_confirm: true,
+      });
+
+      if (authError) throw authError;
+
+      if (!authData.user) throw new Error('Failed to create user');
+
+      // Add role to user_roles table
+      const { error: roleError } = await supabase
+        .from('user_roles')
+        .insert([{
+          user_id: authData.user.id,
+          role: adminForm.role,
+        }]);
+
+      if (roleError) throw roleError;
+
+      toast({ title: "Success", description: `${adminForm.role} created successfully` });
+      setAdminDialogOpen(false);
+      setAdminForm({ email: '', password: '', role: 'admin' });
+      fetchAdminUsers();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleRemoveAdmin = async (adminUser: any) => {
+    if (!confirm(`Remove ${adminUser.role} role from ${adminUser.email}?`)) return;
+
+    try {
+      // Remove from user_roles table
+      const { error } = await supabase
+        .from('user_roles')
+        .delete()
+        .eq('id', adminUser.id);
+
+      if (error) throw error;
+
+      toast({ title: "Success", description: "Admin role removed" });
+      fetchAdminUsers();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteAdminUser = async (adminUser: any) => {
+    if (!confirm(`Permanently delete user ${adminUser.email}? This cannot be undone.`)) return;
+
+    try {
+      // Delete from user_roles first
+      await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', adminUser.user_id);
+
+      // Delete user from auth using admin client
+      const { error } = await supabaseAdmin.auth.admin.deleteUser(adminUser.user_id);
+
+      if (error) throw error;
+
+      toast({ title: "Success", description: "User deleted permanently" });
+      fetchAdminUsers();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleLogout = async () => {
     await signOut();
     navigate('/');
