@@ -77,13 +77,24 @@ const AdminLogin = () => {
         }
 
         // Check admin status
-        const { data: roleData } = await supabase
+        const { data: roleData, error: roleError } = await supabase
           .from('user_roles')
           .select('role')
-          .eq('user_id', currentUser.id)
-          .single();
+          .eq('user_id', currentUser.id);
 
-        if (roleData?.role === 'admin') {
+        if (roleError) {
+          toast({
+            title: "Error",
+            description: "Unable to verify your permissions. Please try again.",
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return;
+        }
+
+        const hasAdminRole = roleData?.some(({ role }) => role === 'admin');
+
+        if (hasAdminRole) {
           // Navigate to dashboard
           navigate(from, { replace: true });
         } else {
