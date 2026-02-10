@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Internships | ALPHABAY X</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="./common.css" />
+  </head>
+  <body class="cyber-grid text-white">
+    <header class="border-b border-emerald-400/20 bg-black/40 backdrop-blur">
+      <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
+        <a href="./dashboard.html" class="flex items-center gap-2">
+          <img data-logo-image class="logo-image" />
+          <span data-logo-name class="font-bold tracking-[0.2em]"></span>
+        </a>
+        <nav class="flex items-center gap-4 text-sm">
+          <a class="text-emerald-300" href="./dashboard.html">Dashboard</a>
+          <button id="logout-btn" class="rounded border border-emerald-400/30 px-3 py-1">Logout</button>
+        </nav>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-6xl px-4 py-8">
+      <div id="message" class="hidden mb-4"></div>
+      <h1 class="mb-6 text-2xl font-semibold text-emerald-300">Available Internships</h1>
+      <section id="cards" class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3"></section>
+    </main>
+
+    <script type="module">
+      import { clearMessage, getCurrentUserAndRole, injectBranding, normalizeSupabaseError, showMessage, supabase } from "./supabase-client.js";
+
+      injectBranding();
+      const cards = document.getElementById("cards");
+      const messageEl = document.getElementById("message");
+      document.getElementById("logout-btn").addEventListener("click", async () => {
+        await supabase.auth.signOut();
+        window.location.href = "./login.html";
+      });
+
+      const { user, role, error: authError } = await getCurrentUserAndRole();
+      if (!user) {
+        window.location.href = "./login.html";
+      }
+
+      if (authError) {
+        showMessage(messageEl, authError);
+      } else {
+        clearMessage(messageEl);
+      }
+
+      if (role !== "student" && role !== "admin") {
+        showMessage(messageEl, "Access restricted: unknown role.");
+      }
+
+      try {
+        const { data, error } = await supabase.from("internships").select("*").order("created_at", { ascending: false });
+
+        if (error) {
+          console.error("Internship fetch failed", error);
+          showMessage(messageEl, normalizeSupabaseError(error));
+        } else if (!data || data.length === 0) {
+          cards.innerHTML = '<p class="text-emerald-100/80">No internships available yet.</p>';
+        } else {
+          cards.innerHTML = data
+            .map(
+              (item) => `
+              <article class="neon-card rounded-xl overflow-hidden">
+                <img src="${item.image_url || "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1200&q=80"}" alt="${item.title}" class="h-44 w-full object-cover" />
+                <div class="p-4">
+                  <p class="text-xs uppercase tracking-[0.25em] text-emerald-300">${item.company}</p>
+                  <h2 class="mt-2 text-lg font-semibold">${item.title}</h2>
+                  <p class="mt-2 line-clamp-3 text-sm text-emerald-100/80">${item.description || "No description provided."}</p>
+                  <a href="${item.internship_link}" target="_blank" rel="noreferrer" class="neon-btn mt-4 inline-block rounded-md px-3 py-2 text-sm font-semibold">Apply Now</a>
+                </div>
+              </article>
+            `
+            )
+            .join("");
+        }
+      } catch (error) {
+        console.error("Unexpected internships page error", error);
+        showMessage(messageEl, normalizeSupabaseError(error));
+      }
+    </script>
+  </body>
+</html>
