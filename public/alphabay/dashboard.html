@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Student Dashboard | ALPHABAY X</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="./common.css" />
+  </head>
+  <body class="cyber-grid text-white">
+    <header class="border-b border-emerald-400/20 bg-black/40 backdrop-blur">
+      <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
+        <a href="./dashboard.html" class="flex items-center gap-2">
+          <img data-logo-image class="logo-image" />
+          <span data-logo-name class="font-bold tracking-[0.2em]"></span>
+        </a>
+        <div class="flex items-center gap-4">
+          <a href="./internships.html" class="rounded border border-emerald-400/40 px-3 py-1 text-sm text-emerald-300">Internships</a>
+          <button id="logout-btn" class="rounded border border-emerald-400/30 px-3 py-1 text-sm">Logout</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-6xl px-4 py-8">
+      <div id="message" class="hidden mb-4"></div>
+      <section class="neon-card rounded-2xl p-6">
+        <h1 class="text-3xl font-bold text-emerald-300">Student Dashboard</h1>
+        <p id="welcome" class="mt-2 text-emerald-100/80"></p>
+        <p class="mt-4 text-sm text-emerald-100/70">You have read-only access. Browse internships and apply via official links.</p>
+        <a href="./internships.html" class="neon-btn mt-6 inline-block rounded-md px-4 py-2 font-semibold">View Internships</a>
+      </section>
+    </main>
+
+    <script type="module">
+      import { getCurrentUserAndRole, injectBranding, normalizeSupabaseError, showMessage, supabase } from "./supabase-client.js";
+
+      injectBranding();
+      const messageEl = document.getElementById("message");
+      const welcomeEl = document.getElementById("welcome");
+
+      document.getElementById("logout-btn").addEventListener("click", async () => {
+        await supabase.auth.signOut();
+        window.location.href = "./login.html";
+      });
+
+      const { user, role, error } = await getCurrentUserAndRole();
+      if (!user) {
+        window.location.href = "./login.html";
+      }
+
+      if (error) {
+        showMessage(messageEl, error);
+      }
+
+      if (role === "admin") {
+        window.location.href = "./admin.html";
+      }
+
+      if (role !== "student") {
+        showMessage(messageEl, "Access restricted.");
+      }
+
+      welcomeEl.textContent = `Welcome ${user.user_metadata?.full_name || user.email}.`;
+
+      window.addEventListener("error", (event) => {
+        console.error("Dashboard error", event.error);
+        showMessage(messageEl, normalizeSupabaseError(event.error));
+      });
+    </script>
+  </body>
+</html>

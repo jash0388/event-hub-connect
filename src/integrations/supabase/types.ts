@@ -50,9 +50,15 @@ export type Database = {
           id: string
           title: string
           description: string | null
+          category: string | null
           date: string
+          time: string | null
           location: string | null
+          organizer: string | null
+          image: string | null
           image_url: string | null
+          popularity_score: number
+          trending_score: number
           registration_link: string | null
           created_by: string | null
           created_at: string
@@ -62,9 +68,15 @@ export type Database = {
           id?: string
           title: string
           description?: string | null
+          category?: string | null
           date: string
+          time?: string | null
           location?: string | null
+          organizer?: string | null
+          image?: string | null
           image_url?: string | null
+          popularity_score?: number
+          trending_score?: number
           registration_link?: string | null
           created_by?: string | null
           created_at?: string
@@ -74,9 +86,15 @@ export type Database = {
           id?: string
           title?: string
           description?: string | null
+          category?: string | null
           date?: string
+          time?: string | null
           location?: string | null
+          organizer?: string | null
+          image?: string | null
           image_url?: string | null
+          popularity_score?: number
+          trending_score?: number
           registration_link?: string | null
           created_by?: string | null
           created_at?: string
@@ -89,6 +107,120 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           }
+        ]
+      }
+      event_attendees: {
+        Row: {
+          event_id: string
+          id: string
+          joined_at: string
+          rsvp_status: string
+          user_id: string
+        }
+        Insert: {
+          event_id: string
+          id?: string
+          joined_at?: string
+          rsvp_status: string
+          user_id: string
+        }
+        Update: {
+          event_id?: string
+          id?: string
+          joined_at?: string
+          rsvp_status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_attendees_event_id_fkey"
+            columns: ["event_id"]
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_attendees_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_comments: {
+        Row: {
+          comment_text: string
+          created_at: string
+          event_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          comment_text: string
+          created_at?: string
+          event_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          comment_text?: string
+          created_at?: string
+          event_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_comments_event_id_fkey"
+            columns: ["event_id"]
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_comments_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_reviews: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          rating: number
+          review_text: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          rating: number
+          review_text: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          rating?: number
+          review_text?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_reviews_event_id_fkey"
+            columns: ["event_id"]
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_reviews_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
         ]
       }
       poll_options: {
@@ -256,6 +388,67 @@ export type Database = {
           is_active?: boolean
           created_at?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      user_saved_events: {
+        Row: {
+          event_id: string
+          id: string
+          saved_at: string
+          user_id: string
+        }
+        Insert: {
+          event_id: string
+          id?: string
+          saved_at?: string
+          user_id: string
+        }
+        Update: {
+          event_id?: string
+          id?: string
+          saved_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_saved_events_event_id_fkey"
+            columns: ["event_id"]
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_saved_events_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      users: {
+        Row: {
+          college: string | null
+          created_at: string
+          email: string
+          id: string
+          name: string | null
+          profile_picture: string | null
+        }
+        Insert: {
+          college?: string | null
+          created_at?: string
+          email: string
+          id: string
+          name?: string | null
+          profile_picture?: string | null
+        }
+        Update: {
+          college?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string | null
+          profile_picture?: string | null
         }
         Relationships: []
       }

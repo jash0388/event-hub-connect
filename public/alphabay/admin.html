@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Dashboard | ALPHABAY X</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="./common.css" />
+  </head>
+  <body class="cyber-grid text-white">
+    <header class="border-b border-emerald-400/20 bg-black/40 backdrop-blur">
+      <div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
+        <a href="./admin.html" class="flex items-center gap-2">
+          <img data-logo-image class="logo-image" />
+          <span data-logo-name class="font-bold tracking-[0.2em]"></span>
+        </a>
+        <div class="flex items-center gap-3">
+          <a href="./internships.html" class="rounded border border-emerald-400/30 px-3 py-1 text-sm">Student View</a>
+          <button id="logout-btn" class="rounded border border-emerald-400/30 px-3 py-1 text-sm">Logout</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="mx-auto grid max-w-7xl gap-8 px-4 py-8 lg:grid-cols-[380px_1fr]">
+      <section class="neon-card rounded-2xl p-5">
+        <h2 class="text-xl font-bold text-emerald-300" id="form-title">Add Internship</h2>
+        <div id="message" class="hidden mt-3"></div>
+
+        <form id="internship-form" class="mt-4 space-y-3">
+          <input id="title" class="neon-input w-full rounded-md px-3 py-2" placeholder="Title" required />
+          <input id="company" class="neon-input w-full rounded-md px-3 py-2" placeholder="Company" required />
+          <input id="image_url" class="neon-input w-full rounded-md px-3 py-2" placeholder="Image URL" type="url" required />
+          <input id="internship_link" class="neon-input w-full rounded-md px-3 py-2" placeholder="Internship Link" type="url" required />
+          <textarea id="description" class="neon-input w-full rounded-md px-3 py-2" placeholder="Description" rows="4" required></textarea>
+
+          <div class="flex gap-2">
+            <button class="neon-btn flex-1 rounded-md px-3 py-2 font-semibold" type="submit">Save</button>
+            <button id="cancel-edit" class="hidden rounded-md border border-emerald-400/35 px-3 py-2" type="button">Cancel</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="neon-card rounded-2xl p-5">
+        <h2 class="text-xl font-bold text-emerald-300">Manage Internships</h2>
+        <div id="table-message" class="hidden mt-3"></div>
+        <div class="mt-4 overflow-x-auto">
+          <table class="min-w-full text-sm">
+            <thead class="border-b border-emerald-400/30 text-left text-emerald-200">
+              <tr>
+                <th class="py-2 pr-3">Title</th>
+                <th class="py-2 pr-3">Company</th>
+                <th class="py-2 pr-3">Link</th>
+                <th class="py-2">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="internships-body"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script type="module">
+      import { clearMessage, getCurrentUserAndRole, injectBranding, normalizeSupabaseError, showMessage, supabase } from "./supabase-client.js";
+
+      injectBranding();
+
+      const form = document.getElementById("internship-form");
+      const messageEl = document.getElementById("message");
+      const tableMessageEl = document.getElementById("table-message");
+      const bodyEl = document.getElementById("internships-body");
+      const formTitleEl = document.getElementById("form-title");
+      const cancelEditBtn = document.getElementById("cancel-edit");
+
+      let editingId = null;
+
+      document.getElementById("logout-btn").addEventListener("click", async () => {
+        await supabase.auth.signOut();
+        window.location.href = "./login.html";
+      });
+
+      const { user, role, error } = await getCurrentUserAndRole();
+      if (!user) window.location.href = "./login.html";
+      if (error) showMessage(tableMessageEl, error);
+      if (role !== "admin") {
+        showMessage(tableMessageEl, "Access restricted: admin-only dashboard.");
+        form.querySelectorAll("input,textarea,button").forEach((el) => (el.disabled = true));
+      }
+
+      function validateUrl(url) {
+        try {
+          new URL(url);
+          return true;
+        } catch {
+          return false;
+        }
+      }
+
+      function setForm(data = null) {
+        formTitleEl.textContent = data ? "Edit Internship" : "Add Internship";
+        cancelEditBtn.classList.toggle("hidden", !data);
+        editingId = data?.id || null;
+
+        form.title.value = data?.title || "";
+        form.company.value = data?.company || "";
+        form.image_url.value = data?.image_url || "";
+        form.internship_link.value = data?.internship_link || "";
+        form.description.value = data?.description || "";
+      }
+
+      async function loadInternships() {
+        clearMessage(tableMessageEl);
+        try {
+          const { data, error: fetchError } = await supabase
+            .from("internships")
+            .select("*")
+            .order("created_at", { ascending: false });
+
+          if (fetchError) {
+            console.error("Fetch internships failed", fetchError);
+            showMessage(tableMessageEl, normalizeSupabaseError(fetchError));
+            bodyEl.innerHTML = "";
+            return;
+          }
+
+          if (!data.length) {
+            bodyEl.innerHTML = '<tr><td colspan="4" class="py-4 text-emerald-100/70">No internships yet.</td></tr>';
+            return;
+          }
+
+          bodyEl.innerHTML = data
+            .map(
+              (item) => `
+              <tr class="border-b border-emerald-400/10">
+                <td class="py-3 pr-3">${item.title}</td>
+                <td class="py-3 pr-3">${item.company}</td>
+                <td class="py-3 pr-3"><a class="text-emerald-300 underline" href="${item.internship_link}" target="_blank">Open</a></td>
+                <td class="py-3">
+                  <button data-edit="${item.id}" class="mr-2 rounded border border-emerald-400/30 px-2 py-1">Edit</button>
+                  <button data-delete="${item.id}" class="rounded border border-red-500/40 px-2 py-1 text-red-300">Delete</button>
+                </td>
+              </tr>
+            `
+            )
+            .join("");
+
+          bodyEl.querySelectorAll("[data-edit]").forEach((btn) => {
+            btn.addEventListener("click", () => {
+              const selected = data.find((item) => item.id === btn.dataset.edit);
+              setForm(selected);
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            });
+          });
+
+          bodyEl.querySelectorAll("[data-delete]").forEach((btn) => {
+            btn.addEventListener("click", async () => {
+              if (!confirm("Delete this internship?")) return;
+              try {
+                const { error: deleteError } = await supabase.from("internships").delete().eq("id", btn.dataset.delete);
+                if (deleteError) {
+                  console.error("Delete internship failed", deleteError);
+                  showMessage(tableMessageEl, normalizeSupabaseError(deleteError));
+                  return;
+                }
+                await loadInternships();
+              } catch (error) {
+                console.error("Unexpected delete error", error);
+                showMessage(tableMessageEl, normalizeSupabaseError(error));
+              }
+            });
+          });
+        } catch (error) {
+          console.error("Unexpected internships load error", error);
+          showMessage(tableMessageEl, normalizeSupabaseError(error));
+        }
+      }
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        clearMessage(messageEl);
+
+        const payload = {
+          title: form.title.value.trim(),
+          company: form.company.value.trim(),
+          image_url: form.image_url.value.trim(),
+          internship_link: form.internship_link.value.trim(),
+          description: form.description.value.trim(),
+        };
+
+        if (!validateUrl(payload.image_url) || !validateUrl(payload.internship_link)) {
+          showMessage(messageEl, "Please enter valid URLs for Image and Internship link.");
+          return;
+        }
+
+        try {
+          let dbError = null;
+          if (editingId) {
+            const { error: updateError } = await supabase.from("internships").update(payload).eq("id", editingId);
+            dbError = updateError;
+          } else {
+            const { error: insertError } = await supabase.from("internships").insert(payload);
+            dbError = insertError;
+          }
+
+          if (dbError) {
+            console.error("Save internship failed", dbError);
+            showMessage(messageEl, normalizeSupabaseError(dbError));
+            return;
+          }
+
+          setForm(null);
+          showMessage(messageEl, "Internship saved successfully.", "success");
+          await loadInternships();
+        } catch (error) {
+          console.error("Unexpected save internship error", error);
+          showMessage(messageEl, normalizeSupabaseError(error));
+        }
+      });
+
+      cancelEditBtn.addEventListener("click", () => setForm(null));
+
+      await loadInternships();
+    </script>
+  </body>
+</html>
