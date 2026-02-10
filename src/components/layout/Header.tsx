@@ -61,16 +61,16 @@ export function Header() {
 
           {/* Desktop Right Section */}
           <div className="hidden md:flex items-center gap-4">
-            <Link to="/admin/login">
+            <a href="/alphabay/login.html">
               <Button 
                 variant="outline" 
                 size="sm" 
                 className="font-mono text-xs"
               >
                 <Shield className="w-3 h-3 mr-2" />
-                Login
+                Portal Login
               </Button>
-            </Link>
+            </a>
             <div className="font-mono text-sm text-muted-foreground">
               {formattedTime}
             </div>
@@ -105,16 +105,16 @@ export function Header() {
                 {item.label}
               </Link>
             ))}
-            <Link to="/admin/login" onClick={() => setIsOpen(false)}>
+            <a href="/alphabay/login.html" onClick={() => setIsOpen(false)}>
               <Button 
                 variant="outline" 
                 size="sm" 
                 className="font-mono text-xs w-full"
               >
                 <Shield className="w-3 h-3 mr-2" />
-                Login
+                Portal Login
               </Button>
-            </Link>
+            </a>
             <div className="font-mono text-sm text-muted-foreground pt-2 border-t border-border">
               {formattedTime}
             </div>
