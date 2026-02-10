@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign Up | ALPHABAY X</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="./common.css" />
+  </head>
+  <body class="cyber-grid text-white">
+    <main class="mx-auto flex min-h-screen max-w-6xl items-center justify-center p-4">
+      <section class="neon-card w-full max-w-xl rounded-2xl p-8">
+        <div class="mb-8 flex items-center gap-3">
+          <img data-logo-image class="logo-image" />
+          <div>
+            <h1 class="text-2xl font-bold tracking-[0.2em]" data-logo-name></h1>
+            <p class="text-sm text-emerald-200/80">Student Signup</p>
+          </div>
+        </div>
+
+        <div id="message" class="hidden"></div>
+
+        <form id="signup-form" class="mt-6 space-y-4">
+          <div>
+            <label class="mb-1 block text-sm text-emerald-100">Full Name</label>
+            <input class="neon-input w-full rounded-md px-3 py-2" id="name" required />
+          </div>
+          <div>
+            <label class="mb-1 block text-sm text-emerald-100">Email</label>
+            <input class="neon-input w-full rounded-md px-3 py-2" id="email" type="email" required />
+          </div>
+          <div>
+            <label class="mb-1 block text-sm text-emerald-100">Password</label>
+            <input class="neon-input w-full rounded-md px-3 py-2" id="password" type="password" required />
+          </div>
+          <div>
+            <label class="mb-1 block text-sm text-emerald-100">Confirm Password</label>
+            <input class="neon-input w-full rounded-md px-3 py-2" id="confirmPassword" type="password" required />
+          </div>
+
+          <button class="neon-btn w-full rounded-md px-4 py-2 font-semibold" type="submit">Create Student Account</button>
+          <p class="text-center text-sm text-emerald-100/70">Already have an account? <a class="text-emerald-300 underline" href="./login.html">Login</a></p>
+        </form>
+      </section>
+    </main>
+
+    <script type="module">
+      import { supabase, injectBranding, normalizeSupabaseError, showMessage, clearMessage } from "./supabase-client.js";
+
+      injectBranding();
+
+      const form = document.getElementById("signup-form");
+      const messageEl = document.getElementById("message");
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        clearMessage(messageEl);
+
+        const name = document.getElementById("name").value.trim();
+        const email = document.getElementById("email").value.trim();
+        const password = document.getElementById("password").value;
+        const confirmPassword = document.getElementById("confirmPassword").value;
+
+        if (!/^\S+@\S+\.\S+$/.test(email)) {
+          showMessage(messageEl, "Please enter a valid email format.");
+          return;
+        }
+
+        if (password.length < 8) {
+          showMessage(messageEl, "Password must be at least 8 characters.");
+          return;
+        }
+
+        if (password !== confirmPassword) {
+          showMessage(messageEl, "Passwords do not match.");
+          return;
+        }
+
+        try {
+          const { error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+              data: { full_name: name },
+            },
+          });
+
+          if (error) {
+            console.error("Signup failed", error);
+            showMessage(messageEl, normalizeSupabaseError(error));
+            return;
+          }
+
+          showMessage(messageEl, "Signup successful. Check your email for verification, then login.", "success");
+          form.reset();
+        } catch (error) {
+          console.error("Unexpected signup error", error);
+          showMessage(messageEl, normalizeSupabaseError(error));
+        }
+      });
+    </script>
+  </body>
+</html>
