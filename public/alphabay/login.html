@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login | ALPHABAY X</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="./common.css" />
+  </head>
+  <body class="cyber-grid text-white">
+    <main class="mx-auto flex min-h-screen max-w-6xl items-center justify-center p-4">
+      <section class="neon-card w-full max-w-lg rounded-2xl p-8">
+        <div class="mb-8 flex items-center gap-3">
+          <img data-logo-image class="logo-image" />
+          <div>
+            <h1 class="text-2xl font-bold tracking-[0.2em]" data-logo-name></h1>
+            <p class="text-sm text-emerald-200/80">Secure Login</p>
+          </div>
+        </div>
+
+        <div id="message" class="hidden"></div>
+
+        <form id="login-form" class="mt-6 space-y-4">
+          <div>
+            <label class="mb-1 block text-sm text-emerald-100">Email</label>
+            <input class="neon-input w-full rounded-md px-3 py-2" id="email" type="email" required />
+          </div>
+          <div>
+            <label class="mb-1 block text-sm text-emerald-100">Password</label>
+            <input class="neon-input w-full rounded-md px-3 py-2" id="password" type="password" required />
+          </div>
+
+          <button class="neon-btn w-full rounded-md px-4 py-2 font-semibold" type="submit">Login</button>
+          <p class="text-center text-sm text-emerald-100/70">New student? <a class="text-emerald-300 underline" href="./signup.html">Create account</a></p>
+        </form>
+      </section>
+    </main>
+
+    <script type="module">
+      import { supabase, injectBranding, normalizeSupabaseError, showMessage, clearMessage } from "./supabase-client.js";
+
+      injectBranding();
+
+      const form = document.getElementById("login-form");
+      const messageEl = document.getElementById("message");
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        clearMessage(messageEl);
+
+        const email = document.getElementById("email").value.trim();
+        const password = document.getElementById("password").value;
+
+        try {
+          const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+          if (signInError) {
+            console.error("Login failed", signInError);
+            showMessage(messageEl, normalizeSupabaseError(signInError));
+            return;
+          }
+
+          const {
+            data: { user },
+            error: userError,
+          } = await supabase.auth.getUser();
+
+          if (userError || !user) {
+            console.error("Failed to fetch user after login", userError);
+            showMessage(messageEl, normalizeSupabaseError(userError));
+            return;
+          }
+
+          const { data: profile, error: profileError } = await supabase
+            .from("profiles")
+            .select("role")
+            .eq("id", user.id)
+            .single();
+
+          if (profileError) {
+            console.error("Profile role fetch failed", profileError);
+            showMessage(messageEl, normalizeSupabaseError(profileError));
+            return;
+          }
+
+          if (profile.role === "admin") {
+            window.location.href = "./admin.html";
+          } else {
+            window.location.href = "./dashboard.html";
+          }
+        } catch (error) {
+          console.error("Unexpected login error", error);
+          showMessage(messageEl, normalizeSupabaseError(error));
+        }
+      });
+    </script>
+  </body>
+</html>
