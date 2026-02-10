@@ -81,7 +81,7 @@ export async function getCurrentUserAndRole() {
     return { user, role: normalizeRole(roles?.[0]?.role), error: normalizeSupabaseError(profileError) };
   }
 
-  return { user, role: normalizeRole(profile?.role ?? roles?.[0]?.role), error: null };
+  return { user, role: profile?.role ?? "user", error: null };
 }
 
 export function showMessage(element, message, type = "error") {
