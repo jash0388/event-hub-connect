@@ -30,6 +30,14 @@
             <input class="neon-input w-full rounded-md px-3 py-2" id="password" type="password" required />
           </div>
 
+          <div>
+            <label class="mb-1 block text-sm text-emerald-100">Login as</label>
+            <select class="neon-input w-full rounded-md px-3 py-2" id="login-as" required>
+              <option value="student">Student</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+
           <button class="neon-btn w-full rounded-md px-4 py-2 font-semibold" type="submit">Login</button>
           <p class="text-center text-sm text-emerald-100/70">New student? <a class="text-emerald-300 underline" href="./signup.html">Create account</a></p>
         </form>
@@ -37,7 +45,7 @@
     </main>
 
     <script type="module">
-      import { supabase, injectBranding, normalizeSupabaseError, showMessage, clearMessage } from "./supabase-client.js";
+      import { supabase, injectBranding, normalizeSupabaseError, showMessage, clearMessage, getCurrentUserAndRole } from "./supabase-client.js";
 
       injectBranding();
 
@@ -59,34 +67,29 @@
             return;
           }
 
-          const {
-            data: { user },
-            error: userError,
-          } = await supabase.auth.getUser();
+          const loginAs = document.getElementById("login-as").value;
+          const { user, role, error: roleError } = await getCurrentUserAndRole();
 
-          if (userError || !user) {
-            console.error("Failed to fetch user after login", userError);
-            showMessage(messageEl, normalizeSupabaseError(userError));
+          if (!user) {
+            showMessage(messageEl, "Authentication failed. Please try again.");
             return;
           }
 
-          const { data: profile, error: profileError } = await supabase
-            .from("profiles")
-            .select("role")
-            .eq("id", user.id)
-            .single();
-
-          if (profileError) {
-            console.error("Profile role fetch failed", profileError);
-            showMessage(messageEl, normalizeSupabaseError(profileError));
-            return;
+          if (roleError) {
+            console.warn("Role lookup warning", roleError);
           }
 
-          if (profile.role === "admin") {
+          if (loginAs === "admin") {
+            if (role !== "admin") {
+              showMessage(messageEl, "Access denied: this account is not an admin.");
+              await supabase.auth.signOut();
+              return;
+            }
             window.location.href = "./admin.html";
-          } else {
-            window.location.href = "./dashboard.html";
+            return;
           }
+
+          window.location.href = "./dashboard.html";
         } catch (error) {
           console.error("Unexpected login error", error);
           showMessage(messageEl, normalizeSupabaseError(error));
