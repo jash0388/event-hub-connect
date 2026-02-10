@@ -47,6 +47,8 @@
     <script type="module">
       import { supabase, injectBranding, normalizeSupabaseError, showMessage, clearMessage, getCurrentUserAndRole } from "./supabase-client.js";
 
+      const ADMIN_DASHBOARD_URL = "https://datanauts.in/admin/dashboard";
+
       injectBranding();
 
       const form = document.getElementById("login-form");
@@ -85,7 +87,7 @@
               await supabase.auth.signOut();
               return;
             }
-            window.location.href = "./admin.html";
+            window.location.href = ADMIN_DASHBOARD_URL;
             return;
           }
 
