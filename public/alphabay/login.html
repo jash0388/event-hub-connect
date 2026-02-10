@@ -59,15 +59,28 @@
             return;
           }
 
-          const { user, role, error: roleError } = await getCurrentUserAndRole();
+          const { user, role: resolvedRole, error: roleError } = await getCurrentUserAndRole();
 
           if (!user) {
             showMessage(messageEl, "Authentication failed. Please try again.");
             return;
           }
 
+          let role = resolvedRole;
+
           if (roleError) {
             console.warn("Role lookup warning", roleError);
+
+            // Fallback role lookup to reduce chance of login blockage during migrations
+            const { data: profile, error: profileError } = await supabase
+              .from("profiles")
+              .select("role")
+              .eq("id", user.id)
+              .maybeSingle();
+
+            if (!profileError) {
+              role = profile?.role === "admin" ? "admin" : "user";
+            }
           }
 
           if (role === "admin") {
