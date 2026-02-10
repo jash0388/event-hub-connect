@@ -49,8 +49,12 @@ interface Event {
   id: string;
   title: string;
   description: string | null;
+  category: string | null;
   date: string;
+  time: string | null;
   location: string | null;
+  organizer: string | null;
+  image: string | null;
   image_url: string | null;
   registration_link: string | null;
 }
@@ -128,8 +132,11 @@ const AdminDashboard = () => {
   const [eventForm, setEventForm] = useState({
     title: '',
     description: '',
+    category: '',
     datetime: '',
+    time: '',
     location: '',
+    organizer: '',
     image_url: '',
     registration_link: '',
   });
@@ -399,9 +406,12 @@ const AdminDashboard = () => {
       setEventForm({
         title: event.title,
         description: event.description || '',
+        category: event.category || '',
         datetime: localDateTime,
+        time: event.time || format(new Date(event.date), 'HH:mm'),
         location: event.location || '',
-        image_url: event.image_url || '',
+        organizer: event.organizer || '',
+        image_url: event.image_url || event.image || '',
         registration_link: event.registration_link || '',
       });
     } else {
@@ -409,8 +419,11 @@ const AdminDashboard = () => {
       setEventForm({
         title: '',
         description: '',
+        category: '',
         datetime: '',
+        time: '',
         location: '',
+        organizer: '',
         image_url: '',
         registration_link: '',
       });
@@ -428,8 +441,12 @@ const AdminDashboard = () => {
       const payload = {
         title: eventForm.title,
         description: eventForm.description || null,
+        category: eventForm.category || null,
         date: dateISO,
+        time: eventForm.time || null,
         location: eventForm.location || null,
+        organizer: eventForm.organizer || null,
+        image: eventForm.image_url || null,
         image_url: eventForm.image_url || null,
         registration_link: eventForm.registration_link || null,
         created_by: user?.id,
@@ -790,6 +807,15 @@ const AdminDashboard = () => {
                         />
                       </div>
                       <div>
+                        <Label htmlFor="category">Category</Label>
+                        <Input
+                          id="category"
+                          value={eventForm.category}
+                          onChange={(e) => setEventForm({ ...eventForm, category: e.target.value })}
+                          placeholder="Sports, Tech Talks, Cultural..."
+                        />
+                      </div>
+                      <div>
                         <Label htmlFor="datetime">Date & Time *</Label>
                         <Input
                           id="datetime"
@@ -797,6 +823,23 @@ const AdminDashboard = () => {
                           value={eventForm.datetime}
                           onChange={(e) => setEventForm({ ...eventForm, datetime: e.target.value })}
                           required
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="time">Display Time (Optional)</Label>
+                        <Input
+                          id="time"
+                          type="time"
+                          value={eventForm.time}
+                          onChange={(e) => setEventForm({ ...eventForm, time: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="organizer">Organizer</Label>
+                        <Input
+                          id="organizer"
+                          value={eventForm.organizer}
+                          onChange={(e) => setEventForm({ ...eventForm, organizer: e.target.value })}
                         />
                       </div>
                       <div>
@@ -854,6 +897,7 @@ const AdminDashboard = () => {
                       <TableRow>
                         <TableHead>Title</TableHead>
                         <TableHead>Date</TableHead>
+                        <TableHead>Category</TableHead>
                         <TableHead>Location</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
@@ -863,6 +907,7 @@ const AdminDashboard = () => {
                         <TableRow key={event.id}>
                           <TableCell className="font-medium">{event.title}</TableCell>
                           <TableCell>{format(new Date(event.date), 'PPP p')}</TableCell>
+                          <TableCell>{event.category || '—'}</TableCell>
                           <TableCell>{event.location || '—'}</TableCell>
                           <TableCell className="text-right">
                             <Button
