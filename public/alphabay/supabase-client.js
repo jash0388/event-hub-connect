@@ -48,14 +48,14 @@ export async function getCurrentUserAndRole() {
     .from("profiles")
     .select("role")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
   if (profileError) {
     console.error("Error fetching profile role", profileError);
     return { user, role: null, error: normalizeSupabaseError(profileError) };
   }
 
-  return { user, role: profile.role, error: null };
+  return { user, role: profile?.role ?? "user", error: null };
 }
 
 export function showMessage(element, message, type = "error") {
