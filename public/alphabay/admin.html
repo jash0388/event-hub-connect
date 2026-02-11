@@ -60,7 +60,7 @@
     </main>
 
     <script type="module">
-      import { clearMessage, getCurrentUserAndRole, injectBranding, normalizeSupabaseError, showMessage, supabase } from "./supabase-client.js";
+      import { clearMessage, getCurrentUserAndRole, injectBranding, normalizeSupabaseError, showMessage, signOutUser, supabase } from "./supabase-client.js";
 
       injectBranding();
 
@@ -74,7 +74,7 @@
       let editingId = null;
 
       document.getElementById("logout-btn").addEventListener("click", async () => {
-        await supabase.auth.signOut();
+        await signOutUser();
         window.location.href = "./login.html";
       });
 

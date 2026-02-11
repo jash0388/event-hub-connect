@@ -32,15 +32,16 @@
     </main>
 
     <script type="module">
-      import { getCurrentUserAndRole, injectBranding, normalizeSupabaseError, showMessage, supabase } from "./supabase-client.js";
+      import { getCurrentUserAndRole, injectBranding, normalizeSupabaseError, showMessage, signOutUser } from "./supabase-client.js";
+      import { MAIN_PAGE_URL } from "./config.js";
 
       injectBranding();
       const messageEl = document.getElementById("message");
       const welcomeEl = document.getElementById("welcome");
 
       document.getElementById("logout-btn").addEventListener("click", async () => {
-        await supabase.auth.signOut();
-        window.location.href = "./login.html";
+        await signOutUser();
+        window.location.href = MAIN_PAGE_URL;
       });
 
       const { user, role, error } = await getCurrentUserAndRole();
@@ -56,11 +57,11 @@
         window.location.href = "./admin.html";
       }
 
-      if (role !== "student") {
+      if (role !== "user" && role !== "admin") {
         showMessage(messageEl, "Access restricted.");
       }
 
-      welcomeEl.textContent = `Welcome ${user.user_metadata?.full_name || user.email}.`;
+      welcomeEl.textContent = `Welcome ${user.user_metadata?.full_name || user.displayName || user.email}.`;
 
       window.addEventListener("error", (event) => {
         console.error("Dashboard error", event.error);
