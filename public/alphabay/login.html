@@ -30,93 +30,66 @@
             <input class="neon-input w-full rounded-md px-3 py-2" id="password" type="password" required />
           </div>
 
-          <button id="login-btn" class="neon-btn w-full rounded-md px-4 py-2 font-semibold" type="submit">Login</button>
-          <button id="google-login-btn" class="w-full rounded-md border border-emerald-400/30 px-4 py-2 font-semibold text-emerald-200" type="button">
-            Continue with Google
-          </button>
+          <button class="neon-btn w-full rounded-md px-4 py-2 font-semibold" type="submit">Login</button>
           <p class="text-center text-sm text-emerald-100/70">New student? <a class="text-emerald-300 underline" href="./signup.html">Create account</a></p>
         </form>
       </section>
     </main>
 
     <script type="module">
-      import {
-        clearMessage,
-        getCurrentUserAndRole,
-        injectBranding,
-        normalizeSupabaseError,
-        showMessage,
-        signInWithEmailPassword,
-        signInWithGoogle,
-      } from "./supabase-client.js";
+      import { supabase, injectBranding, normalizeSupabaseError, showMessage, clearMessage } from "./supabase-client.js";
 
       injectBranding();
 
       const form = document.getElementById("login-form");
       const messageEl = document.getElementById("message");
-      const loginBtn = document.getElementById("login-btn");
-      const googleBtn = document.getElementById("google-login-btn");
-      let isSubmitting = false;
-
-      async function handlePostLoginRoute() {
-        const { user, role, error } = await getCurrentUserAndRole();
-
-        if (error) {
-          showMessage(messageEl, error);
-          return;
-        }
-
-        if (!user) {
-          showMessage(messageEl, "Authentication failed. Please try again.");
-          return;
-        }
-
-        window.location.href = role === "admin" ? "./admin.html" : "./dashboard.html";
-      }
 
       form.addEventListener("submit", async (event) => {
         event.preventDefault();
-        if (isSubmitting) return;
-
         clearMessage(messageEl);
-        isSubmitting = true;
-        loginBtn.disabled = true;
-        loginBtn.textContent = "Logging in...";
 
         const email = document.getElementById("email").value.trim();
         const password = document.getElementById("password").value;
 
         try {
-          await signInWithEmailPassword(email, password);
-          await handlePostLoginRoute();
+          const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+          if (signInError) {
+            console.error("Login failed", signInError);
+            showMessage(messageEl, normalizeSupabaseError(signInError));
+            return;
+          }
+
+          const {
+            data: { user },
+            error: userError,
+          } = await supabase.auth.getUser();
+
+          if (userError || !user) {
+            console.error("Failed to fetch user after login", userError);
+            showMessage(messageEl, normalizeSupabaseError(userError));
+            return;
+          }
+
+          const { data: profile, error: profileError } = await supabase
+            .from("profiles")
+            .select("role")
+            .eq("id", user.id)
+            .single();
+
+          if (profileError) {
+            console.error("Profile role fetch failed", profileError);
+            showMessage(messageEl, normalizeSupabaseError(profileError));
+            return;
+          }
+
+          if (profile.role === "admin") {
+            window.location.href = "./admin.html";
+          } else {
+            window.location.href = "./dashboard.html";
+          }
         } catch (error) {
-          console.error("Login failed", error);
+          console.error("Unexpected login error", error);
           showMessage(messageEl, normalizeSupabaseError(error));
-        } finally {
-          isSubmitting = false;
-          loginBtn.disabled = false;
-          loginBtn.textContent = "Login";
-        }
-      });
-
-      googleBtn.addEventListener("click", async () => {
-        if (isSubmitting) return;
-
-        clearMessage(messageEl);
-        isSubmitting = true;
-        googleBtn.disabled = true;
-        googleBtn.textContent = "Connecting...";
-
-        try {
-          await signInWithGoogle();
-          await handlePostLoginRoute();
-        } catch (error) {
-          console.error("Google login failed", error);
-          showMessage(messageEl, normalizeSupabaseError(error));
-        } finally {
-          isSubmitting = false;
-          googleBtn.disabled = false;
-          googleBtn.textContent = "Continue with Google";
         }
       });
     </script>

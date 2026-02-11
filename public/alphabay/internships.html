@@ -28,13 +28,13 @@
     </main>
 
     <script type="module">
-      import { clearMessage, getCurrentUserAndRole, injectBranding, normalizeSupabaseError, showMessage, signOutUser, supabase } from "./supabase-client.js";
+      import { clearMessage, getCurrentUserAndRole, injectBranding, normalizeSupabaseError, showMessage, supabase } from "./supabase-client.js";
 
       injectBranding();
       const cards = document.getElementById("cards");
       const messageEl = document.getElementById("message");
       document.getElementById("logout-btn").addEventListener("click", async () => {
-        await signOutUser();
+        await supabase.auth.signOut();
         window.location.href = "./login.html";
       });
 
@@ -49,7 +49,7 @@
         clearMessage(messageEl);
       }
 
-      if (role !== "user" && role !== "admin") {
+      if (role !== "student" && role !== "admin") {
         showMessage(messageEl, "Access restricted: unknown role.");
       }
 

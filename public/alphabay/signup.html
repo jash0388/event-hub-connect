@@ -45,7 +45,7 @@
     </main>
 
     <script type="module">
-      import { clearMessage, injectBranding, normalizeSupabaseError, showMessage, signUpWithEmailPassword } from "./supabase-client.js";
+      import { supabase, injectBranding, normalizeSupabaseError, showMessage, clearMessage } from "./supabase-client.js";
 
       injectBranding();
 
@@ -77,11 +77,24 @@
         }
 
         try {
-          await signUpWithEmailPassword(email, password, name);
-          showMessage(messageEl, "Signup successful. Verify your email, then login.", "success");
+          const { error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+              data: { full_name: name },
+            },
+          });
+
+          if (error) {
+            console.error("Signup failed", error);
+            showMessage(messageEl, normalizeSupabaseError(error));
+            return;
+          }
+
+          showMessage(messageEl, "Signup successful. Check your email for verification, then login.", "success");
           form.reset();
         } catch (error) {
-          console.error("Signup failed", error);
+          console.error("Unexpected signup error", error);
           showMessage(messageEl, normalizeSupabaseError(error));
         }
       });

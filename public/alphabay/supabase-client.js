@@ -1,30 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {
-  createUserWithEmailAndPassword,
-  GoogleAuthProvider,
-  onAuthStateChanged,
-  sendEmailVerification,
-  signInWithEmailAndPassword,
-  signInWithPopup,
-  signOut,
-  updateProfile,
-  getAuth,
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import {
-  doc,
-  getDoc,
-  getFirestore,
-  serverTimestamp,
-  setDoc,
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { ALPHABAY_LOGO_IMAGE, APP_NAME, FIREBASE_CONFIG, SUPABASE_ANON_KEY, SUPABASE_URL } from "./config.js";
+import { ALPHABAY_LOGO_IMAGE, APP_NAME, SUPABASE_ANON_KEY, SUPABASE_URL } from "./config.js";
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-const firebaseApp = initializeApp(FIREBASE_CONFIG);
-const auth = getAuth(firebaseApp);
-const firestore = getFirestore(firebaseApp);
 
 export function injectBranding() {
   document.querySelectorAll("[data-logo-image]").forEach((node) => {
@@ -49,114 +26,36 @@ export function normalizeSupabaseError(error) {
     return `Access restricted: ${message}`;
   }
 
-  if (lowered.includes("auth") || lowered.includes("firebase")) {
-    return `Authentication error: ${message}`;
-  }
-
   return message;
 }
 
-async function ensureUserDoc(user, role = "user") {
-  const userRef = doc(firestore, "users", user.uid);
-  await setDoc(
-    userRef,
-    {
-      email: user.email ?? "",
-      full_name: user.displayName ?? "",
-      role,
-      updated_at: serverTimestamp(),
-      created_at: serverTimestamp(),
-    },
-    { merge: true }
-  );
-}
-
-function mapFirebaseUser(user) {
-  if (!user) return null;
-  return {
-    id: user.uid,
-    email: user.email,
-    user_metadata: {
-      full_name: user.displayName,
-    },
-    displayName: user.displayName,
-    raw: user,
-  };
-}
-
-async function waitForAuthUser() {
-  if (auth.currentUser !== undefined) {
-    return auth.currentUser;
-  }
-
-  return new Promise((resolve) => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      unsubscribe();
-      resolve(user);
-    });
-
-    setTimeout(() => {
-      unsubscribe();
-      resolve(auth.currentUser ?? null);
-    }, 1500);
-  });
-}
-
-export async function signInWithEmailPassword(email, password) {
-  const credential = await signInWithEmailAndPassword(auth, email, password);
-  await ensureUserDoc(credential.user, "user");
-  return credential;
-}
-
-export async function signInWithGoogle() {
-  const provider = new GoogleAuthProvider();
-  const credential = await signInWithPopup(auth, provider);
-  await ensureUserDoc(credential.user, "user");
-  return credential;
-}
-
-export async function signUpWithEmailPassword(email, password, fullName) {
-  const credential = await createUserWithEmailAndPassword(auth, email, password);
-
-  if (fullName) {
-    await updateProfile(credential.user, { displayName: fullName });
-  }
-
-  await ensureUserDoc(credential.user, "user");
-  await sendEmailVerification(credential.user);
-  return credential;
-}
-
-export async function signOutUser() {
-  await signOut(auth);
-}
-
 export async function getCurrentUserAndRole() {
-  try {
-    const currentUser = auth.currentUser ?? (await waitForAuthUser());
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
 
-    if (!currentUser) {
-      return { user: null, role: null, error: null };
-    }
-
-    const userRef = doc(firestore, "users", currentUser.uid);
-    const userSnapshot = await getDoc(userRef);
-
-    let role = "user";
-    if (userSnapshot.exists()) {
-      const data = userSnapshot.data();
-      if (data?.role === "admin") {
-        role = "admin";
-      }
-    } else {
-      await ensureUserDoc(currentUser, "user");
-    }
-
-    return { user: mapFirebaseUser(currentUser), role, error: null };
-  } catch (error) {
-    console.error("Error getting current Firebase user", error);
-    return { user: null, role: null, error: normalizeSupabaseError(error) };
+  if (userError) {
+    console.error("Error getting current user", userError);
+    return { user: null, role: null, error: normalizeSupabaseError(userError) };
   }
+
+  if (!user) {
+    return { user: null, role: null, error: null };
+  }
+
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (profileError) {
+    console.error("Error fetching profile role", profileError);
+    return { user, role: null, error: normalizeSupabaseError(profileError) };
+  }
+
+  return { user, role: profile.role, error: null };
 }
 
 export function showMessage(element, message, type = "error") {
