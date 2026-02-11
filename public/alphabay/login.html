@@ -30,66 +30,126 @@
             <input class="neon-input w-full rounded-md px-3 py-2" id="password" type="password" required />
           </div>
 
-          <button class="neon-btn w-full rounded-md px-4 py-2 font-semibold" type="submit">Login</button>
+          <button id="login-btn" class="neon-btn w-full rounded-md px-4 py-2 font-semibold" type="submit">Login</button>
+
+          <button
+            id="google-login-btn"
+            class="w-full rounded-md border border-emerald-400/40 bg-black/40 px-4 py-2 font-semibold text-emerald-100 hover:bg-emerald-500/10"
+            type="button"
+          >
+            Continue with Google
+          </button>
+
           <p class="text-center text-sm text-emerald-100/70">New student? <a class="text-emerald-300 underline" href="./signup.html">Create account</a></p>
         </form>
       </section>
     </main>
 
     <script type="module">
-      import { supabase, injectBranding, normalizeSupabaseError, showMessage, clearMessage } from "./supabase-client.js";
+      import {
+        clearMessage,
+        getCurrentUserAndRole,
+        injectBranding,
+        normalizeSupabaseError,
+        showMessage,
+        signInWithGoogle,
+        supabase,
+      } from "./supabase-client.js";
 
       injectBranding();
 
       const form = document.getElementById("login-form");
       const messageEl = document.getElementById("message");
+      const loginBtn = document.getElementById("login-btn");
+      const googleLoginBtn = document.getElementById("google-login-btn");
+
+      let isSubmitting = false;
+
+      function shouldRetryLogin(error) {
+        const message = error?.message?.toLowerCase?.() || "";
+        return message.includes("aborted") || message.includes("interrupted");
+      }
+
+      async function redirectByRole() {
+        const { user, role, error: roleError } = await getCurrentUserAndRole();
+
+        if (!user) {
+          throw new Error(roleError || "Authentication failed. Please try again.");
+        }
+
+        if (roleError) {
+          console.warn("Role lookup warning", roleError);
+        }
+
+        if (role === "admin") {
+          window.location.href = "./admin.html";
+          return;
+        }
+
+        window.location.href = "./dashboard.html";
+      }
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (session) {
+        try {
+          await redirectByRole();
+        } catch (error) {
+          showMessage(messageEl, normalizeSupabaseError(error));
+        }
+      }
 
       form.addEventListener("submit", async (event) => {
         event.preventDefault();
+
+        if (isSubmitting) return;
+
+        isSubmitting = true;
+        loginBtn.disabled = true;
+        googleLoginBtn.disabled = true;
+        loginBtn.textContent = "Logging in...";
         clearMessage(messageEl);
 
         const email = document.getElementById("email").value.trim();
         const password = document.getElementById("password").value;
 
         try {
-          const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-          if (signInError) {
-            console.error("Login failed", signInError);
-            showMessage(messageEl, normalizeSupabaseError(signInError));
+          let signInResult = await supabase.auth.signInWithPassword({ email, password });
+
+          if (signInResult.error && shouldRetryLogin(signInResult.error)) {
+            await new Promise((resolve) => setTimeout(resolve, 250));
+            signInResult = await supabase.auth.signInWithPassword({ email, password });
+          }
+
+          if (signInResult.error) {
+            console.error("Login failed", signInResult.error);
+            showMessage(messageEl, normalizeSupabaseError(signInResult.error));
             return;
           }
 
-          const {
-            data: { user },
-            error: userError,
-          } = await supabase.auth.getUser();
-
-          if (userError || !user) {
-            console.error("Failed to fetch user after login", userError);
-            showMessage(messageEl, normalizeSupabaseError(userError));
-            return;
-          }
-
-          const { data: profile, error: profileError } = await supabase
-            .from("profiles")
-            .select("role")
-            .eq("id", user.id)
-            .single();
-
-          if (profileError) {
-            console.error("Profile role fetch failed", profileError);
-            showMessage(messageEl, normalizeSupabaseError(profileError));
-            return;
-          }
-
-          if (profile.role === "admin") {
-            window.location.href = "./admin.html";
-          } else {
-            window.location.href = "./dashboard.html";
-          }
+          await redirectByRole();
         } catch (error) {
           console.error("Unexpected login error", error);
           showMessage(messageEl, normalizeSupabaseError(error));
+        } finally {
+          isSubmitting = false;
+          loginBtn.disabled = false;
+          googleLoginBtn.disabled = false;
+          loginBtn.textContent = "Login";
+        }
+      });
+
+      googleLoginBtn.addEventListener("click", async () => {
+        clearMessage(messageEl);
+        googleLoginBtn.disabled = true;
+
+        const { error } = await signInWithGoogle();
+        if (error) {
+          console.error("Google login failed", error);
+          showMessage(messageEl, normalizeSupabaseError(error));
+          googleLoginBtn.disabled = false;
         }
       });
     </script>

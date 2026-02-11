@@ -31,53 +31,59 @@
           </div>
           <div>
             <label class="mb-1 block text-sm text-emerald-100">Password</label>
-            <input class="neon-input w-full rounded-md px-3 py-2" id="password" type="password" required />
+            <input class="neon-input w-full rounded-md px-3 py-2" id="password" type="password" required minlength="6" />
           </div>
           <div>
             <label class="mb-1 block text-sm text-emerald-100">Confirm Password</label>
-            <input class="neon-input w-full rounded-md px-3 py-2" id="confirmPassword" type="password" required />
+            <input class="neon-input w-full rounded-md px-3 py-2" id="confirmPassword" type="password" required minlength="6" />
           </div>
 
-          <button class="neon-btn w-full rounded-md px-4 py-2 font-semibold" type="submit">Create Student Account</button>
+          <button id="signup-btn" class="neon-btn w-full rounded-md px-4 py-2 font-semibold" type="submit">Create Student Account</button>
+
+          <button
+            id="google-signup-btn"
+            class="w-full rounded-md border border-emerald-400/40 bg-black/40 px-4 py-2 font-semibold text-emerald-100 hover:bg-emerald-500/10"
+            type="button"
+          >
+            Continue with Google
+          </button>
+
           <p class="text-center text-sm text-emerald-100/70">Already have an account? <a class="text-emerald-300 underline" href="./login.html">Login</a></p>
         </form>
       </section>
     </main>
 
     <script type="module">
-      import { supabase, injectBranding, normalizeSupabaseError, showMessage, clearMessage } from "./supabase-client.js";
+      import { clearMessage, injectBranding, normalizeSupabaseError, showMessage, signInWithGoogle, supabase } from "./supabase-client.js";
 
       injectBranding();
 
       const form = document.getElementById("signup-form");
       const messageEl = document.getElementById("message");
+      const signupBtn = document.getElementById("signup-btn");
+      const googleSignupBtn = document.getElementById("google-signup-btn");
 
       form.addEventListener("submit", async (event) => {
         event.preventDefault();
         clearMessage(messageEl);
+
+        signupBtn.disabled = true;
+        googleSignupBtn.disabled = true;
 
         const name = document.getElementById("name").value.trim();
         const email = document.getElementById("email").value.trim();
         const password = document.getElementById("password").value;
         const confirmPassword = document.getElementById("confirmPassword").value;
 
-        if (!/^\S+@\S+\.\S+$/.test(email)) {
-          showMessage(messageEl, "Please enter a valid email format.");
-          return;
-        }
-
-        if (password.length < 8) {
-          showMessage(messageEl, "Password must be at least 8 characters.");
-          return;
-        }
-
         if (password !== confirmPassword) {
           showMessage(messageEl, "Passwords do not match.");
+          signupBtn.disabled = false;
+          googleSignupBtn.disabled = false;
           return;
         }
 
         try {
-          const { error } = await supabase.auth.signUp({
+          const { data, error: signUpError } = await supabase.auth.signUp({
             email,
             password,
             options: {
@@ -85,17 +91,45 @@
             },
           });
 
-          if (error) {
-            console.error("Signup failed", error);
-            showMessage(messageEl, normalizeSupabaseError(error));
+          if (signUpError) {
+            console.error("Signup failed", signUpError);
+            showMessage(messageEl, normalizeSupabaseError(signUpError));
             return;
           }
 
-          showMessage(messageEl, "Signup successful. Check your email for verification, then login.", "success");
+          const userId = data?.user?.id;
+          if (userId) {
+            const { error: profileError } = await supabase.from("profiles").upsert({
+              id: userId,
+              full_name: name,
+              role: "user",
+            });
+
+            if (profileError) {
+              console.warn("Profile upsert warning", profileError);
+            }
+          }
+
+          showMessage(messageEl, "Account created successfully. Please login.", "success");
           form.reset();
         } catch (error) {
           console.error("Unexpected signup error", error);
           showMessage(messageEl, normalizeSupabaseError(error));
+        } finally {
+          signupBtn.disabled = false;
+          googleSignupBtn.disabled = false;
+        }
+      });
+
+      googleSignupBtn.addEventListener("click", async () => {
+        clearMessage(messageEl);
+        googleSignupBtn.disabled = true;
+
+        const { error } = await signInWithGoogle();
+        if (error) {
+          console.error("Google signup failed", error);
+          showMessage(messageEl, normalizeSupabaseError(error));
+          googleSignupBtn.disabled = false;
         }
       });
     </script>
