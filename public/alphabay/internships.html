@@ -29,14 +29,13 @@
 
     <script type="module">
       import { clearMessage, getCurrentUserAndRole, injectBranding, isMissingTableError, normalizeSupabaseError, showMessage, supabase } from "./supabase-client.js";
-      import { MAIN_PAGE_URL } from "./config.js";
 
       injectBranding();
       const cards = document.getElementById("cards");
       const messageEl = document.getElementById("message");
       document.getElementById("logout-btn").addEventListener("click", async () => {
         await supabase.auth.signOut();
-        window.location.href = MAIN_PAGE_URL;
+        window.location.href = "./login.html";
       });
 
       const { user, role, error: authError } = await getCurrentUserAndRole();
