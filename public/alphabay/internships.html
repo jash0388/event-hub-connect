@@ -28,15 +28,14 @@
     </main>
 
     <script type="module">
-      import { clearMessage, getCurrentUserAndRole, injectBranding, isMissingTableError, normalizeSupabaseError, showMessage, supabase } from "./supabase-client.js";
-      import { MAIN_PAGE_URL } from "./config.js";
+      import { clearMessage, getCurrentUserAndRole, injectBranding, normalizeSupabaseError, showMessage, supabase } from "./supabase-client.js";
 
       injectBranding();
       const cards = document.getElementById("cards");
       const messageEl = document.getElementById("message");
       document.getElementById("logout-btn").addEventListener("click", async () => {
         await supabase.auth.signOut();
-        window.location.href = MAIN_PAGE_URL;
+        window.location.href = "./login.html";
       });
 
       const { user, role, error: authError } = await getCurrentUserAndRole();
@@ -50,21 +49,16 @@
         clearMessage(messageEl);
       }
 
-      if (role !== "user" && role !== "admin") {
+      if (role !== "student" && role !== "admin") {
         showMessage(messageEl, "Access restricted: unknown role.");
-      } else {
-        try {
+      }
+
+      try {
         const { data, error } = await supabase.from("internships").select("*").order("created_at", { ascending: false });
 
         if (error) {
           console.error("Internship fetch failed", error);
-
-          if (isMissingTableError(error, "internships")) {
-            cards.innerHTML = '<p class="text-emerald-100/80">Internships module is being set up. Please check back soon.</p>';
-            clearMessage(messageEl);
-          } else {
-            showMessage(messageEl, normalizeSupabaseError(error));
-          }
+          showMessage(messageEl, normalizeSupabaseError(error));
         } else if (!data || data.length === 0) {
           cards.innerHTML = '<p class="text-emerald-100/80">No internships available yet.</p>';
         } else {
@@ -84,10 +78,9 @@
             )
             .join("");
         }
-        } catch (error) {
-          console.error("Unexpected internships page error", error);
-          showMessage(messageEl, normalizeSupabaseError(error));
-        }
+      } catch (error) {
+        console.error("Unexpected internships page error", error);
+        showMessage(messageEl, normalizeSupabaseError(error));
       }
     </script>
   </body>
