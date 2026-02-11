@@ -1,5 +1,12 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { ALPHABAY_LOGO_IMAGE, APP_NAME, SUPABASE_ANON_KEY, SUPABASE_URL } from "./config.js";
+import {
+  ALPHABAY_LOGO_IMAGE,
+  APP_NAME,
+  AUTH_REDIRECT_URL,
+  INITIAL_ADMIN_EMAILS,
+  SUPABASE_ANON_KEY,
+  SUPABASE_URL,
+} from "./config.js";
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -26,7 +33,72 @@ export function normalizeSupabaseError(error) {
     return `Access restricted: ${message}`;
   }
 
+  if (lowered.includes("operation was aborted") || lowered.includes("aborted") || lowered.includes("interrupted")) {
+    return "Request interrupted. Please try logging in once more.";
+  }
+
   return message;
+}
+
+export function normalizeRole(rawRole) {
+  if (rawRole === "admin") return "admin";
+  if (rawRole === "student" || rawRole === "user") return "user";
+  return "user";
+}
+
+export function isMissingTableError(error, tableName) {
+  const message = error?.message?.toLowerCase?.() || "";
+  const table = String(tableName || "").toLowerCase();
+
+  return (
+    message.includes("could not find the table") ||
+    message.includes("does not exist") ||
+    (message.includes(`public.${table}`) && message.includes("schema cache"))
+  );
+}
+
+async function ensureInitialAdmin(user) {
+  if (!user?.id || !user?.email) return;
+
+  const normalizedEmail = user.email.toLowerCase();
+  const adminAllowlist = INITIAL_ADMIN_EMAILS.map((email) => email.toLowerCase().trim());
+
+  if (!adminAllowlist.includes(normalizedEmail)) {
+    return;
+  }
+
+  const { data: existingRoles, error: readError } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", user.id)
+    .eq("role", "admin");
+
+  if (readError) {
+    console.warn("Could not verify initial admin role", readError);
+    return;
+  }
+
+  if (Array.isArray(existingRoles) && existingRoles.length > 0) {
+    return;
+  }
+
+  const { error: insertError } = await supabase.from("user_roles").insert({
+    user_id: user.id,
+    role: "admin",
+  });
+
+  if (insertError) {
+    console.warn("Could not seed initial admin role", insertError);
+  }
+}
+
+export async function signInWithGoogle() {
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: AUTH_REDIRECT_URL },
+  });
+
+  return { error };
 }
 
 export async function getCurrentUserAndRole() {
@@ -44,18 +116,29 @@ export async function getCurrentUserAndRole() {
     return { user: null, role: null, error: null };
   }
 
+  await ensureInitialAdmin(user);
+
+  const { data: roles, error: rolesError } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", user.id);
+
+  if (!rolesError && Array.isArray(roles) && roles.some((entry) => entry.role === "admin")) {
+    return { user, role: "admin", error: null };
+  }
+
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select("role")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
   if (profileError) {
     console.error("Error fetching profile role", profileError);
-    return { user, role: null, error: normalizeSupabaseError(profileError) };
+    return { user, role: normalizeRole(roles?.[0]?.role), error: normalizeSupabaseError(profileError) };
   }
 
-  return { user, role: profile.role, error: null };
+  return { user, role: normalizeRole(profile?.role ?? roles?.[0]?.role), error: null };
 }
 
 export function showMessage(element, message, type = "error") {

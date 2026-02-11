@@ -5,3 +5,9 @@ export const APP_NAME = "ALPHABAY X";
 
 export const SUPABASE_URL = "https://cqjjbvccldipkqqtqzqc.supabase.co";
 export const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNxampidmNjbGRpcGtxcXRxenFjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAzOTU5OTcsImV4cCI6MjA4NTk3MTk5N30.VJxcanrSRdEAcnRpCI2zpeWQ7PhvdPiZtRnA5L7RQgc";
+
+export const MAIN_PAGE_URL = "/";
+export const AUTH_REDIRECT_URL = `${window.location.origin}/alphabay/login.html`;
+
+// Initial admin seed list. Add your owner email here.
+export const INITIAL_ADMIN_EMAILS = ["owner@datanauts.in"];
