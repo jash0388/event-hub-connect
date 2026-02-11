@@ -60,7 +60,7 @@
     </main>
 
     <script type="module">
-      import { clearMessage, getCurrentUserAndRole, injectBranding, normalizeSupabaseError, showMessage, supabase } from "./supabase-client.js";
+      import { clearMessage, getCurrentUserAndRole, injectBranding, isMissingTableError, normalizeSupabaseError, showMessage, supabase } from "./supabase-client.js";
 
       injectBranding();
 
@@ -70,6 +70,8 @@
       const bodyEl = document.getElementById("internships-body");
       const formTitleEl = document.getElementById("form-title");
       const cancelEditBtn = document.getElementById("cancel-edit");
+
+      const EXTERNAL_ADMIN_DASHBOARD_URL = "https://datanauts.in/admin/dashboard";
 
       let editingId = null;
 
@@ -84,6 +86,8 @@
       if (role !== "admin") {
         showMessage(tableMessageEl, "Access restricted: admin-only dashboard.");
         form.querySelectorAll("input,textarea,button").forEach((el) => (el.disabled = true));
+      } else {
+        window.location.href = EXTERNAL_ADMIN_DASHBOARD_URL;
       }
 
       function validateUrl(url) {
@@ -117,6 +121,14 @@
 
           if (fetchError) {
             console.error("Fetch internships failed", fetchError);
+
+            if (isMissingTableError(fetchError, "internships")) {
+              showMessage(tableMessageEl, "Internships table is not created yet. Run the latest Supabase migrations to enable this dashboard.");
+              bodyEl.innerHTML = "";
+              form.querySelectorAll("input,textarea,button").forEach((el) => (el.disabled = true));
+              return;
+            }
+
             showMessage(tableMessageEl, normalizeSupabaseError(fetchError));
             bodyEl.innerHTML = "";
             return;
@@ -203,6 +215,10 @@
 
           if (dbError) {
             console.error("Save internship failed", dbError);
+            if (isMissingTableError(dbError, "internships")) {
+              showMessage(messageEl, "Internships table is not created yet. Run the latest Supabase migrations first.");
+              return;
+            }
             showMessage(messageEl, normalizeSupabaseError(dbError));
             return;
           }
