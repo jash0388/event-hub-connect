@@ -26,6 +26,10 @@ export function normalizeSupabaseError(error) {
     return `Access restricted: ${message}`;
   }
 
+  if (lowered.includes("operation was aborted") || lowered.includes("aborted")) {
+    return "Request interrupted. Please try logging in once more.";
+  }
+
   return message;
 }
 
