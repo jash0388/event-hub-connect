@@ -70,6 +70,16 @@ interface Project {
   tags: string[] | null;
 }
 
+interface Internship {
+  id: string;
+  title: string;
+  company: string;
+  description: string | null;
+  image_url: string | null;
+  internship_link: string | null;
+  created_at: string;
+}
+
 interface Poll {
   id: string;
   event_id: string;
@@ -108,6 +118,7 @@ interface AdminUser {
 const AdminDashboard = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [internships, setInternships] = useState<Internship[]>([]);
   const [polls, setPolls] = useState<Poll[]>([]);
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
   const [messages, setMessages] = useState<ContactMessage[]>([]);
@@ -118,6 +129,7 @@ const AdminDashboard = () => {
   
   const [eventDialogOpen, setEventDialogOpen] = useState(false);
   const [projectDialogOpen, setProjectDialogOpen] = useState(false);
+  const [internshipDialogOpen, setInternshipDialogOpen] = useState(false);
   const [pollDialogOpen, setPollDialogOpen] = useState(false);
   const [socialDialogOpen, setSocialDialogOpen] = useState(false);
   const [replyDialogOpen, setReplyDialogOpen] = useState(false);
@@ -125,6 +137,7 @@ const AdminDashboard = () => {
   
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [editingInternship, setEditingInternship] = useState<Internship | null>(null);
   const [editingSocial, setEditingSocial] = useState<SocialLink | null>(null);
   const [selectedMessage, setSelectedMessage] = useState<ContactMessage | null>(null);
   const [replyText, setReplyText] = useState('');
@@ -149,6 +162,14 @@ const AdminDashboard = () => {
     demo_url: '',
     registration_link: '',
     tags: '',
+  });
+
+  const [internshipForm, setInternshipForm] = useState({
+    title: '',
+    company: '',
+    description: '',
+    image_url: '',
+    internship_link: '',
   });
   
   const [pollForm, setPollForm] = useState({
@@ -182,7 +203,7 @@ const AdminDashboard = () => {
 
   const fetchAllData = async () => {
     setIsLoading(true);
-    await Promise.all([fetchEvents(), fetchProjects(), fetchPolls(), fetchSocialLinks(), fetchMessages(), fetchAdminUsers()]);
+    await Promise.all([fetchEvents(), fetchProjects(), fetchInternships(), fetchPolls(), fetchSocialLinks(), fetchMessages(), fetchAdminUsers()]);
     setIsLoading(false);
   };
 
@@ -221,6 +242,26 @@ const AdminDashboard = () => {
         description: error.message || "Failed to load projects",
         variant: "destructive",
       });
+    }
+  };
+
+  const fetchInternships = async () => {
+    try {
+      const { data, error } = await (supabase as any)
+        .from('internships')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching internships:', error);
+        setInternships([]);
+        return;
+      }
+
+      setInternships(data || []);
+    } catch (error: any) {
+      console.error('Error fetching internships:', error);
+      setInternships([]);
     }
   };
 
@@ -581,6 +622,90 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleInternshipDialog = (internship?: Internship) => {
+    if (internship) {
+      setEditingInternship(internship);
+      setInternshipForm({
+        title: internship.title,
+        company: internship.company,
+        description: internship.description || '',
+        image_url: internship.image_url || '',
+        internship_link: internship.internship_link || '',
+      });
+    } else {
+      setEditingInternship(null);
+      setInternshipForm({
+        title: '',
+        company: '',
+        description: '',
+        image_url: '',
+        internship_link: '',
+      });
+    }
+
+    setInternshipDialogOpen(true);
+  };
+
+  const handleInternshipSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+
+    try {
+      const payload = {
+        title: internshipForm.title,
+        company: internshipForm.company,
+        description: internshipForm.description || null,
+        image_url: internshipForm.image_url || null,
+        internship_link: internshipForm.internship_link || null,
+      };
+
+      if (editingInternship) {
+        const { error } = await (supabase as any)
+          .from('internships')
+          .update(payload)
+          .eq('id', editingInternship.id);
+
+        if (error) throw error;
+        toast({ title: "Success", description: "Internship updated" });
+      } else {
+        const { error } = await (supabase as any)
+          .from('internships')
+          .insert([payload]);
+
+        if (error) throw error;
+        toast({ title: "Success", description: "Internship created" });
+      }
+
+      setInternshipDialogOpen(false);
+      fetchInternships();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleInternshipDelete = async (id: string) => {
+    if (!confirm('Delete this internship?')) return;
+
+    try {
+      const { error } = await (supabase as any).from('internships').delete().eq('id', id);
+      if (error) throw error;
+      toast({ title: "Success", description: "Internship deleted" });
+      fetchInternships();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   const handlePollSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
@@ -764,9 +889,10 @@ const AdminDashboard = () => {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-6 max-w-4xl">
+            <TabsList className="grid w-full grid-cols-7 max-w-5xl">
               <TabsTrigger value="events">Events</TabsTrigger>
               <TabsTrigger value="projects">Projects</TabsTrigger>
+              <TabsTrigger value="internships">Internships</TabsTrigger>
               <TabsTrigger value="polls">Polls</TabsTrigger>
               <TabsTrigger value="social">Social</TabsTrigger>
               <TabsTrigger value="messages">Messages</TabsTrigger>
@@ -1082,6 +1208,128 @@ const AdminDashboard = () => {
                             >
                               <Trash2 className="w-4 h-4" />
                             </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="internships" className="mt-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold">Manage Internships</h2>
+                <Dialog open={internshipDialogOpen} onOpenChange={setInternshipDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button onClick={() => handleInternshipDialog()}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Internship
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-lg">
+                    <DialogHeader>
+                      <DialogTitle>{editingInternship ? 'Edit Internship' : 'Add Internship'}</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handleInternshipSubmit} className="space-y-4 mt-4">
+                      <div>
+                        <Label htmlFor="internship_title">Title *</Label>
+                        <Input
+                          id="internship_title"
+                          value={internshipForm.title}
+                          onChange={(e) => setInternshipForm({ ...internshipForm, title: e.target.value })}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="internship_company">Company *</Label>
+                        <Input
+                          id="internship_company"
+                          value={internshipForm.company}
+                          onChange={(e) => setInternshipForm({ ...internshipForm, company: e.target.value })}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="internship_description">Description</Label>
+                        <Textarea
+                          id="internship_description"
+                          value={internshipForm.description}
+                          onChange={(e) => setInternshipForm({ ...internshipForm, description: e.target.value })}
+                          rows={3}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="internship_image_url">Image URL</Label>
+                        <Input
+                          id="internship_image_url"
+                          type="url"
+                          value={internshipForm.image_url}
+                          onChange={(e) => setInternshipForm({ ...internshipForm, image_url: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="internship_link">Internship Link</Label>
+                        <Input
+                          id="internship_link"
+                          type="url"
+                          value={internshipForm.internship_link}
+                          onChange={(e) => setInternshipForm({ ...internshipForm, internship_link: e.target.value })}
+                        />
+                      </div>
+                      <div className="flex justify-end gap-3 pt-4">
+                        <Button type="button" variant="outline" onClick={() => setInternshipDialogOpen(false)}>
+                          Cancel
+                        </Button>
+                        <Button type="submit" disabled={isSaving}>
+                          {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : (editingInternship ? 'Update' : 'Add')}
+                        </Button>
+                      </div>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+              </div>
+
+              <div className="bg-card border border-border rounded-lg overflow-hidden">
+                {isLoading ? (
+                  <div className="p-8 text-center">
+                    <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
+                  </div>
+                ) : internships.length === 0 ? (
+                  <div className="p-8 text-center text-muted-foreground">
+                    No internships yet. Add one to publish for users.
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Title</TableHead>
+                        <TableHead>Company</TableHead>
+                        <TableHead>Link</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {internships.map((internship) => (
+                        <TableRow key={internship.id}>
+                          <TableCell className="font-medium">{internship.title}</TableCell>
+                          <TableCell>{internship.company}</TableCell>
+                          <TableCell>
+                            {internship.internship_link ? (
+                              <a href={internship.internship_link} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">
+                                Open link
+                              </a>
+                            ) : '—'}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button size="sm" variant="outline" onClick={() => handleInternshipDialog(internship)}>
+                                <Edit className="w-3 h-3" />
+                              </Button>
+                              <Button size="sm" variant="destructive" onClick={() => handleInternshipDelete(internship.id)}>
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
