@@ -28,18 +28,20 @@ interface Project {
   tags: string[] | null;
 }
 
-interface Poll {
+interface Internship {
   id: string;
-  event_id: string;
-  question: string;
-  registration_link: string | null;
+  title: string;
+  company: string;
+  description: string | null;
+  image_url: string | null;
+  internship_link: string | null;
   created_at: string;
 }
 
 const Feed = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
-  const [polls, setPolls] = useState<Poll[]>([]);
+  const [internships, setInternships] = useState<Internship[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -48,7 +50,7 @@ const Feed = () => {
 
   const fetchAllData = async () => {
     setIsLoading(true);
-    await Promise.all([fetchEvents(), fetchProjects(), fetchPolls()]);
+    await Promise.all([fetchEvents(), fetchProjects(), fetchInternships()]);
     setIsLoading(false);
   };
 
@@ -68,12 +70,18 @@ const Feed = () => {
     setProjects(data || []);
   };
 
-  const fetchPolls = async () => {
-    const { data } = await supabase
-      .from('polls')
-      .select('*')
-      .order('created_at', { ascending: false });
-    setPolls(data || []);
+  const fetchInternships = async () => {
+    const { data, error } = await (supabase as any)
+      .from("internships")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      setInternships([]);
+      return;
+    }
+
+    setInternships(data || []);
   };
 
   return (
@@ -82,15 +90,15 @@ const Feed = () => {
       <main className="pt-24 pb-16">
         <div className="container mx-auto px-4 max-w-5xl">
           <div className="mb-8">
-            <h1 className="text-3xl font-display font-bold mb-2">Datanauts Hub</h1>
-            <p className="text-muted-foreground">Explore events, projects, and polls</p>
+            <h1 className="text-3xl font-display font-bold mb-2 tracking-wide">Datanauts Hub</h1>
+            <p className="text-muted-foreground">Explore events, projects, and internships</p>
           </div>
 
           <Tabs defaultValue="events" className="w-full">
             <TabsList className="grid w-full grid-cols-3 mb-8">
               <TabsTrigger value="events">Events</TabsTrigger>
               <TabsTrigger value="projects">Projects</TabsTrigger>
-              <TabsTrigger value="polls">Polls</TabsTrigger>
+              <TabsTrigger value="internships">Internships</TabsTrigger>
             </TabsList>
 
             <TabsContent value="events">
@@ -195,24 +203,31 @@ const Feed = () => {
               )}
             </TabsContent>
 
-            <TabsContent value="polls">
+            <TabsContent value="internships">
               {isLoading ? (
                 <div className="flex justify-center py-12">
                   <Loader2 className="w-8 h-8 animate-spin text-primary" />
                 </div>
-              ) : polls.length === 0 ? (
+              ) : internships.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
-                  No polls available yet
+                  No internships available yet
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {polls.map((poll) => (
-                    <div key={poll.id} className="bg-card border border-border rounded-lg p-6">
-                      <h3 className="text-xl font-bold mb-4">{poll.question}</h3>
-                      {poll.registration_link && (
+                  {internships.map((internship) => (
+                    <div key={internship.id} className="bg-card border border-border rounded-lg p-6">
+                      {internship.image_url && (
+                        <img src={internship.image_url} alt={internship.title} className="w-full h-48 object-cover rounded-lg mb-4" />
+                      )}
+                      <div className="flex items-center justify-between gap-3 mb-2">
+                        <h3 className="text-xl font-bold">{internship.title}</h3>
+                        <span className="px-2 py-1 bg-primary/10 text-primary text-xs rounded">{internship.company}</span>
+                      </div>
+                      <p className="text-muted-foreground mb-4">{internship.description || "No description provided."}</p>
+                      {internship.internship_link && (
                         <Button asChild>
-                          <a href={poll.registration_link} target="_blank" rel="noopener noreferrer">
-                            Participate
+                          <a href={internship.internship_link} target="_blank" rel="noopener noreferrer">
+                            Apply Now
                             <ExternalLink className="ml-2 w-4 h-4" />
                           </a>
                         </Button>

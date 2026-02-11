@@ -26,7 +26,28 @@ export function normalizeSupabaseError(error) {
     return `Access restricted: ${message}`;
   }
 
+  if (lowered.includes("operation was aborted") || lowered.includes("aborted")) {
+    return "Request interrupted. Please try logging in once more.";
+  }
+
   return message;
+}
+
+export function isMissingTableError(error, tableName) {
+  const message = error?.message?.toLowerCase?.() || "";
+  const table = String(tableName || "").toLowerCase();
+
+  return (
+    message.includes("could not find the table") ||
+    message.includes("does not exist") ||
+    message.includes(`public.${table}`) && message.includes("schema cache")
+  );
+}
+
+function normalizeRole(rawRole) {
+  if (rawRole === "admin") return "admin";
+  if (rawRole === "student" || rawRole === "user") return "user";
+  return "user";
 }
 
 export async function getCurrentUserAndRole() {
@@ -44,18 +65,27 @@ export async function getCurrentUserAndRole() {
     return { user: null, role: null, error: null };
   }
 
+  const { data: roles, error: rolesError } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", user.id);
+
+  if (!rolesError && Array.isArray(roles) && roles.some((entry) => entry.role === "admin")) {
+    return { user, role: "admin", error: null };
+  }
+
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select("role")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
   if (profileError) {
     console.error("Error fetching profile role", profileError);
-    return { user, role: null, error: normalizeSupabaseError(profileError) };
+    return { user, role: normalizeRole(roles?.[0]?.role), error: normalizeSupabaseError(profileError) };
   }
 
-  return { user, role: profile.role, error: null };
+  return { user, role: profile?.role ?? "user", error: null };
 }
 
 export function showMessage(element, message, type = "error") {
