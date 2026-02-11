@@ -71,6 +71,8 @@
       const formTitleEl = document.getElementById("form-title");
       const cancelEditBtn = document.getElementById("cancel-edit");
 
+      const EXTERNAL_ADMIN_DASHBOARD_URL = "https://datanauts.in/admin/dashboard";
+
       let editingId = null;
 
       document.getElementById("logout-btn").addEventListener("click", async () => {
@@ -84,6 +86,8 @@
       if (role !== "admin") {
         showMessage(tableMessageEl, "Access restricted: admin-only dashboard.");
         form.querySelectorAll("input,textarea,button").forEach((el) => (el.disabled = true));
+      } else {
+        window.location.href = EXTERNAL_ADMIN_DASHBOARD_URL;
       }
 
       function validateUrl(url) {
