@@ -30,7 +30,7 @@
             <input class="neon-input w-full rounded-md px-3 py-2" id="password" type="password" required />
           </div>
 
-          <button class="neon-btn w-full rounded-md px-4 py-2 font-semibold" type="submit">Login</button>
+          <button id="login-btn" class="neon-btn w-full rounded-md px-4 py-2 font-semibold" type="submit">Login</button>
           <p class="text-center text-sm text-emerald-100/70">New student? <a class="text-emerald-300 underline" href="./signup.html">Create account</a></p>
         </form>
       </section>
@@ -43,46 +43,72 @@
 
       const form = document.getElementById("login-form");
       const messageEl = document.getElementById("message");
+      const loginBtn = document.getElementById("login-btn");
+      let isSubmitting = false;
+
+      function shouldRetryLogin(error) {
+        const message = error?.message?.toLowerCase?.() || "";
+        return message.includes("aborted") || message.includes("interrupted");
+      }
 
       form.addEventListener("submit", async (event) => {
         event.preventDefault();
+
+        if (isSubmitting) return;
+        isSubmitting = true;
+        loginBtn.disabled = true;
+        loginBtn.textContent = "Logging in...";
         clearMessage(messageEl);
 
         const email = document.getElementById("email").value.trim();
         const password = document.getElementById("password").value;
 
         try {
-          const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-          if (signInError) {
-            console.error("Login failed", signInError);
-            showMessage(messageEl, normalizeSupabaseError(signInError));
+          let signInResult = await supabase.auth.signInWithPassword({ email, password });
+
+          if (signInResult.error && shouldRetryLogin(signInResult.error)) {
+            await new Promise((resolve) => setTimeout(resolve, 250));
+            signInResult = await supabase.auth.signInWithPassword({ email, password });
+          }
+
+          if (signInResult.error) {
+            console.error("Login failed", signInResult.error);
+            showMessage(messageEl, normalizeSupabaseError(signInResult.error));
             return;
           }
 
-          const {
-            data: { user },
-            error: userError,
-          } = await supabase.auth.getUser();
-
-          if (userError || !user) {
-            console.error("Failed to fetch user after login", userError);
-            showMessage(messageEl, normalizeSupabaseError(userError));
+          const signedInUser = signInResult.data?.user;
+          if (!signedInUser) {
+            showMessage(messageEl, "Authentication failed. Please try again.");
             return;
           }
 
-          const { data: profile, error: profileError } = await supabase
-            .from("profiles")
+          let role = "user";
+
+          const { data: roles, error: rolesError } = await supabase
+            .from("user_roles")
             .select("role")
-            .eq("id", user.id)
-            .single();
+            .eq("user_id", signedInUser.id);
 
-          if (profileError) {
-            console.error("Profile role fetch failed", profileError);
-            showMessage(messageEl, normalizeSupabaseError(profileError));
-            return;
+          if (!rolesError && Array.isArray(roles) && roles.some((entry) => entry.role === "admin")) {
+            role = "admin";
+          } else {
+            const { data: profile, error: profileError } = await supabase
+              .from("profiles")
+              .select("role")
+              .eq("id", signedInUser.id)
+              .maybeSingle();
+
+            if (profileError) {
+              console.warn("Profile role lookup warning", profileError);
+            }
+
+            if (profile?.role === "admin") {
+              role = "admin";
+            }
           }
 
-          if (profile.role === "admin") {
+          if (role === "admin") {
             window.location.href = "./admin.html";
           } else {
             window.location.href = "./dashboard.html";
@@ -90,6 +116,10 @@
         } catch (error) {
           console.error("Unexpected login error", error);
           showMessage(messageEl, normalizeSupabaseError(error));
+        } finally {
+          isSubmitting = false;
+          loginBtn.disabled = false;
+          loginBtn.textContent = "Login";
         }
       });
     </script>
