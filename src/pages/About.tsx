@@ -49,19 +49,25 @@ export default function About() {
   useEffect(() => {
     async function fetchStats() {
       try {
-        // Fetch admins count from user_roles
+        // Fetch admins count from user_roles where role = 'admin'
         const { count: adminsCount } = await supabase
           .from("user_roles")
-          .select("*", { count: "exact", head: true });
+          .select("*", { count: "exact", head: true })
+          .eq("role", "admin");
 
         // Fetch events count
         const { count: eventsCount } = await supabase
           .from("events")
           .select("*", { count: "exact", head: true });
 
+        // Fetch projects count
+        const { count: projectsCount } = await supabase
+          .from("projects")
+          .select("*", { count: "exact", head: true });
+
         setStats([
           { icon: Users, value: String(adminsCount || 0), label: "ADMINS" },
-          { icon: Code2, value: "4", label: "PROJECTS" },
+          { icon: Code2, value: String(projectsCount || 0), label: "PROJECTS" },
           { icon: Rocket, value: String(eventsCount || 0), label: "EVENTS" },
           { icon: Heart, value: "∞", label: "PASSION FOR TECH" },
         ]);
