@@ -146,24 +146,41 @@ const AdminDashboard = () => {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
 
-  // Image upload function
+  // Image upload function - uses Cloudinary
   const uploadImage = async (file: File): Promise<string | null> => {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Math.random()}.${fileExt}`;
-    const filePath = `events/${fileName}`;
+    const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+    const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
 
-    const { data, error } = await supabase.storage
-      .from('event-images')
-      .upload(filePath, file);
-
-    if (error) {
-      console.error('Error uploading image:', error);
-      toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
+    if (!cloudName || !uploadPreset) {
+      toast({ title: 'Upload not configured', description: 'Cloudinary not set up', variant: 'destructive' });
       return null;
     }
 
-    const { data: urlData } = supabase.storage.from('event-images').getPublicUrl(filePath);
-    return urlData.publicUrl;
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', uploadPreset);
+
+    try {
+      const response = await fetch(
+        `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+        {
+          method: 'POST',
+          body: formData,
+        }
+      );
+      const data = await response.json();
+      if (data.secure_url) {
+        return data.secure_url;
+      } else {
+        console.error('Cloudinary error:', data);
+        toast({ title: 'Upload failed', description: data.error?.message || 'Unknown error', variant: 'destructive' });
+        return null;
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast({ title: 'Upload failed', description: 'Network error', variant: 'destructive' });
+      return null;
+    }
   };
 
   // Handle main image file selection
@@ -1087,7 +1104,28 @@ const AdminDashboard = () => {
                         />
                         {uploadingPhotos && <p className="text-sm text-muted-foreground mt-1">Uploading photos...</p>}
                         {eventForm.photos && !uploadingPhotos && (
-                          <p className="text-sm text-muted-foreground mt-1">{eventForm.photos.split(',').length} photo(s) added</p>
+                          <>
+                            <p className="text-sm text-muted-foreground mt-1">{eventForm.photos.split(',').length} photo(s) added</p>
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              {eventForm.photos.split(',').filter(p => p.trim()).map((photo, idx) => (
+                                <div key={idx} className="relative">
+                                  <img src={photo.trim()} alt={`Photo ${idx + 1}`} className="h-16 w-16 object-cover rounded" />
+                                  <Button
+                                    type="button"
+                                    variant="destructive"
+                                    size="sm"
+                                    className="absolute -top-2 -right-2 h-5 w-5 p-0"
+                                    onClick={() => {
+                                      const photos = eventForm.photos.split(',').filter((_, i) => i !== idx).join(',');
+                                      setEventForm({ ...eventForm, photos });
+                                    }}
+                                  >
+                                    ×
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          </>
                         )}
                       </div>
                       <div>
