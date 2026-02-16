@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { Calendar, Clock, Flame, MapPin, Search, Star, Users, Bookmark, Bell, MessageSquare, Trash2 } from "lucide-react";
 import { addDays, format, isAfter, isBefore, isPast, isToday, parseISO, startOfDay } from "date-fns";
 import { Header } from "@/components/layout/Header";
@@ -29,6 +30,8 @@ interface EventRecord {
   trending_score: number;
   registration_link: string | null;
   created_at: string;
+  photos: string[] | null;
+  videos: string[] | null;
 }
 
 interface EnhancedEvent extends EventRecord {
@@ -113,13 +116,24 @@ export default function Events() {
         );
       }
 
-      const { data: eventRows, error: eventError } = await supabase
+      // Try to fetch with photos/videos - if columns don't exist, we'll handle that gracefully
+      let eventRows;
+      const { data: rowsWithMedia, error: mediaError } = await supabase
         .from("events")
-        .select(
-          "id,title,description,category,date,time,location,organizer,image,image_url,popularity_score,trending_score,registration_link,created_at"
-        )
+        .select("id,title,description,category,date,time,location,organizer,image,image_url,popularity_score,trending_score,registration_link,created_at,photos,videos")
         .order("date", { ascending: true });
-      if (eventError) throw eventError;
+
+      if (mediaError) {
+        // If photos/videos columns don't exist, fetch without them
+        const { data: basicRows, error: basicError } = await supabase
+          .from("events")
+          .select("id,title,description,category,date,time,location,organizer,image,image_url,popularity_score,trending_score,registration_link,created_at")
+          .order("date", { ascending: true });
+        if (basicError) throw basicError;
+        eventRows = basicRows;
+      } else {
+        eventRows = rowsWithMedia;
+      }
 
       const baseEvents: EnhancedEvent[] = (eventRows || []).map((event: EventRecord) => ({
         ...event,
@@ -139,10 +153,11 @@ export default function Events() {
         supabase.from("users").select("id,name,email"),
       ]);
 
-      if (attendeesError) throw attendeesError;
-      if (reviewsError) throw reviewsError;
-      if (commentsError) throw commentsError;
-      if (usersError) throw usersError;
+      // Log errors but don't fail the entire page - events can still be shown
+      if (attendeesError) console.warn("Failed to load attendees:", attendeesError);
+      if (reviewsError) console.warn("Failed to load reviews:", reviewsError);
+      if (commentsError) console.warn("Failed to load comments:", commentsError);
+      if (usersError) console.warn("Failed to load users:", usersError);
 
       const usersMap = new Map((usersRows || []).map((profile) => [profile.id, profile.name || profile.email || "Student"]));
 
@@ -427,7 +442,7 @@ export default function Events() {
 
     return (
       <article key={event.id} className="group overflow-hidden rounded-2xl border border-white/10 bg-card/75 backdrop-blur-lg transition-all duration-300 hover:-translate-y-1 hover:border-primary/40">
-        <div className="relative h-44 overflow-hidden bg-muted">
+        <Link to={`/events/${event.id}`} className="block relative h-44 overflow-hidden bg-muted">
           {event.image || event.image_url ? (
             <img src={event.image || event.image_url || ""} alt={event.title} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
           ) : (
@@ -438,11 +453,13 @@ export default function Events() {
             {event.category}
           </span>
           {isToday(eventDate) && <span className="absolute right-4 top-4 rounded-full border border-primary/60 bg-primary/20 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.2em] text-primary">Happening Today</span>}
-        </div>
+        </Link>
 
         <div className="space-y-4 p-5">
           <div className="flex items-start justify-between gap-3">
-            <h3 className="font-display text-xl font-semibold tracking-wide text-foreground">{event.title}</h3>
+            <Link to={`/events/${event.id}`} className="hover:text-primary transition-colors">
+              <h3 className="font-display text-xl font-semibold tracking-wide text-foreground">{event.title}</h3>
+            </Link>
             {rating && (
               <div className="inline-flex items-center gap-1 rounded-md border border-neon-amber/40 bg-neon-amber/10 px-2 py-1 text-xs text-neon-amber">
                 <Star size={12} fill="currentColor" />
@@ -478,6 +495,10 @@ export default function Events() {
             <Button variant={status === "going" ? "default" : "outline"} onClick={() => void setRSVP(event.id, "going")} disabled={isSaving}>RSVP Going</Button>
             <Button variant={status === "interested" ? "default" : "outline"} onClick={() => void setRSVP(event.id, "interested")} disabled={isSaving}>Interested</Button>
           </div>
+
+          <Link to={`/events/${event.id}`} className="block w-full">
+            <Button variant="secondary" className="w-full">View Details</Button>
+          </Link>
 
           {status && !canReview && <div className="inline-flex items-center gap-2 rounded-md border border-primary/30 bg-primary/10 px-3 py-2 font-mono text-xs uppercase tracking-[0.15em] text-primary"><Bell size={13} /> {reminderText(event.date)}</div>}
 
@@ -543,20 +564,6 @@ export default function Events() {
           <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_300px]">
             <div className="space-y-10">
               <section>
-                <h2 className="mb-4 font-display text-2xl font-bold tracking-wide text-foreground">Happening Today</h2>
-                {happeningToday.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No events scheduled for today yet.</p>
-                ) : (
-                  <div className="grid gap-4 md:grid-cols-2">{happeningToday.map(renderEventCard)}</div>
-                )}
-              </section>
-
-              <section>
-                <div className="mb-4 flex items-center gap-2"><Flame className="text-neon-amber" size={18} /><h2 className="font-display text-2xl font-bold tracking-wide text-foreground">Most Attended This Week</h2></div>
-                <div className="grid gap-4 md:grid-cols-2">{trendingThisWeek.map(renderEventCard)}</div>
-              </section>
-
-              <section>
                 <h2 className="mb-4 font-display text-2xl font-bold tracking-wide text-foreground">Browse All Events</h2>
                 <div className="mb-6 grid gap-3 rounded-xl border border-white/10 bg-card/65 p-4 md:grid-cols-[1.4fr_1fr_1fr]">
                   <div className="relative">
@@ -574,7 +581,7 @@ export default function Events() {
                   </select>
                 </div>
 
-                {isLoading ? <p className="text-sm text-muted-foreground">Loading events…</p> : filteredEvents.length === 0 ? <p className="text-sm text-muted-foreground">No events found for your current filters.</p> : <div className="grid gap-4 md:grid-cols-2">{filteredEvents.map(renderEventCard)}</div>}
+                {isLoading ? <p className="text-sm text-muted-foreground">Loading events…</p> : filteredEvents.length === 0 ? <p className="text-sm text-muted-foreground">No events found for your current filters.</p> : <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{filteredEvents.map(renderEventCard)}</div>}
               </section>
             </div>
 

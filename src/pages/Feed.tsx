@@ -85,9 +85,9 @@ const Feed = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Header />
-      <main className="pt-24 pb-16">
+      <main className="pt-20 pb-16 flex-1">
         <div className="container mx-auto px-4 max-w-5xl">
           <div className="mb-8">
             <h1 className="text-3xl font-display font-bold mb-2 tracking-wide">Datanauts Hub</h1>

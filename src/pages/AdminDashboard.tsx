@@ -57,6 +57,8 @@ interface Event {
   image: string | null;
   image_url: string | null;
   registration_link: string | null;
+  photos: string[] | null;
+  videos: string[] | null;
 }
 
 interface Project {
@@ -126,7 +128,7 @@ const AdminDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('events');
-  
+
   const [eventDialogOpen, setEventDialogOpen] = useState(false);
   const [projectDialogOpen, setProjectDialogOpen] = useState(false);
   const [internshipDialogOpen, setInternshipDialogOpen] = useState(false);
@@ -134,14 +136,72 @@ const AdminDashboard = () => {
   const [socialDialogOpen, setSocialDialogOpen] = useState(false);
   const [replyDialogOpen, setReplyDialogOpen] = useState(false);
   const [adminDialogOpen, setAdminDialogOpen] = useState(false);
-  
+
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [editingInternship, setEditingInternship] = useState<Internship | null>(null);
   const [editingSocial, setEditingSocial] = useState<SocialLink | null>(null);
   const [selectedMessage, setSelectedMessage] = useState<ContactMessage | null>(null);
   const [replyText, setReplyText] = useState('');
-  
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingPhotos, setUploadingPhotos] = useState(false);
+
+  // Image upload function
+  const uploadImage = async (file: File): Promise<string | null> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random()}.${fileExt}`;
+    const filePath = `events/${fileName}`;
+
+    const { data, error } = await supabase.storage
+      .from('event-images')
+      .upload(filePath, file);
+
+    if (error) {
+      console.error('Error uploading image:', error);
+      toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
+      return null;
+    }
+
+    const { data: urlData } = supabase.storage.from('event-images').getPublicUrl(filePath);
+    return urlData.publicUrl;
+  };
+
+  // Handle main image file selection
+  const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingImage(true);
+    try {
+      const url = await uploadImage(file);
+      if (url) {
+        setEventForm({ ...eventForm, image_url: url });
+      }
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  // Handle multiple photo files selection
+  const handlePhotoFilesChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploadingPhotos(true);
+    try {
+      const urls: string[] = [];
+      for (const file of Array.from(files)) {
+        const url = await uploadImage(file);
+        if (url) urls.push(url);
+      }
+      const currentPhotos = eventForm.photos ? eventForm.photos.split(',').map(p => p.trim()).filter(p => p) : [];
+      const allPhotos = [...currentPhotos, ...urls].join(', ');
+      setEventForm({ ...eventForm, photos: allPhotos });
+    } finally {
+      setUploadingPhotos(false);
+    }
+  };
+
   const [eventForm, setEventForm] = useState({
     title: '',
     description: '',
@@ -152,8 +212,10 @@ const AdminDashboard = () => {
     organizer: '',
     image_url: '',
     registration_link: '',
+    photos: '',
+    videos: '',
   });
-  
+
   const [projectForm, setProjectForm] = useState({
     title: '',
     description: '',
@@ -171,7 +233,7 @@ const AdminDashboard = () => {
     image_url: '',
     internship_link: '',
   });
-  
+
   const [pollForm, setPollForm] = useState({
     event_id: '',
     question: '',
@@ -192,7 +254,7 @@ const AdminDashboard = () => {
     password: '',
     role: 'admin' as 'admin' | 'moderator' | 'user',
   });
-  
+
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -319,7 +381,7 @@ const AdminDashboard = () => {
 
       // Fetch user details from auth using admin client
       const { data: authData, error: authError } = await supabaseAdmin.auth.admin.listUsers();
-      
+
       if (authError) throw authError;
 
       // Combine roles with user emails
@@ -454,6 +516,8 @@ const AdminDashboard = () => {
         organizer: event.organizer || '',
         image_url: event.image_url || event.image || '',
         registration_link: event.registration_link || '',
+        photos: event.photos ? event.photos.join(', ') : '',
+        videos: event.videos ? event.videos.join(', ') : '',
       });
     } else {
       setEditingEvent(null);
@@ -467,6 +531,8 @@ const AdminDashboard = () => {
         organizer: '',
         image_url: '',
         registration_link: '',
+        photos: '',
+        videos: '',
       });
     }
     setEventDialogOpen(true);
@@ -478,7 +544,9 @@ const AdminDashboard = () => {
 
     try {
       const dateISO = new Date(eventForm.datetime).toISOString();
-      
+      const photosArray = eventForm.photos ? eventForm.photos.split(',').map(url => url.trim()).filter(url => url) : [];
+      const videosArray = eventForm.videos ? eventForm.videos.split(',').map(url => url.trim()).filter(url => url) : [];
+
       const payload = {
         title: eventForm.title,
         description: eventForm.description || null,
@@ -490,6 +558,8 @@ const AdminDashboard = () => {
         image: eventForm.image_url || null,
         image_url: eventForm.image_url || null,
         registration_link: eventForm.registration_link || null,
+        photos: photosArray,
+        videos: videosArray,
         created_by: user?.id,
       };
 
@@ -977,13 +1047,23 @@ const AdminDashboard = () => {
                         />
                       </div>
                       <div>
-                        <Label htmlFor="image_url">Image URL</Label>
+                        <Label htmlFor="image_url">Cover Image</Label>
                         <Input
                           id="image_url"
-                          type="url"
-                          value={eventForm.image_url}
-                          onChange={(e) => setEventForm({ ...eventForm, image_url: e.target.value })}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageFileChange}
+                          disabled={uploadingImage}
                         />
+                        {uploadingImage && <p className="text-sm text-muted-foreground mt-1">Uploading...</p>}
+                        {eventForm.image_url && !uploadingImage && (
+                          <div className="mt-2">
+                            <img src={eventForm.image_url} alt="Preview" className="h-20 w-auto rounded" />
+                            <Button type="button" variant="ghost" size="sm" onClick={() => setEventForm({ ...eventForm, image_url: '' })} className="mt-1">
+                              Remove
+                            </Button>
+                          </div>
+                        )}
                       </div>
                       <div>
                         <Label htmlFor="registration_link">Registration Link (Optional)</Label>
@@ -993,6 +1073,31 @@ const AdminDashboard = () => {
                           value={eventForm.registration_link}
                           onChange={(e) => setEventForm({ ...eventForm, registration_link: e.target.value })}
                           placeholder="https://forms.google.com/..."
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="photos">Event Photos (Upload multiple)</Label>
+                        <Input
+                          id="photos"
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={handlePhotoFilesChange}
+                          disabled={uploadingPhotos}
+                        />
+                        {uploadingPhotos && <p className="text-sm text-muted-foreground mt-1">Uploading photos...</p>}
+                        {eventForm.photos && !uploadingPhotos && (
+                          <p className="text-sm text-muted-foreground mt-1">{eventForm.photos.split(',').length} photo(s) added</p>
+                        )}
+                      </div>
+                      <div>
+                        <Label htmlFor="videos">Videos (Comma-separated URLs)</Label>
+                        <Textarea
+                          id="videos"
+                          value={eventForm.videos}
+                          onChange={(e) => setEventForm({ ...eventForm, videos: e.target.value })}
+                          placeholder="https://example.com/video1.mp4, https://example.com/video2.mp4"
+                          rows={2}
                         />
                       </div>
                       <div className="flex justify-end gap-3 pt-4">
@@ -1476,13 +1581,20 @@ const AdminDashboard = () => {
                     <form onSubmit={handleSocialSubmit} className="space-y-4 mt-4">
                       <div>
                         <Label htmlFor="platform">Platform *</Label>
-                        <Input
+                        <select
                           id="platform"
                           value={socialForm.platform}
                           onChange={(e) => setSocialForm({ ...socialForm, platform: e.target.value })}
-                          placeholder="Twitter, GitHub, LinkedIn"
                           required
-                        />
+                          className="w-full px-3 py-2 bg-background border border-border rounded-md"
+                        >
+                          <option value="">Select Platform</option>
+                          <option value="GitHub">GitHub</option>
+                          <option value="Twitter">Twitter</option>
+                          <option value="Instagram">Instagram</option>
+                          <option value="LinkedIn">LinkedIn</option>
+                          <option value="Email">Email</option>
+                        </select>
                       </div>
                       <div>
                         <Label htmlFor="social_url">URL *</Label>
@@ -1495,15 +1607,7 @@ const AdminDashboard = () => {
                           required
                         />
                       </div>
-                      <div>
-                        <Label htmlFor="icon">Icon (Optional)</Label>
-                        <Input
-                          id="icon"
-                          value={socialForm.icon}
-                          onChange={(e) => setSocialForm({ ...socialForm, icon: e.target.value })}
-                          placeholder="twitter, github, linkedin"
-                        />
-                      </div>
+
                       <div>
                         <Label htmlFor="display_order">Display Order</Label>
                         <Input
@@ -1794,13 +1898,12 @@ const AdminDashboard = () => {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <span className={`text-xs px-2 py-1 rounded ${
-                              adminUser.role === 'admin' 
-                                ? 'bg-red-500/20 text-red-500' 
-                                : adminUser.role === 'moderator'
+                            <span className={`text-xs px-2 py-1 rounded ${adminUser.role === 'admin'
+                              ? 'bg-red-500/20 text-red-500'
+                              : adminUser.role === 'moderator'
                                 ? 'bg-yellow-500/20 text-yellow-500'
                                 : 'bg-blue-500/20 text-blue-500'
-                            }`}>
+                              }`}>
                               {adminUser.role}
                             </span>
                           </TableCell>

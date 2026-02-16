@@ -35,10 +35,10 @@ export function Header() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
-            <span className="font-display text-lg font-bold tracking-wider text-primary glow-green">
-              ALPHABAY X
+            <img src="/logo.png" alt="DataNauts Logo" className="w-8 h-8 object-contain" />
+            <span className="font-display text-lg font-bold tracking-wider text-primary">
+              DATANAUTS
             </span>
-            <span className="text-muted-foreground text-sm">/ 2026</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -61,16 +61,16 @@ export function Header() {
 
           {/* Desktop Right Section */}
           <div className="hidden md:flex items-center gap-4">
-            <a href="/alphabay/login.html">
-              <Button 
-                variant="outline" 
-                size="sm" 
+            <Link to="/admin/login">
+              <Button
+                variant="outline"
+                size="sm"
                 className="font-mono text-xs"
               >
                 <Shield className="w-3 h-3 mr-2" />
-                Portal Login
+                Admin Login
               </Button>
-            </a>
+            </Link>
             <div className="font-mono text-sm text-muted-foreground">
               {formattedTime}
             </div>
@@ -105,16 +105,16 @@ export function Header() {
                 {item.label}
               </Link>
             ))}
-            <a href="/alphabay/login.html" onClick={() => setIsOpen(false)}>
-              <Button 
-                variant="outline" 
-                size="sm" 
+            <Link to="/admin/login" onClick={() => setIsOpen(false)}>
+              <Button
+                variant="outline"
+                size="sm"
                 className="font-mono text-xs w-full"
               >
                 <Shield className="w-3 h-3 mr-2" />
-                Portal Login
+                Admin Login
               </Button>
-            </a>
+            </Link>
             <div className="font-mono text-sm text-muted-foreground pt-2 border-t border-border">
               {formattedTime}
             </div>
