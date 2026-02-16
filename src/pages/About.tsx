@@ -2,6 +2,8 @@ import { Code2, Heart, Rocket, Users } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { CyberCard } from "@/components/ui/CyberCard";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const teamMembers = [
   {
@@ -31,13 +33,45 @@ const teamMembers = [
 ];
 
 const stats = [
-  { icon: Users, value: "5000+", label: "COMMUNITY MEMBERS" },
-  { icon: Code2, value: "50+", label: "PROJECTS LAUNCHED" },
-  { icon: Rocket, value: "100+", label: "EVENTS HOSTED" },
+  { icon: Code2, value: "10+", label: "PROJECTS LAUNCHED" },
+  { icon: Rocket, value: "20+", label: "EVENTS HOSTED" },
   { icon: Heart, value: "∞", label: "PASSION FOR TECH" },
 ];
 
 export default function About() {
+  const [stats, setStats] = useState([
+    { icon: Users, value: "-", label: "ADMINS" },
+    { icon: Code2, value: "-", label: "PROJECTS" },
+    { icon: Rocket, value: "-", label: "EVENTS" },
+    { icon: Heart, value: "∞", label: "PASSION FOR TECH" },
+  ]);
+
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        // Fetch admins count from user_roles
+        const { count: adminsCount } = await supabase
+          .from("user_roles")
+          .select("*", { count: "exact", head: true });
+
+        // Fetch events count
+        const { count: eventsCount } = await supabase
+          .from("events")
+          .select("*", { count: "exact", head: true });
+
+        setStats([
+          { icon: Users, value: String(adminsCount || 0), label: "ADMINS" },
+          { icon: Code2, value: "4", label: "PROJECTS" },
+          { icon: Rocket, value: String(eventsCount || 0), label: "EVENTS" },
+          { icon: Heart, value: "∞", label: "PASSION FOR TECH" },
+        ]);
+      } catch (error) {
+        console.error("Error fetching stats:", error);
+      }
+    }
+    fetchStats();
+  }, []);
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -56,18 +90,18 @@ export default function About() {
             </h1>
             <div className="space-y-4 font-mono text-muted-foreground">
               <p>
-                We are <span className="text-primary">DATANAUTS SPHN</span>, a collective of tech enthusiasts, 
+                We are <span className="text-primary">DATANAUTS SPHN</span>, a collective of tech enthusiasts,
                 developers, and designers united by our passion for innovation and data science.
               </p>
               <p>
-                Founded in 2024, our mission is to build cutting-edge projects, host 
-                community events, and create a space where technology meets creativity. 
-                The <span className="text-secondary">ALPHABAY X</span> platform represents our vision for the future 
+                Founded in 2024, our mission is to build cutting-edge projects, host
+                community events, and create a space where technology meets creativity.
+                The <span className="text-secondary">ALPHABAY X</span> platform represents our vision for the future
                 of tech communities.
               </p>
               <p>
-                Whether you're a seasoned developer or just starting your journey, 
-                there's a place for you in our community. Join us as we explore the 
+                Whether you're a seasoned developer or just starting your journey,
+                there's a place for you in our community. Join us as we explore the
                 frontiers of technology together.
               </p>
             </div>
@@ -148,16 +182,16 @@ export default function About() {
                 {">"} OUR MISSION
               </p>
               <p className="text-muted-foreground pl-4">
-                To build a thriving tech community that embraces innovation, 
-                creativity, and collaboration. We believe in pushing boundaries 
+                To build a thriving tech community that embraces innovation,
+                creativity, and collaboration. We believe in pushing boundaries
                 and creating technology that inspires.
               </p>
               <p className="text-secondary">
                 {">"} OUR VISION
               </p>
               <p className="text-muted-foreground pl-4">
-                A world where technology is accessible to all, where communities 
-                come together to solve problems, and where the next generation 
+                A world where technology is accessible to all, where communities
+                come together to solve problems, and where the next generation
                 of tech leaders are nurtured and empowered.
               </p>
               <p className="text-accent">
