@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { Menu, X, Shield } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Menu, X, Shield, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 
 const navItems = [
   { path: "/", label: "HOME" },
   { path: "/events", label: "EVENTS" },
-  { path: "/projects", label: "PROJECTS" },
+  { path: "/profile", label: "MY EVENTS" },
   { path: "/about", label: "ABOUT" },
   { path: "/contact", label: "CONTACT" },
 ];
@@ -15,12 +16,34 @@ const navItems = [
 export function Header() {
   const [isOpen, setIsOpen] = useState(false);
   const [time, setTime] = useState(new Date());
+  const [user, setUser] = useState<any>(null);
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+    };
+    getUser();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    navigate("/");
+  };
 
   const formattedTime = time.toLocaleTimeString("en-US", {
     hour: "2-digit",
@@ -42,7 +65,7 @@ export function Header() {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-8">
+          <nav className="hidden md:flex items-center gap-8 absolute left-1/2 -translate-x-1/2">
             {navItems.map((item) => (
               <Link
                 key={item.path}
@@ -61,6 +84,30 @@ export function Header() {
 
           {/* Desktop Right Section */}
           <div className="hidden md:flex items-center gap-4">
+            {user ? (
+              <>
+                <Link to="/profile">
+                  <Button variant="outline" size="sm" className="font-mono text-xs">
+                    My Profile
+                  </Button>
+                </Link>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleLogout}
+                  className="font-mono text-xs"
+                >
+                  <LogOut className="w-3 h-3 mr-2" />
+                  Logout
+                </Button>
+              </>
+            ) : (
+              <Link to="/login">
+                <Button variant="outline" size="sm" className="font-mono text-xs">
+                  Login
+                </Button>
+              </Link>
+            )}
             <Link to="/admin/login">
               <Button
                 variant="outline"
@@ -68,7 +115,7 @@ export function Header() {
                 className="font-mono text-xs"
               >
                 <Shield className="w-3 h-3 mr-2" />
-                Admin Login
+                Admin
               </Button>
             </Link>
             <div className="font-mono text-sm text-muted-foreground">

@@ -36,8 +36,13 @@ import {
   UserPlus,
   Shield,
   UserMinus,
+  QrCode,
+  CheckCircle,
+  XCircle,
+  Camera,
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { Html5QrcodeScanner } from 'html5-qrcode';
 
 // Create admin client for user management
 const supabaseAdmin = createClient(
@@ -136,6 +141,59 @@ const AdminDashboard = () => {
   const [socialDialogOpen, setSocialDialogOpen] = useState(false);
   const [replyDialogOpen, setReplyDialogOpen] = useState(false);
   const [adminDialogOpen, setAdminDialogOpen] = useState(false);
+  const [scannedQRResult, setScannedQRResult] = useState<any>(null);
+  const [qrScanError, setQrScanError] = useState<string>('');
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [cameraScannerReady, setCameraScannerReady] = useState(false);
+
+  // Initialize camera QR scanner
+  useEffect(() => {
+    let scanner: Html5QrcodeScanner | null = null;
+
+    if (cameraScannerReady) {
+      // Wait for DOM to be ready
+      const timer = setTimeout(() => {
+        try {
+          scanner = new Html5QrcodeScanner(
+            'qr-reader',
+            { fps: 10, qrbox: { width: 250, height: 250 } },
+            false
+          );
+
+          scanner.render(
+            (decodedText) => {
+              // QR code scanned successfully
+              console.log('QR Scanned:', decodedText);
+              handleQRVerify(decodedText);
+              setCameraScannerReady(false);
+              if (scanner) {
+                scanner.clear();
+              }
+            },
+            (error) => {
+              // Scan error (usually just no QR found in frame)
+              console.log('Scan error:', error);
+            }
+          );
+        } catch (err) {
+          console.error('Failed to initialize scanner:', err);
+          setQrScanError('Failed to access camera. Please check permissions.');
+          setCameraScannerReady(false);
+        }
+      }, 100);
+
+      return () => {
+        clearTimeout(timer);
+        if (scanner) {
+          try {
+            scanner.clear();
+          } catch (e) {
+            // Scanner might not be initialized
+          }
+        }
+      };
+    }
+  }, [cameraScannerReady]);
 
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
@@ -511,6 +569,178 @@ const AdminDashboard = () => {
         description: error.message,
         variant: "destructive",
       });
+    }
+  };
+
+  const handleQRVerify = async (qrCode: string) => {
+    setIsVerifying(true);
+    setQrScanError('');
+    console.log('Verifying QR code:', qrCode);
+    try {
+      // Accept any QR code format - try multiple approaches
+      const trimmedCode = qrCode.trim();
+
+      console.log('Trimmed QR:', trimmedCode);
+
+      // If it's empty
+      if (!trimmedCode) {
+        setQrScanError('QR code is empty');
+        setScannedQRResult(null);
+        return;
+      }
+
+      // First, try to look up by ID directly (QR contains registration ID)
+      let registration: any = null;
+
+      try {
+        // First try: look up by ID directly (most efficient)
+        const idResult = await (supabase as any)
+          .from('event_registrations')
+          .select('*, events(title, date, location)')
+          .eq('id', trimmedCode)
+          .single();
+
+        console.log('ID lookup result:', idResult);
+        if (idResult.data) {
+          registration = idResult.data;
+        }
+      } catch (e) {
+        console.log('ID lookup error:', e);
+      }
+
+      // Second try: look up by qr_code field
+      if (!registration) {
+        try {
+          const regResult = await (supabase as any)
+            .from('event_registrations')
+            .select('*, events(title, date, location)')
+            .eq('qr_code', trimmedCode)
+            .single();
+
+          console.log('QR code lookup result:', regResult);
+          if (regResult.data) {
+            registration = regResult.data;
+          }
+        } catch (e) {
+          console.log('QR code lookup error:', e);
+        }
+      }
+
+      // If found in event_registrations, use that
+      if (registration) {
+        // Mark as scanned
+        await (supabase as any)
+          .from('event_registrations')
+          .update({ scanned_at: new Date().toISOString() })
+          .eq('id', registration.id);
+
+        // Send to Make.com webhook
+        try {
+          await fetch('https://hook.eu1.make.com/tiv9b7rdoy8bykkgyj3gvghsduu5fvfp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              timestamp: new Date().toISOString(),
+              full_name: registration.full_name,
+              roll_number: registration.roll_number,
+              year: registration.year,
+              event_title: registration.events?.title,
+              event_id: registration.event_id,
+              qr_code: registration.qr_code
+            })
+          });
+        } catch (webhookError) {
+          console.log('Webhook error:', webhookError);
+        }
+
+        setScannedQRResult({
+          valid: true,
+          attendee: {
+            profiles: {
+              full_name: registration.full_name,
+              email: 'N/A',
+              college: registration.year
+            }
+          },
+          event: registration.events,
+          verifiedAt: new Date().toISOString()
+        });
+        setIsVerifying(false);
+        return;
+      }
+
+      // Fall back to event_attendees table
+      let attendee: any = null;
+
+      try {
+        const qrResult = await (supabase as any)
+          .from('event_attendees')
+          .select('*, profiles(full_name, email, college)')
+          .eq('qr_code', trimmedCode)
+          .eq('rsvp_status', 'going')
+          .single();
+
+        console.log('QR lookup result:', qrResult);
+        attendee = qrResult.data;
+      } catch (e) {
+        console.log('QR lookup error:', e);
+      }
+
+      // If not found, try parsing as event_id-user_id or event_id-user_id-timestamp
+      if (!attendee) {
+        const parts = trimmedCode.split('-');
+
+        if (parts.length >= 2) {
+          // Format: event_id-user_id[-timestamp]
+          const eventId = parts[0];
+          const userId = parts[1];
+
+          console.log('Looking for event:', eventId, 'user:', userId);
+
+          try {
+            const partsResult = await (supabase as any)
+              .from('event_attendees')
+              .select('*, profiles(full_name, email, college)')
+              .eq('event_id', eventId)
+              .eq('user_id', userId)
+              .eq('rsvp_status', 'going')
+              .single();
+
+            console.log('Parts lookup result:', partsResult);
+            attendee = partsResult.data;
+          } catch (e) {
+            console.log('Parts lookup error:', e);
+          }
+        }
+      }
+
+      if (!attendee) {
+        setQrScanError('Invalid QR code - No matching registration found. Make sure the user has registered for this event.');
+        setScannedQRResult(null);
+        return;
+      }
+
+      // Get event details - use event_id from attendee if available
+      const eventIdToUse = attendee?.event_id;
+      const { data: event } = await (supabase as any)
+        .from('events')
+        .select('title, date, location')
+        .eq('id', eventIdToUse)
+        .single();
+
+      setScannedQRResult({
+        valid: true,
+        attendee,
+        event,
+        verifiedAt: new Date().toISOString()
+      });
+
+      toast({ title: "Success", description: "QR Code verified successfully!" });
+    } catch (error: any) {
+      setQrScanError(error.message || 'Failed to verify QR code');
+      setScannedQRResult(null);
+    } finally {
+      setIsVerifying(false);
     }
   };
 
@@ -984,6 +1214,7 @@ const AdminDashboard = () => {
               <TabsTrigger value="social">Social</TabsTrigger>
               <TabsTrigger value="messages">Messages</TabsTrigger>
               <TabsTrigger value="admins">Admins</TabsTrigger>
+              <TabsTrigger value="qrscan">QR Scanner</TabsTrigger>
             </TabsList>
 
             <TabsContent value="events" className="mt-6">
@@ -1972,6 +2203,142 @@ const AdminDashboard = () => {
                       ))}
                     </TableBody>
                   </Table>
+                )}
+              </div>
+            </TabsContent>
+
+            {/* QR Scanner Tab */}
+            <TabsContent value="qrscan" className="mt-6">
+              <div className="space-y-6">
+                <div className="flex items-center gap-2">
+                  <QrCode className="w-6 h-6" />
+                  <h2 className="text-xl font-semibold">QR Code Scanner</h2>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Scan or enter a QR code to verify event registration
+                </p>
+
+                {/* Camera Scanner */}
+                {!cameraScannerReady ? (
+                  <div className="bg-card border border-border rounded-xl p-6">
+                    <div className="text-center space-y-4">
+                      <Camera className="w-12 h-12 mx-auto text-muted-foreground" />
+                      <h3 className="font-semibold">Use Camera to Scan</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Click below to activate your camera and scan QR codes
+                      </p>
+                      <Button
+                        onClick={() => setCameraScannerReady(true)}
+                        className="w-full"
+                      >
+                        <Camera className="w-4 h-4 mr-2" />
+                        Start Camera Scanner
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-card border border-border rounded-xl p-6 space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h3 className="font-semibold">Camera Scanner Active</h3>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCameraScannerReady(false)}
+                      >
+                        Stop Scanner
+                      </Button>
+                    </div>
+                    <div id="qr-reader" className="w-full"></div>
+                  </div>
+                )}
+
+                {/* Manual QR Code Entry */}
+                <div className="bg-card border border-border rounded-xl p-6 space-y-4">
+                  <Label htmlFor="qr-input">Enter QR Code manually</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="qr-input"
+                      placeholder="Enter QR code string (event_id-user_id-timestamp)"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleQRVerify((e.target as HTMLInputElement).value);
+                        }
+                      }}
+                      onBlur={(e) => {
+                        if (e.target.value) {
+                          handleQRVerify(e.target.value);
+                        }
+                      }}
+                    />
+                    <Button
+                      onClick={() => {
+                        const input = document.getElementById('qr-input') as HTMLInputElement;
+                        if (input?.value) handleQRVerify(input.value);
+                      }}
+                      disabled={isVerifying}
+                    >
+                      {isVerifying ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Verify'}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Scan Result */}
+                {qrScanError && (
+                  <div className="bg-destructive/10 border border-destructive rounded-xl p-6">
+                    <div className="flex items-center gap-2 text-destructive">
+                      <XCircle className="w-6 h-6" />
+                      <h3 className="font-semibold">Invalid QR Code</h3>
+                    </div>
+                    <p className="mt-2 text-destructive/80">{qrScanError}</p>
+                  </div>
+                )}
+
+                {scannedQRResult && scannedQRResult.valid && (
+                  <div className="bg-green-500/10 border border-green-500 rounded-xl p-6">
+                    <div className="flex items-center gap-2 text-green-500 mb-4">
+                      <CheckCircle className="w-6 h-6" />
+                      <h3 className="font-semibold text-lg">Valid Entry Pass</h3>
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground">Event</p>
+                        <p className="font-semibold">{scannedQRResult.event?.title}</p>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground">Date</p>
+                        <p className="font-semibold">
+                          {scannedQRResult.event?.date ? new Date(scannedQRResult.event.date).toLocaleDateString() : 'N/A'}
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground">Location</p>
+                        <p className="font-semibold">{scannedQRResult.event?.location || 'TBA'}</p>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground">Attendee</p>
+                        <p className="font-semibold">
+                          {(scannedQRResult.attendee as any)?.profiles?.full_name || 'Unknown'}
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground">Email</p>
+                        <p className="font-semibold">
+                          {(scannedQRResult.attendee as any)?.profiles?.email || 'Unknown'}
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground">College</p>
+                        <p className="font-semibold">
+                          {(scannedQRResult.attendee as any)?.profiles?.college || 'Not specified'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <p className="mt-4 text-xs text-muted-foreground">
+                      Verified at: {new Date(scannedQRResult.verifiedAt).toLocaleString()}
+                    </p>
+                  </div>
                 )}
               </div>
             </TabsContent>

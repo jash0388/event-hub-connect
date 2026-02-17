@@ -4,7 +4,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
-import { Loader2, Calendar, MapPin, Clock, ArrowLeft } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+} from "@/components/ui/dialog";
+import { Loader2, Calendar, MapPin, Clock, ArrowLeft, Users, Check, Heart } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
@@ -28,7 +37,191 @@ export default function EventDetails() {
     const { id } = useParams<{ id: string }>();
     const [event, setEvent] = useState<EventDetail | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [attendeeCount, setAttendeeCount] = useState(0);
+    const [userRsvp, setUserRsvp] = useState<string | null>(null);
+    const [isRsvping, setIsRsvping] = useState(false);
+    const [showRegisterDialog, setShowRegisterDialog] = useState(false);
+    const [registerForm, setRegisterForm] = useState({
+        full_name: "",
+        roll_number: "",
+        year: ""
+    });
     const { toast } = useToast();
+
+    // Check if user is logged in and fetch RSVP status
+    useEffect(() => {
+        const checkUserAndRsvp = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user && id) {
+                const { data } = await supabase
+                    .from('event_attendees')
+                    .select('rsvp_status')
+                    .eq('event_id', id)
+                    .eq('user_id', user.id)
+                    .single();
+                if (data) setUserRsvp(data.rsvp_status);
+            }
+        };
+        checkUserAndRsvp();
+    }, [id]);
+
+    // Fetch attendee count
+    useEffect(() => {
+        const fetchAttendeeCount = async () => {
+            if (!id) return;
+            const { count } = await supabase
+                .from('event_attendees')
+                .select('*', { count: 'exact', head: true })
+                .eq('event_id', id)
+                .eq('rsvp_status', 'going');
+            setAttendeeCount(count || 0);
+        };
+        fetchAttendeeCount();
+    }, [id]);
+
+    // Handle RSVP - open registration dialog
+    const handleRsvp = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            toast({ title: 'Login Required', description: 'Please login to register', variant: 'destructive' });
+            return;
+        }
+
+        // If already registered, cancel
+        if (userRsvp === 'going') {
+            setIsRsvping(true);
+            try {
+                await supabase
+                    .from('event_attendees')
+                    .delete()
+                    .eq('event_id', id)
+                    .eq('user_id', user.id);
+                setUserRsvp(null);
+                setAttendeeCount(prev => Math.max(0, prev - 1));
+                toast({ title: 'Registration Cancelled', description: 'Your registration has been cancelled' });
+            } catch (error) {
+                toast({ title: 'Error', description: 'Failed to cancel registration', variant: 'destructive' });
+            } finally {
+                setIsRsvping(false);
+            }
+        } else {
+            // Show registration dialog
+            setShowRegisterDialog(true);
+        }
+    };
+
+    // Handle registration confirmation
+    const handleRegisterConfirm = async () => {
+        // Validate form
+        if (!registerForm.full_name.trim()) {
+            toast({ title: 'Error', description: 'Full Name is required', variant: 'destructive' });
+            return;
+        }
+        if (!registerForm.roll_number.trim()) {
+            toast({ title: 'Error', description: 'Roll Number is required', variant: 'destructive' });
+            return;
+        }
+        if (!registerForm.year.trim()) {
+            toast({ title: 'Error', description: 'Year is required', variant: 'destructive' });
+            return;
+        }
+
+        setIsRsvping(true);
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                toast({ title: 'Login Required', description: 'Please login to register', variant: 'destructive' });
+                return;
+            }
+
+            // Generate unique QR code string
+            const qrCode = `${id}-${user.id}-${Date.now()}`;
+            console.log('Generating QR code:', qrCode);
+
+            // RSVP with QR code and registration details
+            const { data, error } = await supabase
+                .from('event_attendees')
+                .upsert({
+                    event_id: id,
+                    user_id: user.id,
+                    rsvp_status: 'going',
+                    joined_at: new Date().toISOString(),
+                    qr_code: qrCode,
+                    full_name: registerForm.full_name,
+                    roll_number: registerForm.roll_number,
+                    year: registerForm.year
+                }, { onConflict: 'event_id, user_id' });
+
+            console.log('RSVP result:', data, 'error:', error);
+
+            if (error) {
+                console.error('RSVP Error:', error);
+                toast({ title: 'Error', description: error.message, variant: 'destructive' });
+                return;
+            }
+
+            // Also update profile with the details
+            await supabase
+                .from('profiles')
+                .upsert({
+                    id: user.id,
+                    full_name: registerForm.full_name,
+                    college: registerForm.roll_number,
+                    year: registerForm.year,
+                    updated_at: new Date().toISOString()
+                });
+
+            setShowRegisterDialog(false);
+            setUserRsvp('going');
+            setAttendeeCount(prev => prev + 1);
+            setRegisterForm({ full_name: '', roll_number: '', year: '' });
+            toast({ title: 'Registered!', description: 'You are going to this event! Your entry QR code is ready in your profile.' });
+        } catch (error) {
+            console.error('RSVP catch error:', error);
+            toast({ title: 'Error', description: 'Failed to register', variant: 'destructive' });
+        } finally {
+            setIsRsvping(false);
+        }
+    };
+
+    // Handle Interested
+    const handleInterested = async () => {
+        setIsRsvping(true);
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                toast({ title: 'Login Required', description: 'Please login to mark interest', variant: 'destructive' });
+                return;
+            }
+
+            if (userRsvp === 'interested') {
+                // Remove interest
+                await supabase
+                    .from('event_attendees')
+                    .delete()
+                    .eq('event_id', id)
+                    .eq('user_id', user.id);
+                setUserRsvp(null);
+                toast({ title: 'Removed', description: 'You are no longer interested in this event' });
+            } else {
+                // Mark as interested
+                await supabase
+                    .from('event_attendees')
+                    .upsert({
+                        event_id: id,
+                        user_id: user.id,
+                        rsvp_status: 'interested',
+                        joined_at: new Date().toISOString()
+                    });
+                setUserRsvp('interested');
+                toast({ title: 'Interest Marked!', description: 'You are interested in this event!' });
+            }
+        } catch (error) {
+            toast({ title: 'Error', description: 'Failed to update interest', variant: 'destructive' });
+        } finally {
+            setIsRsvping(false);
+        }
+    };
 
     useEffect(() => {
         const fetchEvent = async () => {
@@ -37,7 +230,7 @@ export default function EventDetails() {
             try {
                 const { data, error } = await supabase
                     .from("events")
-                    .select("id,title,description,category,date,time,location,organizer,image,image_url,registration_link,photos,videos")
+                    .select("id,title,description,category,date,time,location,organizer,image,image_url,registration_link")
                     .eq("id", id)
                     .single();
 
@@ -45,8 +238,8 @@ export default function EventDetails() {
 
                 const eventData: EventDetail = {
                     ...data,
-                    photos: data.photos || null,
-                    videos: data.videos || null
+                    photos: null,
+                    videos: null
                 };
                 setEvent(eventData);
             } catch (error: any) {
@@ -149,6 +342,37 @@ export default function EventDetails() {
                                     </Button>
                                 </a>
                             )}
+
+                            {/* RSVP Buttons */}
+                            <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                                <Button
+                                    size="lg"
+                                    className={`w-full ${userRsvp === 'going' ? 'bg-green-600 hover:bg-green-700' : 'bg-green-600 hover:bg-green-700'}`}
+                                    onClick={handleRsvp}
+                                    disabled={isRsvping}
+                                >
+                                    {isRsvping ? (
+                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    ) : userRsvp === 'going' ? (
+                                        <><Check className="w-4 h-4 mr-2" /> REGISTERED</>
+                                    ) : (
+                                        <><Check className="w-4 h-4 mr-2" /> REGISTER</>
+                                    )}
+                                </Button>
+                                <Button
+                                    size="lg"
+                                    variant={userRsvp === 'interested' ? "default" : "outline"}
+                                    className="w-full"
+                                    onClick={handleInterested}
+                                    disabled={isRsvping}
+                                >
+                                    {userRsvp === 'interested' ? (
+                                        <><Heart className="w-4 h-4 mr-2 fill-current" /> INTERESTED</>
+                                    ) : (
+                                        <><Heart className="w-4 h-4 mr-2" /> INTERESTED</>
+                                    )}
+                                </Button>
+                            </div>
                         </div>
                     </div>
 
@@ -202,6 +426,63 @@ export default function EventDetails() {
                 </div>
             </main>
             <Footer />
+
+            {/* Registration Dialog */}
+            <Dialog open={showRegisterDialog} onOpenChange={setShowRegisterDialog}>
+                <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle>Register for {event?.title}</DialogTitle>
+                        <DialogDescription>
+                            Please fill in your details to register for this event.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleRegisterConfirm} className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="full_name">Full Name *</Label>
+                            <Input
+                                id="full_name"
+                                value={registerForm.full_name}
+                                onChange={(e) => setRegisterForm(prev => ({ ...prev, full_name: e.target.value }))}
+                                placeholder="Enter your full name"
+                                required
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="roll_number">Roll Number *</Label>
+                            <Input
+                                id="roll_number"
+                                value={registerForm.roll_number}
+                                onChange={(e) => setRegisterForm(prev => ({ ...prev, roll_number: e.target.value }))}
+                                placeholder="Enter your roll number"
+                                required
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="year">Year *</Label>
+                            <select
+                                id="year"
+                                value={registerForm.year}
+                                onChange={(e) => setRegisterForm(prev => ({ ...prev, year: e.target.value }))}
+                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                required
+                            >
+                                <option value="">Select your year</option>
+                                <option value="1st Year">1st Year</option>
+                                <option value="2nd Year">2nd Year</option>
+                                <option value="3rd Year">3rd Year</option>
+                                <option value="4th Year">4th Year</option>
+                                <option value="5th Year">5th Year</option>
+                            </select>
+                        </div>
+                        <Button type="submit" className="w-full" disabled={isRsvping}>
+                            {isRsvping ? (
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            ) : null}
+                            Complete Registration
+                        </Button>
+                    </form>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

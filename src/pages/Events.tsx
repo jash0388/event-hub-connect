@@ -7,6 +7,14 @@ import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -93,6 +101,10 @@ export default function Events() {
 
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const [rsvpByEvent, setRsvpByEvent] = useState<Record<string, RSVPStatus>>({});
+  const [registeredEvents, setRegisteredEvents] = useState<Set<string>>(new Set());
+  const [showRegisterModal, setShowRegisterModal] = useState<string | null>(null);
+  const [registerForm, setRegisterForm] = useState({ full_name: "", roll_number: "", year: "" });
+  const [isRegistering, setIsRegistering] = useState(false);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
 
@@ -235,7 +247,53 @@ export default function Events() {
 
   useEffect(() => {
     fetchPageData();
+    fetchUserRegistrations();
   }, [user?.id]);
+
+  // Fetch user's event registrations
+  const fetchUserRegistrations = async () => {
+    // First check localStorage as backup
+    const registeredFromStorage = new Set<string>();
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('registered_') && localStorage.getItem(key) === 'true') {
+        const eventId = key.replace('registered_', '');
+        registeredFromStorage.add(eventId);
+      }
+    }
+
+    if (!user?.id) {
+      // Just use localStorage if not logged in
+      if (registeredFromStorage.size > 0) {
+        setRegisteredEvents(registeredFromStorage);
+      }
+      return;
+    }
+
+    try {
+      const { data: regs } = await (supabase
+        .from("event_registrations" as any)
+        .select("event_id")
+        .eq("user_id", user.id) as any);
+
+      const dbRegistrations = new Set<string>();
+      if (regs && Array.isArray(regs)) {
+        regs.forEach((r: any) => dbRegistrations.add(r.event_id));
+        // Update localStorage to match database
+        regs.forEach((r: any) => localStorage.setItem(`registered_${r.event_id}`, 'true'));
+      }
+
+      // Merge localStorage and DB registrations
+      const allRegistered = new Set([...registeredFromStorage, ...dbRegistrations]);
+      setRegisteredEvents(allRegistered);
+    } catch (err) {
+      console.log("Event registrations table not ready yet, using localStorage");
+      // Fall back to localStorage
+      if (registeredFromStorage.size > 0) {
+        setRegisteredEvents(registeredFromStorage);
+      }
+    }
+  };
 
   const happeningToday = useMemo(
     () => events.filter((event) => isToday(parseISO(event.date)) && !isPast(parseISO(event.date))),
@@ -492,9 +550,151 @@ export default function Events() {
           </div>
 
           <div className="grid grid-cols-2 gap-2">
-            <Button variant={status === "going" ? "default" : "outline"} onClick={() => void setRSVP(event.id, "going")} disabled={isSaving}>RSVP Going</Button>
+            <Button
+              variant={registeredEvents.has(event.id) ? "default" : "outline"}
+              className={registeredEvents.has(event.id) ? "bg-green-600 hover:bg-green-700" : ""}
+              onClick={() => {
+                if (!user) {
+                  toast({ title: 'Login Required', description: 'Please login to register', variant: 'destructive' });
+                  return;
+                }
+                if (registeredEvents.has(event.id)) {
+                  return; // Already registered
+                }
+                setShowRegisterModal(event.id);
+              }}
+              disabled={isSaving || isRegistering}
+            >
+              {registeredEvents.has(event.id) ? "✓ Registered" : "Register"}
+            </Button>
             <Button variant={status === "interested" ? "default" : "outline"} onClick={() => void setRSVP(event.id, "interested")} disabled={isSaving}>Interested</Button>
           </div>
+
+          {/* Registration Modal */}
+          {showRegisterModal === event.id && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center">
+              <div className="absolute inset-0 bg-black/70" onClick={() => setShowRegisterModal(null)} />
+              <div className="relative z-10 w-full max-w-md rounded-xl border border-primary/30 bg-card p-6 shadow-2xl">
+                <h3 className="mb-4 text-xl font-bold text-foreground">Register for {event.title}</h3>
+                <form onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (!registerForm.full_name.trim() || !registerForm.roll_number.trim() || !registerForm.year) {
+                    toast({ title: 'Error', description: 'Please fill all fields', variant: 'destructive' });
+                    return;
+                  }
+                  setIsRegistering(true);
+                  try {
+                    const { data: { user: currentUser } } = await supabase.auth.getUser();
+                    if (!currentUser) {
+                      toast({ title: 'Error', description: 'Please login first', variant: 'destructive' });
+                      return;
+                    }
+                    // Check for duplicate
+                    const { data: existing } = await (supabase
+                      .from("event_registrations" as any)
+                      .select("id")
+                      .eq("event_id", event.id)
+                      .eq("user_id", currentUser.id) as any);
+                    if (existing && existing.length > 0) {
+                      toast({ title: 'Already Registered', description: 'You have already registered for this event' });
+                      setShowRegisterModal(null);
+                      return;
+                    }
+                    // Check if event has already ended
+                    const eventDate = new Date(event.date);
+                    const now = new Date();
+                    if (eventDate < now) {
+                      toast({ title: 'Event Ended', description: 'Registration closed - this event has ended', variant: 'destructive' });
+                      setIsRegistering(false);
+                      return;
+                    }
+                    // Insert registration and get the returned ID
+                    const { data: newReg, error: insertError } = await (supabase
+                      .from("event_registrations" as any)
+                      .insert({
+                        event_id: event.id,
+                        user_id: currentUser.id,
+                        full_name: registerForm.full_name,
+                        roll_number: registerForm.roll_number,
+                        year: registerForm.year
+                      })
+                      .select('id')
+                      .single() as any);
+
+                    if (insertError || !newReg) {
+                      toast({ title: 'Error', description: 'Failed to register', variant: 'destructive' });
+                      setIsRegistering(false);
+                      return;
+                    }
+
+                    // Use the database ID as QR code
+                    const qrCode = newReg.id;
+                    await (supabase
+                      .from("event_registrations" as any)
+                      .update({ qr_code: qrCode })
+                      .eq('id', newReg.id) as any);
+
+                    // Save to localStorage as backup
+                    localStorage.setItem(`registered_${event.id}`, 'true');
+                    setRegisteredEvents(prev => new Set([...prev, event.id]));
+                    toast({ title: 'Successfully Registered!', description: 'Your registration is confirmed' });
+                    setShowRegisterModal(null);
+                    setRegisterForm({ full_name: "", roll_number: "", year: "" });
+                  } catch (err) {
+                    toast({ title: 'Error', description: 'Failed to register', variant: 'destructive' });
+                  } finally {
+                    setIsRegistering(false);
+                  }
+                }} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor={`full_name_${event.id}`}>Full Name *</Label>
+                    <Input
+                      id={`full_name_${event.id}`}
+                      value={registerForm.full_name}
+                      onChange={(e) => setRegisterForm(prev => ({ ...prev, full_name: e.target.value }))}
+                      placeholder="Enter your full name"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor={`roll_${event.id}`}>Roll Number *</Label>
+                    <Input
+                      id={`roll_${event.id}`}
+                      value={registerForm.roll_number}
+                      onChange={(e) => setRegisterForm(prev => ({ ...prev, roll_number: e.target.value }))}
+                      placeholder="Enter your roll number"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor={`year_${event.id}`}>Year *</Label>
+                    <select
+                      id={`year_${event.id}`}
+                      value={registerForm.year}
+                      onChange={(e) => setRegisterForm(prev => ({ ...prev, year: e.target.value }))}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      required
+                    >
+                      <option value="">Select your year</option>
+                      <option value="1st Year">1st Year</option>
+                      <option value="2nd Year">2nd Year</option>
+                      <option value="3rd Year">3rd Year</option>
+                      <option value="4th Year">4th Year</option>
+                      <option value="5th Year">5th Year</option>
+                    </select>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button type="submit" className="flex-1 bg-green-600 hover:bg-green-700" disabled={isRegistering}>
+                      {isRegistering ? "Registering..." : "Submit"}
+                    </Button>
+                    <Button type="button" variant="outline" onClick={() => setShowRegisterModal(null)}>
+                      Cancel
+                    </Button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
 
           <Link to={`/events/${event.id}`} className="block w-full">
             <Button variant="secondary" className="w-full">View Details</Button>

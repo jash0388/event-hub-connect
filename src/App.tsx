@@ -12,6 +12,8 @@ import About from "./pages/About";
 import Contact from "./pages/Contact";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
+import Profile from "./pages/Profile";
+import UserAuth from "./pages/UserAuth";
 import NotFound from "./pages/NotFound";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 
@@ -31,6 +33,8 @@ const App = () => (
           <Route path="/projects" element={<Projects />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/login" element={<UserAuth />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route
             path="/admin"
