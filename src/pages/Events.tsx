@@ -616,7 +616,8 @@ export default function Events() {
                         user_id: currentUser.id,
                         full_name: registerForm.full_name,
                         roll_number: registerForm.roll_number,
-                        year: registerForm.year
+                        year: registerForm.year,
+                        qr_code: '' // Initialize empty, will update after
                       })
                       .select('id')
                       .single() as any);
@@ -629,10 +630,14 @@ export default function Events() {
 
                     // Use the database ID as QR code
                     const qrCode = newReg.id;
-                    await (supabase
+                    const { error: updateError } = await (supabase
                       .from("event_registrations" as any)
                       .update({ qr_code: qrCode })
                       .eq('id', newReg.id) as any);
+
+                    if (updateError) {
+                      console.error('Failed to update QR code:', updateError);
+                    }
 
                     // Save to localStorage as backup
                     localStorage.setItem(`registered_${event.id}`, 'true');
