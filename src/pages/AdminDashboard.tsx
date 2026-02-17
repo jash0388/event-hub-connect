@@ -658,7 +658,7 @@ const AdminDashboard = () => {
           attendee: {
             profiles: {
               full_name: registration.full_name,
-              email: 'N/A',
+              email: registration.roll_number || 'N/A',
               college: registration.year
             }
           },
@@ -2316,19 +2316,19 @@ const AdminDashboard = () => {
                         <p className="font-semibold">{scannedQRResult.event?.location || 'TBA'}</p>
                       </div>
                       <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">Attendee</p>
+                        <p className="text-sm text-muted-foreground">Full Name</p>
                         <p className="font-semibold">
                           {(scannedQRResult.attendee as any)?.profiles?.full_name || 'Unknown'}
                         </p>
                       </div>
                       <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">Email</p>
+                        <p className="text-sm text-muted-foreground">Roll Number</p>
                         <p className="font-semibold">
-                          {(scannedQRResult.attendee as any)?.profiles?.email || 'Unknown'}
+                          {(scannedQRResult.attendee as any)?.profiles?.email || 'N/A'}
                         </p>
                       </div>
                       <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">College</p>
+                        <p className="text-sm text-muted-foreground">Year</p>
                         <p className="font-semibold">
                           {(scannedQRResult.attendee as any)?.profiles?.college || 'Not specified'}
                         </p>
