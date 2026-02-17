@@ -628,11 +628,17 @@ const AdminDashboard = () => {
 
       // If found in event_registrations, use that
       if (registration) {
-        // Mark as scanned
-        await (supabase as any)
-          .from('event_registrations')
-          .update({ scanned_at: new Date().toISOString() })
-          .eq('id', registration.id);
+        // Check if already scanned
+        const alreadyScanned = registration.scanned_at ? true : false;
+        const firstScanTime = registration.scanned_at;
+
+        // Mark as scanned (only if not already scanned)
+        if (!alreadyScanned) {
+          await (supabase as any)
+            .from('event_registrations')
+            .update({ scanned_at: new Date().toISOString() })
+            .eq('id', registration.id);
+        }
 
         // Send to Make.com webhook
         try {
@@ -646,7 +652,8 @@ const AdminDashboard = () => {
               year: registration.year,
               event_title: registration.events?.title,
               event_id: registration.event_id,
-              qr_code: registration.qr_code
+              qr_code: registration.qr_code,
+              already_scanned: alreadyScanned
             })
           });
         } catch (webhookError) {
@@ -654,7 +661,7 @@ const AdminDashboard = () => {
         }
 
         setScannedQRResult({
-          valid: true,
+          valid: !alreadyScanned,
           attendee: {
             profiles: {
               full_name: registration.full_name,
@@ -663,7 +670,9 @@ const AdminDashboard = () => {
             }
           },
           event: registration.events,
-          verifiedAt: new Date().toISOString()
+          verifiedAt: alreadyScanned ? firstScanTime : new Date().toISOString(),
+          alreadyScanned: alreadyScanned,
+          firstScannedAt: firstScanTime
         });
         setIsVerifying(false);
         return;
@@ -2290,6 +2299,54 @@ const AdminDashboard = () => {
                       <h3 className="font-semibold">Invalid QR Code</h3>
                     </div>
                     <p className="mt-2 text-destructive/80">{qrScanError}</p>
+                  </div>
+                )}
+
+                {scannedQRResult && !scannedQRResult.valid && (
+                  <div className="bg-red-500/10 border border-red-500 rounded-xl p-6">
+                    <div className="flex items-center gap-2 text-red-500 mb-4">
+                      <XCircle className="w-6 h-6" />
+                      <h3 className="font-semibold text-lg">Already Scanned</h3>
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground">Event</p>
+                        <p className="font-semibold">{scannedQRResult.event?.title}</p>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground">Date</p>
+                        <p className="font-semibold">
+                          {scannedQRResult.event?.date ? new Date(scannedQRResult.event.date).toLocaleDateString() : 'N/A'}
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground">Location</p>
+                        <p className="font-semibold">{scannedQRResult.event?.location || 'TBA'}</p>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground">Full Name</p>
+                        <p className="font-semibold">
+                          {(scannedQRResult.attendee as any)?.profiles?.full_name || 'Unknown'}
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground">Roll Number</p>
+                        <p className="font-semibold">
+                          {(scannedQRResult.attendee as any)?.profiles?.email || 'N/A'}
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground">Year</p>
+                        <p className="font-semibold">
+                          {(scannedQRResult.attendee as any)?.profiles?.college || 'Not specified'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <p className="mt-4 text-xs text-muted-foreground">
+                      First scanned at: {scannedQRResult.firstScannedAt ? new Date(scannedQRResult.firstScannedAt).toLocaleString() : 'N/A'}
+                    </p>
                   </div>
                 )}
 
