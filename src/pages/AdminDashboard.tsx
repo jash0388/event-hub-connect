@@ -598,7 +598,7 @@ const AdminDashboard = () => {
           .from('event_registrations')
           .select('*, events(title, date, location)')
           .eq('id', trimmedCode)
-          .single();
+          .maybeSingle();
 
         console.log('ID lookup result:', idResult);
         if (idResult.data) {
@@ -615,7 +615,7 @@ const AdminDashboard = () => {
             .from('event_registrations')
             .select('*, events(title, date, location)')
             .eq('qr_code', trimmedCode)
-            .single();
+            .maybeSingle();
 
           console.log('QR code lookup result:', regResult);
           if (regResult.data) {
