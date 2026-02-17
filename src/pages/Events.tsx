@@ -325,7 +325,7 @@ export default function Events() {
         );
       });
 
-    if (sortBy === "date") return result.sort((a, b) => parseISO(a.date).getTime() - parseISO(b.date).getTime());
+    if (sortBy === "date") return result.sort((a, b) => parseISO(b.date).getTime() - parseISO(a.date).getTime());
     if (sortBy === "popularity") return result.sort((a, b) => b.attendees - a.attendees);
     return result.sort((a, b) => b.trendingScore - a.trendingScore);
   }, [activeCategory, events, search, sortBy]);

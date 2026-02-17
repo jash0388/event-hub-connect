@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 const navItems = [
   { path: "/", label: "HOME" },
   { path: "/events", label: "EVENTS" },
-  { path: "/profile", label: "MY EVENTS" },
+  { path: "/login", label: "MY EVENTS" },
   { path: "/about", label: "ABOUT" },
   { path: "/contact", label: "CONTACT" },
 ];
