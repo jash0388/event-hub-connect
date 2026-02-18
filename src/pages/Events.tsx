@@ -174,7 +174,7 @@ export default function Events() {
           </div>
 
           {/* Filters & Search */}
-          <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-8 flex flex-col md:flex-row gap-4 items-center">
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-8 flex flex-col md:flex-row gap-4 items-center">
             <div className="relative flex-1 w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
               <Input
@@ -218,11 +218,11 @@ export default function Events() {
           {isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {[1, 2, 3, 4, 5, 6].map(i => (
-                <div key={i} className="bg-white rounded-3xl h-[400px] animate-pulse border border-gray-100" />
+                <div key={i} className="bg-white rounded-xl h-[400px] animate-pulse border border-gray-100" />
               ))}
             </div>
           ) : filteredEvents.length === 0 ? (
-            <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-gray-200">
+            <div className="text-center py-20 bg-white rounded-xl border border-dashed border-gray-200">
               <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Search className="w-8 h-8 text-gray-400" />
               </div>
@@ -237,7 +237,7 @@ export default function Events() {
                 const isSaved = savedIds.includes(event.id);
 
                 return (
-                  <div key={event.id} className="group bg-white rounded-[2.5rem] border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col h-full">
+                  <div key={event.id} className="group bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col h-full">
                     {/* Event Image */}
                     <Link to={`/events/${event.id}`} className="relative h-56 block overflow-hidden">
                       {event.image || event.image_url ? (
@@ -304,7 +304,7 @@ export default function Events() {
                         <Link to={`/events/${event.id}`} className="flex-1">
                           <Button
                             className={cn(
-                              "w-full rounded-2xl h-12 text-sm font-bold transition-all",
+                              "w-full rounded-xl h-12 text-sm font-bold transition-all",
                               isRegistered ? "bg-green-100 text-green-700 hover:bg-green-200 border-none" : "shadow-md hover:shadow-lg"
                             )}
                             variant={isRegistered ? "secondary" : "default"}
@@ -313,7 +313,7 @@ export default function Events() {
                           </Button>
                         </Link>
                         <Link to={`/events/${event.id}`}>
-                          <Button variant="outline" size="icon" className="w-12 h-12 rounded-2xl border-gray-200 hover:bg-gray-50">
+                          <Button variant="outline" size="icon" className="w-12 h-12 rounded-xl border-gray-200 hover:bg-gray-50">
                             <ChevronRight className="w-5 h-5" />
                           </Button>
                         </Link>

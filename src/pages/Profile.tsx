@@ -233,12 +233,12 @@ const Profile = () => {
 
                                         return (
                                             <div key={event.id} className={cn(
-                                                "relative bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden flex flex-col md:flex-row",
+                                                "relative bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col md:flex-row",
                                                 isExpired && "opacity-75 grayscale-[0.5]"
                                             )}>
                                                 {/* Ticket Side - QR */}
                                                 <div className="md:w-64 bg-gray-50 flex flex-col items-center justify-center p-8 border-b md:border-b-0 md:border-r border-dashed border-gray-200">
-                                                    <div className="bg-white p-4 rounded-2xl shadow-sm mb-4">
+                                                    <div className="bg-white p-4 rounded-xl shadow-sm mb-4">
                                                         <QRCodeSVG
                                                             value={event.qr_code || event.id}
                                                             size={140}
@@ -307,7 +307,7 @@ const Profile = () => {
                                     })}
                                 </div>
                             ) : (
-                                <div className="text-center py-24 bg-white rounded-[2rem] border border-dashed border-gray-200">
+                                <div className="text-center py-24 bg-white rounded-xl border border-dashed border-gray-200">
                                     <Ticket className="w-16 h-16 text-gray-200 mx-auto mb-6" />
                                     <h3 className="text-xl font-bold text-gray-900 mb-2">No tickets found</h3>
                                     <p className="text-gray-500 mb-8">You haven't registered for any upcoming events yet.</p>
@@ -325,7 +325,7 @@ const Profile = () => {
                             </div>
 
                             <div className="space-y-8">
-                                <div className="bg-white rounded-[2rem] p-8 border border-gray-100 shadow-sm space-y-6">
+                                <div className="bg-white rounded-xl p-8 border border-gray-100 shadow-sm space-y-6">
                                     <div className="flex items-center gap-3 mb-2">
                                         <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
                                             <User className="w-5 h-5" />
@@ -381,7 +381,7 @@ const Profile = () => {
                                     </div>
                                 </div>
 
-                                <div className="bg-white rounded-[2rem] p-8 border border-gray-100 shadow-sm space-y-6">
+                                <div className="bg-white rounded-xl p-8 border border-gray-100 shadow-sm space-y-6">
                                     <div className="flex items-center gap-3 mb-2">
                                         <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
                                             <Code className="w-5 h-5" />
@@ -406,7 +406,7 @@ const Profile = () => {
                                     </div>
                                 </div>
 
-                                <div className="bg-white rounded-[2rem] p-8 border border-gray-100 shadow-sm space-y-6">
+                                <div className="bg-white rounded-xl p-8 border border-gray-100 shadow-sm space-y-6">
                                     <div className="flex items-center gap-3 mb-2">
                                         <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center text-rose-600">
                                             <Heart className="w-5 h-5" />
@@ -434,7 +434,7 @@ const Profile = () => {
                                 <Button
                                     onClick={handleSave}
                                     disabled={isSaving}
-                                    className="w-full h-16 rounded-2xl text-lg font-bold shadow-lg shadow-primary/20"
+                                    className="w-full h-16 rounded-xl text-lg font-bold shadow-lg shadow-primary/20"
                                 >
                                     {isSaving ? (
                                         <Loader2 className="w-6 h-6 mr-2 animate-spin" />

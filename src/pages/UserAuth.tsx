@@ -75,7 +75,7 @@ export default function UserAuth() {
             <Header />
             <main className="flex-1 pt-24 pb-16">
                 <div className="container mx-auto px-4 max-w-md">
-                    <div className="bg-card border border-border rounded-2xl p-8">
+                    <div className="bg-card border border-border rounded-xl p-8">
                         <div className="text-center mb-8">
                             <h1 className="text-3xl font-display font-bold text-foreground mb-2">
                                 {isLogin ? "Welcome Back" : "Create Account"}

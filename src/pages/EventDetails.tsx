@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
@@ -37,6 +37,7 @@ interface EventDetail {
 
 export default function EventDetails() {
     const { id } = useParams<{ id: string }>();
+    const navigate = useNavigate();
     const [event, setEvent] = useState<EventDetail | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [attendeeCount, setAttendeeCount] = useState(0);
@@ -82,9 +83,18 @@ export default function EventDetails() {
     }, [id]);
 
     const handleRsvp = async () => {
+        setIsRsvping(true);
         const { data: { user } } = await supabase.auth.getUser();
+        setIsRsvping(false);
+
         if (!user) {
-            toast({ title: 'Login Required', description: 'Please login to register', variant: 'destructive' });
+            toast({
+                title: 'Login Required',
+                description: 'Please login to register for events',
+                variant: 'destructive',
+                duration: 3000
+            });
+            navigate('/login');
             return;
         }
 
@@ -209,7 +219,7 @@ export default function EventDetails() {
                         Back to all events
                     </Link>
 
-                    <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
+                    <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
                         {/* Hero Section */}
                         <div className="relative aspect-[21/9] bg-gray-100">
                             {event.image || event.image_url ? (
@@ -238,9 +248,9 @@ export default function EventDetails() {
                                         </h1>
                                     </div>
 
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-6 rounded-3xl bg-gray-50 border border-gray-100">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-6 rounded-xl bg-gray-50 border border-gray-100">
                                         <div className="flex items-center gap-4">
-                                            <div className="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center text-primary">
+                                            <div className="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center text-primary">
                                                 <Calendar className="w-6 h-6" />
                                             </div>
                                             <div>
@@ -249,7 +259,7 @@ export default function EventDetails() {
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-4">
-                                            <div className="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center text-primary">
+                                            <div className="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center text-primary">
                                                 <Clock className="w-6 h-6" />
                                             </div>
                                             <div>
@@ -258,7 +268,7 @@ export default function EventDetails() {
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-4 sm:col-span-2">
-                                            <div className="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center text-primary">
+                                            <div className="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center text-primary">
                                                 <MapPin className="w-6 h-6" />
                                             </div>
                                             <div>
@@ -278,7 +288,7 @@ export default function EventDetails() {
 
                                 {/* Right Column: Registration Card */}
                                 <div className="lg:w-80 shrink-0">
-                                    <div className="bg-gray-50 border border-gray-100 rounded-[2rem] p-8 sticky top-28 space-y-6">
+                                    <div className="bg-gray-50 border border-gray-100 rounded-xl p-8 sticky top-28 space-y-6">
                                         <div className="text-center pb-6 border-b border-gray-200">
                                             <p className="text-3xl font-extrabold text-gray-900">Free</p>
                                             <p className="text-sm text-gray-500 font-medium mt-1">Limited seats available</p>
@@ -288,7 +298,7 @@ export default function EventDetails() {
                                             <Button
                                                 size="lg"
                                                 className={cn(
-                                                    "w-full h-14 rounded-2xl text-lg font-bold shadow-lg shadow-primary/20",
+                                                    "w-full h-14 rounded-xl text-lg font-bold shadow-lg shadow-primary/20",
                                                     userRsvp === 'going' ? "bg-green-600 hover:bg-green-700" : ""
                                                 )}
                                                 onClick={handleRsvp}
@@ -330,43 +340,43 @@ export default function EventDetails() {
 
             {/* Registration Dialog */}
             <Dialog open={showRegisterDialog} onOpenChange={setShowRegisterDialog}>
-                <DialogContent className="sm:max-w-[440px] rounded-[2rem] p-8">
+                <DialogContent className="sm:max-w-[440px] rounded-xl p-8 border-none soft-shadow animate-in slide-in-from-top-4 duration-300">
                     <DialogHeader className="mb-6">
-                        <DialogTitle className="text-2xl font-bold">Registration</DialogTitle>
-                        <DialogDescription className="text-gray-500">
+                        <DialogTitle className="text-2xl font-black tracking-tight text-gray-900">Registration</DialogTitle>
+                        <DialogDescription className="text-gray-400 font-medium">
                             Fill in your details to secure your spot for <strong>{event?.title}</strong>.
                         </DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleRegisterConfirm} className="space-y-6">
                         <div className="space-y-2">
-                            <Label htmlFor="full_name" className="text-sm font-bold text-gray-700">Full Name</Label>
+                            <Label htmlFor="full_name" className="text-xs font-bold text-gray-400 uppercase tracking-widest">Full Name</Label>
                             <Input
                                 id="full_name"
                                 value={registerForm.full_name}
                                 onChange={(e) => setRegisterForm(prev => ({ ...prev, full_name: e.target.value }))}
                                 placeholder="Your full name"
-                                className="h-12 rounded-xl border-gray-100 bg-gray-50 px-4"
+                                className="h-12 rounded-lg border-gray-100 bg-gray-50 px-4 focus:ring-2 focus:ring-primary/20 transition-all"
                                 required
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="roll_number" className="text-sm font-bold text-gray-700">Roll Number / ID</Label>
+                            <Label htmlFor="roll_number" className="text-xs font-bold text-gray-400 uppercase tracking-widest">Roll Number / ID</Label>
                             <Input
                                 id="roll_number"
                                 value={registerForm.roll_number}
                                 onChange={(e) => setRegisterForm(prev => ({ ...prev, roll_number: e.target.value }))}
                                 placeholder="Enter your roll number"
-                                className="h-12 rounded-xl border-gray-100 bg-gray-50 px-4"
+                                className="h-12 rounded-lg border-gray-100 bg-gray-50 px-4 focus:ring-2 focus:ring-primary/20 transition-all"
                                 required
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="year" className="text-sm font-bold text-gray-700">Year of Study</Label>
+                            <Label htmlFor="year" className="text-xs font-bold text-gray-400 uppercase tracking-widest">Year of Study</Label>
                             <select
                                 id="year"
                                 value={registerForm.year}
                                 onChange={(e) => setRegisterForm(prev => ({ ...prev, year: e.target.value }))}
-                                className="flex h-12 w-full rounded-xl border-gray-100 bg-gray-50 px-4 text-sm font-medium focus:ring-2 focus:ring-primary outline-none transition-all"
+                                className="flex h-12 w-full rounded-lg border-gray-100 bg-gray-50 px-4 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-primary/20 outline-none transition-all cursor-pointer"
                                 required
                             >
                                 <option value="">Select your year</option>
@@ -377,12 +387,24 @@ export default function EventDetails() {
                                 <option value="5th Year">5th Year</option>
                             </select>
                         </div>
-                        <DialogFooter className="pt-4 gap-3 sm:flex-col">
-                            <Button type="submit" className="w-full h-14 rounded-2xl text-lg font-bold shadow-lg shadow-primary/20" disabled={isRsvping}>
-                                {isRsvping && <Loader2 className="w-5 h-5 mr-2 animate-spin" />}
-                                Complete Registration
+                        <DialogFooter className="pt-6 gap-3 sm:flex-col">
+                            <Button
+                                type="submit"
+                                className="w-full h-14 rounded-xl text-md font-bold btn-primary-gradient"
+                                disabled={isRsvping}
+                            >
+                                {isRsvping ? (
+                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                ) : (
+                                    "Complete Registration"
+                                )}
                             </Button>
-                            <Button type="button" variant="ghost" className="w-full h-12 rounded-xl text-gray-500 font-bold" onClick={() => setShowRegisterDialog(false)}>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                className="w-full h-12 rounded-xl text-gray-400 font-bold hover:text-gray-900"
+                                onClick={() => setShowRegisterDialog(false)}
+                            >
                                 Cancel
                             </Button>
                         </DialogFooter>
