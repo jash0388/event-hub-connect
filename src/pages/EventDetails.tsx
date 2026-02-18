@@ -12,10 +12,12 @@ import {
     DialogHeader,
     DialogTitle,
     DialogDescription,
+    DialogFooter,
 } from "@/components/ui/dialog";
-import { Loader2, Calendar, MapPin, Clock, ArrowLeft, Users, Check, Heart } from "lucide-react";
+import { Loader2, Calendar, MapPin, Clock, ArrowLeft, Users, Check, Heart, Share2 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 interface EventDetail {
     id: string;
@@ -79,7 +81,6 @@ export default function EventDetails() {
         fetchAttendeeCount();
     }, [id]);
 
-    // Handle RSVP - open registration dialog
     const handleRsvp = async () => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
@@ -87,7 +88,6 @@ export default function EventDetails() {
             return;
         }
 
-        // If already registered, cancel
         if (userRsvp === 'going') {
             setIsRsvping(true);
             try {
@@ -98,48 +98,32 @@ export default function EventDetails() {
                     .eq('user_id', user.id);
                 setUserRsvp(null);
                 setAttendeeCount(prev => Math.max(0, prev - 1));
-                toast({ title: 'Registration Cancelled', description: 'Your registration has been cancelled' });
+                toast({ title: 'Registration Cancelled' });
             } catch (error) {
                 toast({ title: 'Error', description: 'Failed to cancel registration', variant: 'destructive' });
             } finally {
                 setIsRsvping(false);
             }
         } else {
-            // Show registration dialog
             setShowRegisterDialog(true);
         }
     };
 
-    // Handle registration confirmation
-    const handleRegisterConfirm = async () => {
-        // Validate form
-        if (!registerForm.full_name.trim()) {
-            toast({ title: 'Error', description: 'Full Name is required', variant: 'destructive' });
-            return;
-        }
-        if (!registerForm.roll_number.trim()) {
-            toast({ title: 'Error', description: 'Roll Number is required', variant: 'destructive' });
-            return;
-        }
-        if (!registerForm.year.trim()) {
-            toast({ title: 'Error', description: 'Year is required', variant: 'destructive' });
+    const handleRegisterConfirm = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!registerForm.full_name.trim() || !registerForm.roll_number.trim() || !registerForm.year.trim()) {
+            toast({ title: 'Error', description: 'Please fill all fields', variant: 'destructive' });
             return;
         }
 
         setIsRsvping(true);
         try {
             const { data: { user } } = await supabase.auth.getUser();
-            if (!user) {
-                toast({ title: 'Login Required', description: 'Please login to register', variant: 'destructive' });
-                return;
-            }
+            if (!user) return;
 
-            // Generate unique QR code string
             const qrCode = `${id}-${user.id}-${Date.now()}`;
-            console.log('Generating QR code:', qrCode);
 
-            // RSVP with QR code and registration details
-            const { data, error } = await supabase
+            const { error } = await supabase
                 .from('event_attendees')
                 .upsert({
                     event_id: id,
@@ -152,72 +136,14 @@ export default function EventDetails() {
                     year: registerForm.year
                 }, { onConflict: 'event_id, user_id' });
 
-            console.log('RSVP result:', data, 'error:', error);
-
-            if (error) {
-                console.error('RSVP Error:', error);
-                toast({ title: 'Error', description: error.message, variant: 'destructive' });
-                return;
-            }
-
-            // Also update profile with the details
-            await supabase
-                .from('profiles')
-                .upsert({
-                    id: user.id,
-                    full_name: registerForm.full_name,
-                    college: registerForm.roll_number,
-                    year: registerForm.year,
-                    updated_at: new Date().toISOString()
-                });
+            if (error) throw error;
 
             setShowRegisterDialog(false);
             setUserRsvp('going');
             setAttendeeCount(prev => prev + 1);
-            setRegisterForm({ full_name: '', roll_number: '', year: '' });
-            toast({ title: 'Registered!', description: 'You are going to this event! Your entry QR code is ready in your profile.' });
+            toast({ title: 'Registered!', description: 'Your entry QR code is ready in your profile.' });
         } catch (error) {
-            console.error('RSVP catch error:', error);
             toast({ title: 'Error', description: 'Failed to register', variant: 'destructive' });
-        } finally {
-            setIsRsvping(false);
-        }
-    };
-
-    // Handle Interested
-    const handleInterested = async () => {
-        setIsRsvping(true);
-        try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) {
-                toast({ title: 'Login Required', description: 'Please login to mark interest', variant: 'destructive' });
-                return;
-            }
-
-            if (userRsvp === 'interested') {
-                // Remove interest
-                await supabase
-                    .from('event_attendees')
-                    .delete()
-                    .eq('event_id', id)
-                    .eq('user_id', user.id);
-                setUserRsvp(null);
-                toast({ title: 'Removed', description: 'You are no longer interested in this event' });
-            } else {
-                // Mark as interested
-                await supabase
-                    .from('event_attendees')
-                    .upsert({
-                        event_id: id,
-                        user_id: user.id,
-                        rsvp_status: 'interested',
-                        joined_at: new Date().toISOString()
-                    });
-                setUserRsvp('interested');
-                toast({ title: 'Interest Marked!', description: 'You are interested in this event!' });
-            }
-        } catch (error) {
-            toast({ title: 'Error', description: 'Failed to update interest', variant: 'destructive' });
         } finally {
             setIsRsvping(false);
         }
@@ -230,39 +156,28 @@ export default function EventDetails() {
             try {
                 const { data, error } = await supabase
                     .from("events")
-                    .select("id,title,description,category,date,time,location,organizer,image,image_url,registration_link")
+                    .select("*")
                     .eq("id", id)
                     .single();
 
                 if (error) throw error;
-
-                const eventData: EventDetail = {
-                    ...data,
-                    photos: null,
-                    videos: null
-                };
-                setEvent(eventData);
+                setEvent(data);
             } catch (error: any) {
                 console.error("Error fetching event:", error);
-                toast({
-                    title: "Error",
-                    description: "Failed to load event details",
-                    variant: "destructive",
-                });
+                toast({ title: "Error", description: "Failed to load event details", variant: "destructive" });
             } finally {
                 setIsLoading(false);
             }
         };
-
         fetchEvent();
-    }, [id, toast]);
+    }, [id]);
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-background flex flex-col">
+            <div className="min-h-screen bg-white flex flex-col">
                 <Header />
                 <main className="flex-1 flex items-center justify-center">
-                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                    <Loader2 className="w-10 h-10 animate-spin text-primary" />
                 </main>
                 <Footer />
             </div>
@@ -271,12 +186,12 @@ export default function EventDetails() {
 
     if (!event) {
         return (
-            <div className="min-h-screen bg-background flex flex-col">
+            <div className="min-h-screen bg-white flex flex-col">
                 <Header />
                 <main className="flex-1 container mx-auto px-4 py-20 text-center">
-                    <h1 className="text-2xl font-bold mb-4">Event Not Found</h1>
+                    <h1 className="text-3xl font-bold mb-6">Event Not Found</h1>
                     <Link to="/events">
-                        <Button>Back to Events</Button>
+                        <Button className="rounded-xl px-8 h-12">Back to Events</Button>
                     </Link>
                 </main>
                 <Footer />
@@ -285,18 +200,18 @@ export default function EventDetails() {
     }
 
     return (
-        <div className="min-h-screen bg-background flex flex-col">
+        <div className="min-h-screen bg-gray-50 flex flex-col">
             <Header />
-            <main className="flex-1 pt-24 pb-16">
-                <div className="container mx-auto px-4">
-                    <Link to="/events" className="inline-flex items-center text-sm text-muted-foreground hover:text-primary mb-6 transition-colors">
-                        <ArrowLeft className="w-4 h-4 mr-2" />
-                        Back to Events
+            <main className="flex-1 pt-24 pb-20">
+                <div className="container mx-auto px-4 max-w-5xl">
+                    <Link to="/events" className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-primary mb-8 transition-colors group">
+                        <ArrowLeft className="w-4 h-4 mr-2 transition-transform group-hover:-translate-x-1" />
+                        Back to all events
                     </Link>
 
-                    {/* Hero Section */}
-                    <div className="grid md:grid-cols-2 gap-8 mb-12">
-                        <div className="relative rounded-2xl overflow-hidden aspect-video bg-muted border border-border">
+                    <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
+                        {/* Hero Section */}
+                        <div className="relative aspect-[21/9] bg-gray-100">
                             {event.image || event.image_url ? (
                                 <img
                                     src={event.image || event.image_url || ''}
@@ -304,166 +219,154 @@ export default function EventDetails() {
                                     className="object-cover w-full h-full"
                                 />
                             ) : (
-                                <div className="w-full h-full bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center">
-                                    <span className="text-muted-foreground">No Cover Image</span>
+                                <div className="w-full h-full bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
+                                    <Calendar className="w-16 h-16 text-blue-200" />
                                 </div>
                             )}
                         </div>
 
-                        <div className="flex flex-col justify-center space-y-6">
-                            <div className="space-y-2">
-                                <span className="inline-block px-3 py-1 rounded-full text-xs font-mono uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
-                                    {event.category || 'Event'}
-                                </span>
-                                <h1 className="text-4xl md:text-5xl font-display font-bold text-foreground leading-tight">
-                                    {event.title}
-                                </h1>
-                            </div>
+                        <div className="p-8 md:p-12">
+                            <div className="flex flex-col lg:flex-row gap-12">
+                                {/* Left Column: Info */}
+                                <div className="flex-1 space-y-8">
+                                    <div className="space-y-4">
+                                        <span className="inline-block px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
+                                            {event.category || 'Event'}
+                                        </span>
+                                        <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 leading-tight">
+                                            {event.title}
+                                        </h1>
+                                    </div>
 
-                            <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
-                                <div className="flex items-center gap-2">
-                                    <Calendar className="w-4 h-4 text-primary" />
-                                    <span>{format(new Date(event.date), "EEEE, MMMM d, yyyy")}</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <Clock className="w-4 h-4 text-primary" />
-                                    <span>{event.time || format(new Date(event.date), "p")}</span>
-                                </div>
-                                <div className="flex items-center gap-2 col-span-2">
-                                    <MapPin className="w-4 h-4 text-primary" />
-                                    <span>{event.location || "TBA"}</span>
-                                </div>
-                            </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-6 rounded-3xl bg-gray-50 border border-gray-100">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center text-primary">
+                                                <Calendar className="w-6 h-6" />
+                                            </div>
+                                            <div>
+                                                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Date</p>
+                                                <p className="font-bold text-gray-900">{format(new Date(event.date), "MMMM d, yyyy")}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center text-primary">
+                                                <Clock className="w-6 h-6" />
+                                            </div>
+                                            <div>
+                                                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Time</p>
+                                                <p className="font-bold text-gray-900">{event.time || "TBA"}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-4 sm:col-span-2">
+                                            <div className="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center text-primary">
+                                                <MapPin className="w-6 h-6" />
+                                            </div>
+                                            <div>
+                                                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Location</p>
+                                                <p className="font-bold text-gray-900">{event.location || "To be announced"}</p>
+                                            </div>
+                                        </div>
+                                    </div>
 
-                            {event.registration_link && (
-                                <a href={event.registration_link} target="_blank" rel="noopener noreferrer">
-                                    <Button size="lg" className="w-full md:w-auto">
-                                        Register Now
-                                    </Button>
-                                </a>
-                            )}
+                                    <div className="space-y-4">
+                                        <h2 className="text-2xl font-bold text-gray-900">About this event</h2>
+                                        <div className="prose prose-gray max-w-none text-gray-600 leading-relaxed whitespace-pre-wrap">
+                                            {event.description || "No description provided for this event."}
+                                        </div>
+                                    </div>
+                                </div>
 
-                            {/* RSVP Buttons */}
-                            <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-                                <Button
-                                    size="lg"
-                                    className={`w-full ${userRsvp === 'going' ? 'bg-green-600 hover:bg-green-700' : 'bg-green-600 hover:bg-green-700'}`}
-                                    onClick={handleRsvp}
-                                    disabled={isRsvping}
-                                >
-                                    {isRsvping ? (
-                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                    ) : userRsvp === 'going' ? (
-                                        <><Check className="w-4 h-4 mr-2" /> REGISTERED</>
-                                    ) : (
-                                        <><Check className="w-4 h-4 mr-2" /> REGISTER</>
-                                    )}
-                                </Button>
-                                <Button
-                                    size="lg"
-                                    variant={userRsvp === 'interested' ? "default" : "outline"}
-                                    className="w-full"
-                                    onClick={handleInterested}
-                                    disabled={isRsvping}
-                                >
-                                    {userRsvp === 'interested' ? (
-                                        <><Heart className="w-4 h-4 mr-2 fill-current" /> INTERESTED</>
-                                    ) : (
-                                        <><Heart className="w-4 h-4 mr-2" /> INTERESTED</>
-                                    )}
-                                </Button>
+                                {/* Right Column: Registration Card */}
+                                <div className="lg:w-80 shrink-0">
+                                    <div className="bg-gray-50 border border-gray-100 rounded-[2rem] p-8 sticky top-28 space-y-6">
+                                        <div className="text-center pb-6 border-b border-gray-200">
+                                            <p className="text-3xl font-extrabold text-gray-900">Free</p>
+                                            <p className="text-sm text-gray-500 font-medium mt-1">Limited seats available</p>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <Button
+                                                size="lg"
+                                                className={cn(
+                                                    "w-full h-14 rounded-2xl text-lg font-bold shadow-lg shadow-primary/20",
+                                                    userRsvp === 'going' ? "bg-green-600 hover:bg-green-700" : ""
+                                                )}
+                                                onClick={handleRsvp}
+                                                disabled={isRsvping}
+                                            >
+                                                {isRsvping ? (
+                                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                                ) : userRsvp === 'going' ? (
+                                                    <><Check className="w-5 h-5 mr-2" /> Registered</>
+                                                ) : (
+                                                    "Register Now"
+                                                )}
+                                            </Button>
+
+                                            <div className="flex items-center justify-center gap-2 text-sm text-gray-500 font-medium">
+                                                <Users className="w-4 h-4" />
+                                                <span>{attendeeCount} students attending</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="pt-6 border-t border-gray-200 flex flex-col gap-3">
+                                            <Button variant="outline" className="w-full h-12 rounded-xl gap-2 font-bold text-gray-700">
+                                                <Share2 className="w-4 h-4" />
+                                                Share Event
+                                            </Button>
+                                            <Button variant="ghost" className="w-full h-12 rounded-xl gap-2 font-bold text-gray-500">
+                                                <Heart className="w-4 h-4" />
+                                                Save for later
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
-
-                    {/* Description */}
-                    <div className="mb-16 max-w-4xl">
-                        <h2 className="text-2xl font-display font-bold mb-4 border-b border-border pb-2">About Event</h2>
-                        <div className="prose prose-sm md:prose-base dark:prose-invert max-w-none text-muted-foreground whitespace-pre-wrap">
-                            {event.description || "No description provided."}
-                        </div>
-                    </div>
-
-                    {/* Photos Gallery */}
-                    {event.photos && event.photos.length > 0 && (
-                        <div className="mb-16">
-                            <h2 className="text-2xl font-display font-bold mb-6 border-b border-border pb-2">Event Photos</h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {event.photos.map((photo, index) => (
-                                    <div key={index} className="rounded-xl overflow-hidden bg-muted border border-border aspect-[4/3] group relative">
-                                        <img
-                                            src={photo}
-                                            alt={`Event photo ${index + 1}`}
-                                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                            loading="lazy"
-                                        />
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Videos Gallery */}
-                    {event.videos && event.videos.length > 0 && (
-                        <div className="mb-16">
-                            <h2 className="text-2xl font-display font-bold mb-6 border-b border-border pb-2">Event Videos</h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {event.videos.map((video, index) => (
-                                    <div key={index} className="rounded-xl overflow-hidden bg-black border border-border aspect-video">
-                                        <video
-                                            controls
-                                            className="w-full h-full"
-                                            preload="metadata"
-                                        >
-                                            <source src={video} type="video/mp4" />
-                                            Your browser does not support the video tag.
-                                        </video>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
                 </div>
             </main>
             <Footer />
 
             {/* Registration Dialog */}
             <Dialog open={showRegisterDialog} onOpenChange={setShowRegisterDialog}>
-                <DialogContent className="sm:max-w-[425px]">
-                    <DialogHeader>
-                        <DialogTitle>Register for {event?.title}</DialogTitle>
-                        <DialogDescription>
-                            Please fill in your details to register for this event.
+                <DialogContent className="sm:max-w-[440px] rounded-[2rem] p-8">
+                    <DialogHeader className="mb-6">
+                        <DialogTitle className="text-2xl font-bold">Registration</DialogTitle>
+                        <DialogDescription className="text-gray-500">
+                            Fill in your details to secure your spot for <strong>{event?.title}</strong>.
                         </DialogDescription>
                     </DialogHeader>
-                    <form onSubmit={handleRegisterConfirm} className="space-y-4">
+                    <form onSubmit={handleRegisterConfirm} className="space-y-6">
                         <div className="space-y-2">
-                            <Label htmlFor="full_name">Full Name *</Label>
+                            <Label htmlFor="full_name" className="text-sm font-bold text-gray-700">Full Name</Label>
                             <Input
                                 id="full_name"
                                 value={registerForm.full_name}
                                 onChange={(e) => setRegisterForm(prev => ({ ...prev, full_name: e.target.value }))}
-                                placeholder="Enter your full name"
+                                placeholder="Your full name"
+                                className="h-12 rounded-xl border-gray-100 bg-gray-50 px-4"
                                 required
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="roll_number">Roll Number *</Label>
+                            <Label htmlFor="roll_number" className="text-sm font-bold text-gray-700">Roll Number / ID</Label>
                             <Input
                                 id="roll_number"
                                 value={registerForm.roll_number}
                                 onChange={(e) => setRegisterForm(prev => ({ ...prev, roll_number: e.target.value }))}
                                 placeholder="Enter your roll number"
+                                className="h-12 rounded-xl border-gray-100 bg-gray-50 px-4"
                                 required
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="year">Year *</Label>
+                            <Label htmlFor="year" className="text-sm font-bold text-gray-700">Year of Study</Label>
                             <select
                                 id="year"
                                 value={registerForm.year}
                                 onChange={(e) => setRegisterForm(prev => ({ ...prev, year: e.target.value }))}
-                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                className="flex h-12 w-full rounded-xl border-gray-100 bg-gray-50 px-4 text-sm font-medium focus:ring-2 focus:ring-primary outline-none transition-all"
                                 required
                             >
                                 <option value="">Select your year</option>
@@ -474,12 +377,15 @@ export default function EventDetails() {
                                 <option value="5th Year">5th Year</option>
                             </select>
                         </div>
-                        <Button type="submit" className="w-full" disabled={isRsvping}>
-                            {isRsvping ? (
-                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            ) : null}
-                            Complete Registration
-                        </Button>
+                        <DialogFooter className="pt-4 gap-3 sm:flex-col">
+                            <Button type="submit" className="w-full h-14 rounded-2xl text-lg font-bold shadow-lg shadow-primary/20" disabled={isRsvping}>
+                                {isRsvping && <Loader2 className="w-5 h-5 mr-2 animate-spin" />}
+                                Complete Registration
+                            </Button>
+                            <Button type="button" variant="ghost" className="w-full h-12 rounded-xl text-gray-500 font-bold" onClick={() => setShowRegisterDialog(false)}>
+                                Cancel
+                            </Button>
+                        </DialogFooter>
                     </form>
                 </DialogContent>
             </Dialog>

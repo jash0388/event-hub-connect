@@ -1,29 +1,23 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, Shield, LogOut } from "lucide-react";
+import { Menu, X, Shield, LogOut, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 
 const navItems = [
-  { path: "/", label: "HOME" },
-  { path: "/events", label: "EVENTS" },
-  { path: "/login", label: "MY EVENTS" },
-  { path: "/about", label: "ABOUT" },
-  { path: "/contact", label: "CONTACT" },
+  { path: "/", label: "Home" },
+  { path: "/events", label: "Events" },
+  { path: "/profile", label: "My Events" },
+  { path: "/about", label: "About" },
+  { path: "/contact", label: "Contact" },
 ];
 
 export function Header() {
   const [isOpen, setIsOpen] = useState(false);
-  const [time, setTime] = useState(new Date());
   const [user, setUser] = useState<any>(null);
   const location = useLocation();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const timer = setInterval(() => setTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
 
   useEffect(() => {
     const getUser = async () => {
@@ -45,36 +39,31 @@ export function Header() {
     navigate("/");
   };
 
-  const formattedTime = time.toLocaleTimeString("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: true,
-  });
-
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2">
-            <img src="/logo.png" alt="DataNauts Logo" className="w-8 h-8 object-contain" />
-            <span className="font-display text-lg font-bold tracking-wider text-primary">
-              DATANAUTS
+          <Link to="/" className="flex items-center gap-2 group">
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center transition-transform group-hover:scale-105">
+              <img src="/logo.png" alt="" className="w-5 h-5 object-contain invert brightness-0" />
+            </div>
+            <span className="text-xl font-bold tracking-tight text-gray-900">
+              Data<span className="text-primary">Nauts</span>
             </span>
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-8 absolute left-1/2 -translate-x-1/2">
+          <nav className="hidden md:flex items-center gap-1">
             {navItems.map((item) => (
               <Link
                 key={item.path}
                 to={item.path}
                 className={cn(
-                  "font-display text-sm tracking-wider transition-all duration-300",
+                  "px-4 py-2 rounded-full text-sm font-medium transition-colors",
                   location.pathname === item.path
-                    ? "text-primary glow-green"
-                    : "text-muted-foreground hover:text-primary"
+                    ? "bg-primary/10 text-primary"
+                    : "text-gray-600 hover:text-primary hover:bg-gray-50"
                 )}
               >
                 {item.label}
@@ -83,19 +72,20 @@ export function Header() {
           </nav>
 
           {/* Desktop Right Section */}
-          <div className="hidden md:flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-3">
             {user ? (
               <>
                 <Link to="/profile">
-                  <Button variant="outline" size="sm" className="font-mono text-xs">
-                    My Profile
+                  <Button variant="ghost" size="sm" className="rounded-full gap-2">
+                    <User className="w-4 h-4" />
+                    Profile
                   </Button>
                 </Link>
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
                   onClick={handleLogout}
-                  className="font-mono text-xs"
+                  className="rounded-full"
                 >
                   <LogOut className="w-3 h-3 mr-2" />
                   Logout
@@ -103,30 +93,27 @@ export function Header() {
               </>
             ) : (
               <Link to="/login">
-                <Button variant="outline" size="sm" className="font-mono text-xs">
+                <Button variant="outline" size="sm" className="rounded-full px-6">
                   Login
                 </Button>
               </Link>
             )}
             <Link to="/admin/login">
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
-                className="font-mono text-xs"
+                className="rounded-full text-gray-500 hover:text-primary"
+                title="Admin Portal"
               >
-                <Shield className="w-3 h-3 mr-2" />
-                Admin
+                <Shield className="w-4 h-4" />
               </Button>
             </Link>
-            <div className="font-mono text-sm text-muted-foreground">
-              {formattedTime}
-            </div>
           </div>
 
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="md:hidden text-foreground p-2"
+            className="md:hidden text-gray-600 p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
             {isOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
@@ -135,36 +122,34 @@ export function Header() {
 
       {/* Mobile Navigation */}
       {isOpen && (
-        <nav className="md:hidden bg-background border-b border-border animate-slide-in-right">
-          <div className="container mx-auto px-4 py-4 flex flex-col gap-4">
-            {navItems.map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                onClick={() => setIsOpen(false)}
-                className={cn(
-                  "font-display text-sm tracking-wider py-2 transition-all duration-300",
-                  location.pathname === item.path
-                    ? "text-primary glow-green"
-                    : "text-muted-foreground hover:text-primary"
-                )}
-              >
-                {item.label}
+        <nav className="md:hidden bg-white border-b border-gray-100 py-4 px-4 space-y-2 animate-in fade-in slide-in-from-top-4">
+          {navItems.map((item) => (
+            <Link
+              key={item.path}
+              to={item.path}
+              onClick={() => setIsOpen(false)}
+              className={cn(
+                "block px-4 py-3 rounded-xl text-base font-medium transition-colors",
+                location.pathname === item.path
+                  ? "bg-primary/10 text-primary"
+                  : "text-gray-600 hover:bg-gray-50"
+              )}
+            >
+              {item.label}
+            </Link>
+          ))}
+          <div className="pt-4 mt-4 border-t border-gray-100 flex flex-col gap-2">
+            {!user && (
+              <Link to="/login" onClick={() => setIsOpen(false)}>
+                <Button className="w-full rounded-xl">Login</Button>
               </Link>
-            ))}
+            )}
             <Link to="/admin/login" onClick={() => setIsOpen(false)}>
-              <Button
-                variant="outline"
-                size="sm"
-                className="font-mono text-xs w-full"
-              >
-                <Shield className="w-3 h-3 mr-2" />
-                Admin Login
+              <Button variant="outline" className="w-full rounded-xl">
+                <Shield className="w-4 h-4 mr-2" />
+                Admin Portal
               </Button>
             </Link>
-            <div className="font-mono text-sm text-muted-foreground pt-2 border-t border-border">
-              {formattedTime}
-            </div>
           </div>
         </nav>
       )}

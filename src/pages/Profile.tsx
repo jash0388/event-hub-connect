@@ -6,10 +6,12 @@ import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Save, User, Code, Heart, QrCode, Edit } from "lucide-react";
+import { Loader2, Save, User, Code, Heart, QrCode, Edit, Calendar, MapPin, MapPinned, Clock, Ticket } from "lucide-react";
+import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { QRCodeSVG } from "qrcode.react";
+import { cn } from "@/lib/utils";
 
 const skillsList = [
     "Web Development", "Mobile App", "UI/UX Design", "Data Science",
@@ -81,71 +83,40 @@ const Profile = () => {
         const fetchUserEventQRCodes = async () => {
             if (!user) return;
             try {
-                // First check new event_registrations table
-                const { data: registrations, error: regError } = await (supabase
+                // Try fetching from both tables
+                const { data: registrations } = await (supabase
                     .from('event_registrations' as any)
-                    .select('event_id, qr_code, full_name, roll_number, year, created_at, scanned_at')
+                    .select('*, events(*)')
                     .eq('user_id', user.id) as any);
 
-                console.log('Registrations:', registrations, 'Error:', regError);
+                const { data: attendees } = await (supabase
+                    .from('event_attendees')
+                    .select('*, events(*)')
+                    .eq('user_id', user.id)
+                    .eq('rsvp_status', 'going') as any);
 
-                if (registrations && registrations.length > 0) {
-                    const eventIds = registrations.map((r: any) => r.event_id);
-                    const { data: events } = await supabase
-                        .from('events')
-                        .select('id, title, date, location, time')
-                        .in('id', eventIds);
+                const combined = [
+                    ...(registrations || []).map((r: any) => ({
+                        ...r.events,
+                        qr_code: r.qr_code,
+                        full_name: r.full_name,
+                        roll_number: r.roll_number,
+                        year: r.year,
+                        registered_at: r.created_at,
+                        scanned_at: r.scanned_at,
+                        source: 'registrations'
+                    })),
+                    ...(attendees || []).map((a: any) => ({
+                        ...a.events,
+                        qr_code: a.qr_code,
+                        joined_at: a.joined_at,
+                        source: 'attendees'
+                    }))
+                ];
 
-                    console.log('Events from registrations:', events);
-
-                    if (events) {
-                        const eventsWithQR = events.map(event => {
-                            const reg = registrations.find((r: any) => r.event_id === event.id);
-                            return {
-                                ...event,
-                                qr_code: reg?.qr_code,
-                                full_name: reg?.full_name,
-                                roll_number: reg?.roll_number,
-                                year: reg?.year,
-                                registered_at: reg?.created_at,
-                                scanned_at: reg?.scanned_at,
-                                source: 'registrations'
-                            };
-                        });
-                        setUserEventQRCodes(eventsWithQR);
-                    }
-                } else {
-                    // Fall back to old event_attendees table
-                    const { data: attendees, error } = await supabase
-                        .from('event_attendees')
-                        .select('event_id, qr_code, rsvp_status, joined_at')
-                        .eq('user_id', user.id)
-                        .eq('rsvp_status', 'going') as any;
-
-                    console.log('Attendees:', attendees, 'Error:', error);
-
-                    if (attendees && attendees.length > 0) {
-                        const eventIds = attendees.map((a: any) => a.event_id);
-                        const { data: events } = await supabase
-                            .from('events')
-                            .select('id, title, date, location');
-
-                        console.log('Events:', events);
-
-                        if (events) {
-                            const eventsWithQR = events.map(event => {
-                                const attendee = attendees.find((a: any) => a.event_id === event.id);
-                                return {
-                                    ...event,
-                                    qr_code: attendee?.qr_code,
-                                    joined_at: attendee?.joined_at,
-                                    source: 'attendees'
-                                };
-                            });
-                            setUserEventQRCodes(eventsWithQR);
-                        }
-                    }
-                }
+                // Remove duplicates by event id
+                const uniqueEvents = Array.from(new Map(combined.map(item => [item.id, item])).values());
+                setUserEventQRCodes(uniqueEvents);
             } catch (error) {
                 console.error('Error fetching QR codes:', error);
             }
@@ -173,10 +144,7 @@ const Profile = () => {
 
             if (error) throw error;
             toast({ title: "Profile Saved!", description: "Your profile has been updated" });
-
-            if (profile.full_name) {
-                setShowProfileComplete(true);
-            }
+            setShowProfileComplete(true);
         } catch (error) {
             toast({ title: "Error", description: "Failed to save profile", variant: "destructive" });
         } finally {
@@ -204,10 +172,10 @@ const Profile = () => {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-background flex flex-col">
+            <div className="min-h-screen bg-white flex flex-col">
                 <Header />
                 <main className="flex-1 flex items-center justify-center">
-                    <Loader2 className="w-8 h-8 animate-spin" />
+                    <Loader2 className="w-10 h-10 animate-spin text-primary" />
                 </main>
                 <Footer />
             </div>
@@ -216,14 +184,17 @@ const Profile = () => {
 
     if (!user) {
         return (
-            <div className="min-h-screen bg-background flex flex-col">
+            <div className="min-h-screen bg-white flex flex-col">
                 <Header />
-                <main className="flex-1 container mx-auto px-4 py-20 text-center">
-                    <h1 className="text-2xl font-bold mb-4">Login Required</h1>
-                    <p className="text-muted-foreground mb-4">Please login to view your profile</p>
-                    <a href="/admin/login">
-                        <Button>Login</Button>
-                    </a>
+                <main className="flex-1 container mx-auto px-4 py-32 text-center">
+                    <div className="max-w-md mx-auto">
+                        <User className="w-16 h-16 text-gray-200 mx-auto mb-6" />
+                        <h1 className="text-3xl font-bold mb-4">Login Required</h1>
+                        <p className="text-gray-500 mb-8">Please login to view your profile and access your event tickets.</p>
+                        <Link to="/login">
+                            <Button className="w-full h-12 rounded-xl">Go to Login</Button>
+                        </Link>
+                    </div>
                 </main>
                 <Footer />
             </div>
@@ -231,19 +202,29 @@ const Profile = () => {
     }
 
     return (
-        <div className="min-h-screen bg-background flex flex-col">
+        <div className="min-h-screen bg-gray-50 flex flex-col">
             <Header />
-            <main className="flex-1 pt-24 pb-16">
-                <div className="container mx-auto px-4 max-w-2xl">
+            <main className="flex-1 pt-24 pb-20">
+                <div className="container mx-auto px-4 max-w-4xl">
                     {showProfileComplete ? (
-                        <div className="space-y-6">
-                            <div className="flex items-center gap-2">
-                                <QrCode className="w-6 h-6 text-neon-green" />
-                                <h1 className="text-4xl font-display font-bold text-foreground">My Events</h1>
+                        <div className="space-y-10">
+                            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                                <div>
+                                    <h1 className="text-4xl font-extrabold text-gray-900 mb-2">My Events</h1>
+                                    <p className="text-gray-500">View and manage your registered event tickets</p>
+                                </div>
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setShowProfileComplete(false)}
+                                    className="rounded-xl"
+                                >
+                                    <Edit className="w-4 h-4 mr-2" />
+                                    Edit Profile
+                                </Button>
                             </div>
 
                             {userEventQRCodes.length > 0 ? (
-                                <div className="space-y-4">
+                                <div className="grid gap-8">
                                     {userEventQRCodes.map((event: any) => {
                                         const eventDate = new Date(event.date);
                                         const now = new Date();
@@ -251,28 +232,74 @@ const Profile = () => {
                                         const isScanned = event.scanned_at;
 
                                         return (
-                                            <div key={event.id} className={`bg-card border rounded-xl p-6 ${isExpired ? 'border-neon-red/50 opacity-60' : 'border-border'}`}>
-                                                <div className="flex flex-col md:flex-row items-center gap-6">
-                                                    <div className={`bg-white p-3 rounded-lg ${isExpired ? 'grayscale' : ''}`}>
+                                            <div key={event.id} className={cn(
+                                                "relative bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden flex flex-col md:flex-row",
+                                                isExpired && "opacity-75 grayscale-[0.5]"
+                                            )}>
+                                                {/* Ticket Side - QR */}
+                                                <div className="md:w-64 bg-gray-50 flex flex-col items-center justify-center p-8 border-b md:border-b-0 md:border-r border-dashed border-gray-200">
+                                                    <div className="bg-white p-4 rounded-2xl shadow-sm mb-4">
                                                         <QRCodeSVG
-                                                            value={event.qr_code || 'No QR'}
-                                                            size={120}
+                                                            value={event.qr_code || event.id}
+                                                            size={140}
                                                             level="H"
                                                             includeMargin
                                                         />
                                                     </div>
-                                                    <div className="flex-1 text-center md:text-left">
-                                                        <h3 className="font-bold text-xl">{event.title}</h3>
-                                                        <p className="text-muted-foreground">
-                                                            {event.date ? new Date(event.date).toLocaleDateString() : 'TBA'} at {event.location || 'TBA'}
-                                                        </p>
-                                                        {isExpired ? (
-                                                            <p className="text-neon-red text-sm mt-2 font-bold">Event Expired</p>
-                                                        ) : isScanned ? (
-                                                            <p className="text-neon-amber text-sm mt-2">✓ Already Scanned</p>
-                                                        ) : (
-                                                            <p className="text-neon-green text-sm mt-2">Show this QR code at event entry</p>
-                                                        )}
+                                                    <p className="text-[10px] font-mono text-gray-400 uppercase tracking-widest">
+                                                        Ticket ID: {event.qr_code?.substring(0, 12) || event.id.substring(0, 12)}
+                                                    </p>
+                                                </div>
+
+                                                {/* Main Side - Info */}
+                                                <div className="flex-1 p-8 md:p-10 relative">
+                                                    {/* Ticket Notch Decorations */}
+                                                    <div className="hidden md:block absolute -left-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-gray-50 rounded-full border border-gray-100 shadow-inner" />
+
+                                                    <div className="flex flex-col h-full">
+                                                        <div className="mb-6">
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                                <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider border border-primary/10">
+                                                                    {event.category || 'Event Pass'}
+                                                                </span>
+                                                                {isScanned ? (
+                                                                    <span className="px-3 py-1 rounded-full bg-green-100 text-green-700 text-[10px] font-bold uppercase tracking-wider">
+                                                                        ✓ Verified
+                                                                    </span>
+                                                                ) : isExpired ? (
+                                                                    <span className="px-3 py-1 rounded-full bg-rose-100 text-rose-700 text-[10px] font-bold uppercase tracking-wider">
+                                                                        Expired
+                                                                    </span>
+                                                                ) : null}
+                                                            </div>
+                                                            <h3 className="text-2xl md:text-3xl font-extrabold text-gray-900 leading-tight mb-2">
+                                                                {event.title}
+                                                            </h3>
+                                                        </div>
+
+                                                        <div className="grid grid-cols-2 gap-6 mt-auto">
+                                                            <div className="space-y-1">
+                                                                <div className="flex items-center gap-2 text-gray-400">
+                                                                    <Calendar className="w-4 h-4" />
+                                                                    <span className="text-[10px] font-bold uppercase tracking-widest">Date</span>
+                                                                </div>
+                                                                <p className="font-bold text-gray-900">{format(eventDate, "MMM d, yyyy")}</p>
+                                                            </div>
+                                                            <div className="space-y-1">
+                                                                <div className="flex items-center gap-2 text-gray-400">
+                                                                    <Clock className="w-4 h-4" />
+                                                                    <span className="text-[10px] font-bold uppercase tracking-widest">Time</span>
+                                                                </div>
+                                                                <p className="font-bold text-gray-900">{event.time || "TBA"}</p>
+                                                            </div>
+                                                            <div className="space-y-1 col-span-2">
+                                                                <div className="flex items-center gap-2 text-gray-400">
+                                                                    <MapPin className="w-4 h-4" />
+                                                                    <span className="text-[10px] font-bold uppercase tracking-widest">Location</span>
+                                                                </div>
+                                                                <p className="font-bold text-gray-900">{event.location || "To be announced"}</p>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -280,93 +307,98 @@ const Profile = () => {
                                     })}
                                 </div>
                             ) : (
-                                <div className="text-center py-12">
-                                    <p className="text-muted-foreground mb-4">No events yet</p>
+                                <div className="text-center py-24 bg-white rounded-[2rem] border border-dashed border-gray-200">
+                                    <Ticket className="w-16 h-16 text-gray-200 mx-auto mb-6" />
+                                    <h3 className="text-xl font-bold text-gray-900 mb-2">No tickets found</h3>
+                                    <p className="text-gray-500 mb-8">You haven't registered for any upcoming events yet.</p>
                                     <Link to="/events">
-                                        <Button>Browse Events</Button>
+                                        <Button className="rounded-xl px-8 h-12">Browse Events</Button>
                                     </Link>
                                 </div>
                             )}
-
-                            <Button
-                                variant="outline"
-                                onClick={() => setShowProfileComplete(false)}
-                                className="w-full"
-                            >
-                                <Edit className="w-4 h-4 mr-2" />
-                                Edit Profile
-                            </Button>
                         </div>
                     ) : (
-                        <>
-                            <div className="mb-8">
-                                <h1 className="text-4xl font-display font-bold text-foreground mb-2">My Profile</h1>
-                                <p className="text-muted-foreground">Tell us about yourself</p>
+                        <div className="max-w-2xl mx-auto">
+                            <div className="mb-10 text-center">
+                                <h1 className="text-4xl font-extrabold text-gray-900 mb-2">My Profile</h1>
+                                <p className="text-gray-500">Personalize your experience and keep your info updated</p>
                             </div>
 
                             <div className="space-y-8">
-                                <div className="bg-card border border-border rounded-xl p-6 space-y-4">
-                                    <div className="flex items-center gap-2 mb-4">
-                                        <User className="w-5 h-5 text-primary" />
-                                        <h2 className="text-xl font-bold">Basic Info</h2>
+                                <div className="bg-white rounded-[2rem] p-8 border border-gray-100 shadow-sm space-y-6">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+                                            <User className="w-5 h-5" />
+                                        </div>
+                                        <h2 className="text-xl font-bold text-gray-900">Basic Information</h2>
                                     </div>
 
-                                    <div className="space-y-2">
-                                        <Label htmlFor="full_name">Full Name *</Label>
-                                        <Input
-                                            id="full_name"
-                                            value={profile.full_name}
-                                            onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
-                                            placeholder="Your name"
-                                        />
-                                    </div>
+                                    <div className="grid gap-6">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="full_name" className="text-sm font-bold text-gray-700">Full Name</Label>
+                                            <Input
+                                                id="full_name"
+                                                value={profile.full_name}
+                                                onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
+                                                placeholder="Your full name"
+                                                className="h-12 rounded-xl bg-gray-50 border-gray-100"
+                                            />
+                                        </div>
 
-                                    <div className="space-y-2">
-                                        <Label htmlFor="college">College/University</Label>
-                                        <Input
-                                            id="college"
-                                            value={profile.college}
-                                            onChange={(e) => setProfile({ ...profile, college: e.target.value })}
-                                            placeholder="Your college"
-                                        />
-                                    </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="space-y-2">
+                                                <Label htmlFor="college" className="text-sm font-bold text-gray-700">College / University</Label>
+                                                <Input
+                                                    id="college"
+                                                    value={profile.college}
+                                                    onChange={(e) => setProfile({ ...profile, college: e.target.value })}
+                                                    placeholder="e.g. Stanford University"
+                                                    className="h-12 rounded-xl bg-gray-50 border-gray-100"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="year" className="text-sm font-bold text-gray-700">Year of Study</Label>
+                                                <Input
+                                                    id="year"
+                                                    value={profile.year}
+                                                    onChange={(e) => setProfile({ ...profile, year: e.target.value })}
+                                                    placeholder="e.g. 2nd Year"
+                                                    className="h-12 rounded-xl bg-gray-50 border-gray-100"
+                                                />
+                                            </div>
+                                        </div>
 
-                                    <div className="space-y-2">
-                                        <Label htmlFor="year">Year of Study</Label>
-                                        <Input
-                                            id="year"
-                                            value={profile.year}
-                                            onChange={(e) => setProfile({ ...profile, year: e.target.value })}
-                                            placeholder="e.g., 2nd Year"
-                                        />
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <Label htmlFor="bio">Bio</Label>
-                                        <Input
-                                            id="bio"
-                                            value={profile.bio}
-                                            onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
-                                            placeholder="Tell us about yourself"
-                                        />
+                                        <div className="space-y-2">
+                                            <Label htmlFor="bio" className="text-sm font-bold text-gray-700">Bio</Label>
+                                            <Input
+                                                id="bio"
+                                                value={profile.bio}
+                                                onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
+                                                placeholder="A short description about yourself"
+                                                className="h-12 rounded-xl bg-gray-50 border-gray-100"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div className="bg-card border border-border rounded-xl p-6 space-y-4">
-                                    <div className="flex items-center gap-2 mb-4">
-                                        <Code className="w-5 h-5 text-primary" />
-                                        <h2 className="text-xl font-bold">Skills</h2>
+                                <div className="bg-white rounded-[2rem] p-8 border border-gray-100 shadow-sm space-y-6">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
+                                            <Code className="w-5 h-5" />
+                                        </div>
+                                        <h2 className="text-xl font-bold text-gray-900">Skills</h2>
                                     </div>
-                                    <p className="text-sm text-muted-foreground mb-4">What are you good at?</p>
                                     <div className="flex flex-wrap gap-2">
                                         {skillsList.map((skill) => (
                                             <button
                                                 key={skill}
                                                 onClick={() => toggleSkill(skill)}
-                                                className={`px-3 py-1 rounded-full text-sm transition-all ${profile.skills.includes(skill)
-                                                    ? "bg-primary text-primary-foreground"
-                                                    : "bg-muted text-muted-foreground hover:bg-primary/20"
-                                                    }`}
+                                                className={cn(
+                                                    "px-4 py-2 rounded-xl text-sm font-bold transition-all border",
+                                                    profile.skills.includes(skill)
+                                                        ? "bg-primary text-white border-primary shadow-md shadow-primary/20"
+                                                        : "bg-gray-50 text-gray-500 border-gray-100 hover:bg-gray-100"
+                                                )}
                                             >
                                                 {skill}
                                             </button>
@@ -374,21 +406,24 @@ const Profile = () => {
                                     </div>
                                 </div>
 
-                                <div className="bg-card border border-border rounded-xl p-6 space-y-4">
-                                    <div className="flex items-center gap-2 mb-4">
-                                        <Heart className="w-5 h-5 text-primary" />
-                                        <h2 className="text-xl font-bold">Interests</h2>
+                                <div className="bg-white rounded-[2rem] p-8 border border-gray-100 shadow-sm space-y-6">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center text-rose-600">
+                                            <Heart className="w-5 h-5" />
+                                        </div>
+                                        <h2 className="text-xl font-bold text-gray-900">Interests</h2>
                                     </div>
-                                    <p className="text-sm text-muted-foreground mb-4">What are you interested in?</p>
                                     <div className="flex flex-wrap gap-2">
                                         {interestsList.map((interest) => (
                                             <button
                                                 key={interest}
                                                 onClick={() => toggleInterest(interest)}
-                                                className={`px-3 py-1 rounded-full text-sm transition-all ${profile.interests.includes(interest)
-                                                    ? "bg-secondary text-secondary-foreground"
-                                                    : "bg-muted text-muted-foreground hover:bg-secondary/20"
-                                                    }`}
+                                                className={cn(
+                                                    "px-4 py-2 rounded-xl text-sm font-bold transition-all border",
+                                                    profile.interests.includes(interest)
+                                                        ? "bg-secondary text-primary border-primary/20"
+                                                        : "bg-gray-50 text-gray-500 border-gray-100 hover:bg-gray-100"
+                                                )}
                                             >
                                                 {interest}
                                             </button>
@@ -399,18 +434,17 @@ const Profile = () => {
                                 <Button
                                     onClick={handleSave}
                                     disabled={isSaving}
-                                    className="w-full"
-                                    size="lg"
+                                    className="w-full h-16 rounded-2xl text-lg font-bold shadow-lg shadow-primary/20"
                                 >
                                     {isSaving ? (
-                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                        <Loader2 className="w-6 h-6 mr-2 animate-spin" />
                                     ) : (
-                                        <Save className="w-4 h-4 mr-2" />
+                                        <Save className="w-5 h-5 mr-2" />
                                     )}
                                     Save Profile
                                 </Button>
                             </div>
-                        </>
+                        </div>
                     )}
                 </div>
             </main>
