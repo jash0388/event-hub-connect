@@ -1,8 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import { Button } from '@/components/ui/button';
-import { ArrowRight } from 'lucide-react';
+import { SlideButton } from '@/components/ui/slide-button';
 
 const Home = () => {
   const navigate = useNavigate();
@@ -41,22 +40,21 @@ const Home = () => {
 
             {/* Buttons */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 md:gap-5">
-              <Button
-                size="lg"
-                className="w-full sm:w-auto text-base px-8 py-3.5 rounded-xl shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98] font-medium"
+              <SlideButton
+                className="w-full sm:w-auto text-base px-8 py-3.5 rounded-xl shadow-lg shadow-primary/20 font-medium"
                 onClick={() => navigate('/events')}
+                fullWidth
               >
                 Explore Events
-                <ArrowRight className="ml-2 w-4 h-4" />
-              </Button>
-              <Button
+              </SlideButton>
+              <SlideButton
                 variant="outline"
-                size="lg"
-                className="w-full sm:w-auto text-base px-8 py-3.5 rounded-xl border-2 transition-all hover:bg-gray-50 font-medium"
+                className="w-full sm:w-auto text-base px-8 py-3.5 rounded-xl border-2 font-medium"
                 onClick={() => navigate('/about')}
+                fullWidth
               >
                 Learn More
-              </Button>
+              </SlideButton>
             </div>
           </div>
         </div>
