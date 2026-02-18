@@ -1,4 +1,4 @@
-import { Github, Twitter, Instagram, Mail, Linkedin, Globe } from "lucide-react";
+import { Github, Twitter, Instagram, Mail, Linkedin, Globe, Heart } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -36,46 +36,50 @@ export function Footer() {
   }, []);
 
   return (
-    <footer className="border-t border-border bg-background/50 backdrop-blur-sm">
-      <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 items-center gap-6">
-          {/* Logo & Copyright - Left Aligned */}
-          <div className="flex flex-col items-center md:items-start gap-2">
-            <span className="font-display text-lg font-bold tracking-wider text-primary">
-              DATANAUTS SPHN
+    <footer className="bg-gray-50 border-t border-gray-100">
+      <div className="container mx-auto px-4 py-12">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 items-center">
+          {/* Logo & Info */}
+          <div className="text-center md:text-left space-y-3">
+            <span className="text-xl font-bold tracking-tight text-gray-900">
+              Data<span className="text-primary">Nauts</span>
             </span>
-            <p className="text-sm text-muted-foreground">
-              A PROJECT BY ALPHA TEAM © 2026
+            <p className="text-sm text-gray-500 max-w-xs">
+              The central hub for all college tech events, projects, and innovation.
             </p>
           </div>
 
-          {/* Status Indicator - Center Aligned */}
-          <div className="flex justify-center">
-            <div className="flex items-center gap-2 px-4 py-2 border border-primary/30 bg-primary/5 rounded-full">
-              <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-              <span className="font-mono text-xs text-primary uppercase tracking-wider">
-                System Online
-              </span>
-            </div>
+          {/* Copyright & Made with */}
+          <div className="text-center flex flex-col items-center justify-center gap-2">
+            <p className="text-sm text-gray-600 font-medium">
+              © 2026 Alpha Team
+            </p>
+            <p className="text-xs text-gray-400 flex items-center gap-1">
+              Made with <Heart className="w-3 h-3 text-red-400 fill-current" /> for the Community
+            </p>
           </div>
 
-          {/* Social Links - Right Aligned */}
-          <div className="flex items-center justify-center md:justify-end gap-4">
-            {links.map((link) => {
-              const IconComponent = iconMap[link.platform.toLowerCase()] || iconMap.default;
-              return (
-                <a
-                  key={link.id}
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-muted-foreground hover:text-primary transition-colors duration-300"
-                  aria-label={link.platform}
-                >
-                  <IconComponent size={20} />
-                </a>
-              );
-            })}
+          {/* Social Links */}
+          <div className="flex items-center justify-center md:justify-end gap-5">
+            {links.length > 0 ? (
+              links.map((link) => {
+                const IconComponent = iconMap[link.platform.toLowerCase()] || iconMap.default;
+                return (
+                  <a
+                    key={link.id}
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-10 h-10 flex items-center justify-center rounded-full bg-white border border-gray-200 text-gray-500 hover:text-primary hover:border-primary transition-all shadow-sm"
+                    aria-label={link.platform}
+                  >
+                    <IconComponent size={18} />
+                  </a>
+                );
+              })
+            ) : (
+              <p className="text-xs text-gray-400">Join our community</p>
+            )}
           </div>
         </div>
       </div>
