@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
@@ -37,6 +37,7 @@ interface EventDetail {
 
 export default function EventDetails() {
     const { id } = useParams<{ id: string }>();
+    const navigate = useNavigate();
     const [event, setEvent] = useState<EventDetail | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [attendeeCount, setAttendeeCount] = useState(0);
@@ -83,6 +84,12 @@ export default function EventDetails() {
 
     const handleRsvp = async () => {
         const { data: { user } } = await supabase.auth.getUser();
+
+        // AUTH PROTECTION: Redirect to login if not authenticated
+        if (!user) {
+            navigate('/login', { state: { message: 'Please login to register for events' } });
+            return;
+        }
         if (!user) {
             toast({ title: 'Login Required', description: 'Please login to register', variant: 'destructive' });
             return;
@@ -161,7 +168,13 @@ export default function EventDetails() {
                     .single();
 
                 if (error) throw error;
-                setEvent(data);
+
+                const eventData: EventDetail = {
+                    ...data,
+                    photos: null,
+                    videos: null
+                };
+                setEvent(eventData);
             } catch (error: any) {
                 console.error("Error fetching event:", error);
                 toast({ title: "Error", description: "Failed to load event details", variant: "destructive" });

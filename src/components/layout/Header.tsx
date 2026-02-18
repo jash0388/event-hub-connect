@@ -40,14 +40,12 @@ export function Header() {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
+    <header className="fixed top-0 left-0 right-0 z-[100] bg-white/90 backdrop-blur-md">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center transition-transform group-hover:scale-105">
-              <img src="/logo.png" alt="" className="w-5 h-5 object-contain invert brightness-0" />
-            </div>
+            <img src="/logo.png" alt="DataNauts" className="h-8 w-auto object-contain" />
             <span className="text-xl font-bold tracking-tight text-gray-900">
               Data<span className="text-primary">Nauts</span>
             </span>
@@ -118,41 +116,43 @@ export function Header() {
             {isOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
-      </div>
+      </div >
 
       {/* Mobile Navigation */}
-      {isOpen && (
-        <nav className="md:hidden bg-white border-b border-gray-100 py-4 px-4 space-y-2 animate-in fade-in slide-in-from-top-4">
-          {navItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              onClick={() => setIsOpen(false)}
-              className={cn(
-                "block px-4 py-3 rounded-xl text-base font-medium transition-colors",
-                location.pathname === item.path
-                  ? "bg-primary/10 text-primary"
-                  : "text-gray-600 hover:bg-gray-50"
-              )}
-            >
-              {item.label}
-            </Link>
-          ))}
-          <div className="pt-4 mt-4 border-t border-gray-100 flex flex-col gap-2">
-            {!user && (
-              <Link to="/login" onClick={() => setIsOpen(false)}>
-                <Button className="w-full rounded-xl">Login</Button>
+      {
+        isOpen && (
+          <nav className="md:hidden bg-white py-4 px-4 space-y-2 animate-in fade-in slide-in-from-top-4">
+            {navItems.map((item) => (
+              <Link
+                key={item.path}
+                to={item.path}
+                onClick={() => setIsOpen(false)}
+                className={cn(
+                  "block px-4 py-3 rounded-xl text-base font-medium transition-colors",
+                  location.pathname === item.path
+                    ? "bg-primary/10 text-primary"
+                    : "text-gray-600 hover:bg-gray-50"
+                )}
+              >
+                {item.label}
               </Link>
-            )}
-            <Link to="/admin/login" onClick={() => setIsOpen(false)}>
-              <Button variant="outline" className="w-full rounded-xl">
-                <Shield className="w-4 h-4 mr-2" />
-                Admin Portal
-              </Button>
-            </Link>
-          </div>
-        </nav>
-      )}
-    </header>
+            ))}
+            <div className="pt-4 mt-4 border-t border-gray-100 flex flex-col gap-2">
+              {!user && (
+                <Link to="/login" onClick={() => setIsOpen(false)}>
+                  <Button className="w-full rounded-xl">Login</Button>
+                </Link>
+              )}
+              <Link to="/admin/login" onClick={() => setIsOpen(false)}>
+                <Button variant="outline" className="w-full rounded-xl">
+                  <Shield className="w-4 h-4 mr-2" />
+                  Admin Portal
+                </Button>
+              </Link>
+            </div>
+          </nav>
+        )
+      }
+    </header >
   );
 }
