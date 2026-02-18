@@ -130,9 +130,23 @@ export default function EventDetails() {
 
             const qrCode = `${id}-${user.id}-${Date.now()}`;
 
+            // First check if already registered
+            const { data: existing } = await supabase
+                .from('event_attendees')
+                .select('id')
+                .eq('event_id', id)
+                .eq('user_id', user.id)
+                .single();
+
+            if (existing) {
+                toast({ title: 'Already Registered', description: 'You are already registered for this event', variant: 'destructive' });
+                setIsRsvping(false);
+                return;
+            }
+
             const { error } = await supabase
                 .from('event_attendees')
-                .upsert({
+                .insert({
                     event_id: id,
                     user_id: user.id,
                     rsvp_status: 'going',
@@ -141,9 +155,12 @@ export default function EventDetails() {
                     full_name: registerForm.full_name,
                     roll_number: registerForm.roll_number,
                     year: registerForm.year
-                }, { onConflict: 'event_id, user_id' });
+                });
 
-            if (error) throw error;
+            if (error) {
+                console.error('Registration error:', error);
+                throw error;
+            }
 
             setShowRegisterDialog(false);
             setUserRsvp('going');
