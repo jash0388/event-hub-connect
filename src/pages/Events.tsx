@@ -94,10 +94,10 @@ export default function Events() {
         trendingScore: Math.max(0, event.trending_score || 0),
       }));
 
-      // Fetch attendees count
-      const { data: attendeesRows } = await supabase.from("event_attendees").select("event_id, user_id");
+      // Fetch attendees count from event_registrations
+      const { data: attendeesRows } = await (supabase as any).from("event_registrations").select("event_id");
       const attendeeCountMap = new Map<string, number>();
-      (attendeesRows || []).forEach(row => {
+      (attendeesRows || []).forEach((row: any) => {
         attendeeCountMap.set(row.event_id, (attendeeCountMap.get(row.event_id) || 0) + 1);
       });
 
@@ -183,25 +183,6 @@ export default function Events() {
                 placeholder="Search events..."
                 className="pl-10 bg-gray-50 border-none rounded-xl h-11"
               />
-            </div>
-            <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
-              <Button
-                variant={activeCategory === "All" ? "default" : "outline"}
-                onClick={() => setActiveCategory("All")}
-                className="rounded-full px-6 h-11 whitespace-nowrap"
-              >
-                All
-              </Button>
-              {categories.map(cat => (
-                <Button
-                  key={cat}
-                  variant={activeCategory === cat ? "default" : "outline"}
-                  onClick={() => setActiveCategory(cat)}
-                  className="rounded-full px-6 h-11 whitespace-nowrap"
-                >
-                  {cat}
-                </Button>
-              ))}
             </div>
             <select
               value={sortBy}

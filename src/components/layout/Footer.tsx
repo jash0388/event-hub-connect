@@ -55,7 +55,7 @@ export function Footer() {
               © 2026 Alpha Team
             </p>
             <p className="text-xs text-gray-400 flex items-center gap-1">
-              Made with <Heart className="w-3 h-3 text-red-400 fill-current" /> for the Community
+              Made with <Heart className="w-3 h-3 text-red-400 fill-current" /> for the Students of SPHN
             </p>
           </div>
 

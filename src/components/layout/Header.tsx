@@ -4,6 +4,7 @@ import { Menu, X, Shield, LogOut, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { isAdmin } from "@/lib/isAdmin";
 
 const navItems = [
   { path: "/", label: "Home" },
@@ -138,7 +139,27 @@ export function Header() {
               </Link>
             ))}
             <div className="pt-4 mt-4 border-t border-gray-100 flex flex-col gap-2">
-              {!user && (
+              {user ? (
+                <>
+                  <Link to="/profile" onClick={() => setIsOpen(false)}>
+                    <Button variant="ghost" className="w-full rounded-xl justify-start">
+                      <User className="w-4 h-4 mr-2" />
+                      Profile
+                    </Button>
+                  </Link>
+                  <Button
+                    variant="outline"
+                    className="w-full rounded-xl justify-start"
+                    onClick={() => {
+                      handleLogout();
+                      setIsOpen(false);
+                    }}
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Logout
+                  </Button>
+                </>
+              ) : (
                 <Link to="/login" onClick={() => setIsOpen(false)}>
                   <Button className="w-full rounded-xl">Login</Button>
                 </Link>

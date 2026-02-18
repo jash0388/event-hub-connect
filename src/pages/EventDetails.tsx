@@ -18,6 +18,14 @@ import { Loader2, Calendar, MapPin, Clock, ArrowLeft, Users, Check, Heart, Share
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import {
+    addEventReminder,
+    requestNotificationPermission,
+    getTimeUntilEvent,
+    formatCountdown,
+    isEventToday,
+    isEventTomorrow
+} from "@/lib/notifications";
 
 interface EventDetail {
     id: string;
@@ -56,12 +64,12 @@ export default function EventDetails() {
         const checkUserAndRsvp = async () => {
             const { data: { user } } = await supabase.auth.getUser();
             if (user && id) {
-                const { data } = await supabase
-                    .from('event_attendees')
+                const { data } = await (supabase
+                    .from('event_registrations' as any)
                     .select('rsvp_status')
                     .eq('event_id', id)
                     .eq('user_id', user.id)
-                    .single();
+                    .single() as any);
                 if (data) setUserRsvp(data.rsvp_status);
             }
         };
@@ -72,8 +80,8 @@ export default function EventDetails() {
     useEffect(() => {
         const fetchAttendeeCount = async () => {
             if (!id) return;
-            const { count } = await supabase
-                .from('event_attendees')
+            const { count } = await (supabase as any)
+                .from('event_registrations')
                 .select('*', { count: 'exact', head: true })
                 .eq('event_id', id)
                 .eq('rsvp_status', 'going');
@@ -98,8 +106,8 @@ export default function EventDetails() {
         if (userRsvp === 'going') {
             setIsRsvping(true);
             try {
-                await supabase
-                    .from('event_attendees')
+                await (supabase as any)
+                    .from('event_registrations')
                     .delete()
                     .eq('event_id', id)
                     .eq('user_id', user.id);
@@ -131,8 +139,8 @@ export default function EventDetails() {
             const qrCode = `${id}-${user.id}-${Date.now()}`;
 
             // First check if already registered
-            const { data: existing } = await supabase
-                .from('event_attendees')
+            const { data: existing } = await (supabase as any)
+                .from('event_registrations')
                 .select('id')
                 .eq('event_id', id)
                 .eq('user_id', user.id)
@@ -144,8 +152,8 @@ export default function EventDetails() {
                 return;
             }
 
-            const { error } = await supabase
-                .from('event_attendees')
+            const { error } = await (supabase as any)
+                .from('event_registrations')
                 .insert({
                     event_id: id,
                     user_id: user.id,
@@ -165,7 +173,33 @@ export default function EventDetails() {
             setShowRegisterDialog(false);
             setUserRsvp('going');
             setAttendeeCount(prev => prev + 1);
-            toast({ title: 'Registered!', description: 'Your entry QR code is ready in your profile.' });
+
+            // Add reminder for the event
+            addEventReminder({
+                eventId: id!,
+                eventTitle: event.title,
+                eventDate: event.date,
+                eventTime: event.time,
+                location: event.location,
+                userId: user.id,
+                notified: false
+            });
+
+            // Request notification permission and show enhanced toast
+            requestNotificationPermission();
+
+            const timeUntil = getTimeUntilEvent(event.date, event.time);
+            const countdownText = formatCountdown(timeUntil);
+
+            toast({
+                title: '🎉 Registration Successful!',
+                description: isEventToday(event.date)
+                    ? `You're all set! ${event.title} is happening today!`
+                    : isEventTomorrow(event.date)
+                        ? `You're all set! ${event.title} is tomorrow.`
+                        : `You're registered for ${event.title}. See you in ${countdownText}!`,
+                duration: 5000,
+            });
         } catch (error) {
             toast({ title: 'Error', description: 'Failed to register', variant: 'destructive' });
         } finally {

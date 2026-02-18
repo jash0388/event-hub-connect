@@ -4,9 +4,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
-import { Loader2, Calendar, MapPin, Clock, ArrowRight } from "lucide-react";
+import { Loader2, Calendar, MapPin, Clock, ArrowRight, Bell, BellOff } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import {
+    getTimeUntilEvent,
+    requestNotificationPermission,
+    initializeReminderCheck,
+} from "@/lib/notifications";
 
 interface MyEvent {
     id: string;
@@ -26,8 +31,27 @@ export default function MyEvents() {
     const [events, setEvents] = useState<MyEvent[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [user, setUser] = useState<any>(null);
+    const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+    const [countdowns, setCountdowns] = useState<Record<string, ReturnType<typeof getTimeUntilEvent>>>({});
     const { toast } = useToast();
 
+    // Handle notification toggle
+    const handleToggleNotifications = async () => {
+        if (notificationsEnabled) {
+            toast({ title: 'Notifications Disabled', description: 'You will no longer receive event reminders.' });
+            setNotificationsEnabled(false);
+        } else {
+            const permitted = await requestNotificationPermission();
+            if (permitted) {
+                setNotificationsEnabled(true);
+                toast({ title: 'Notifications Enabled', description: 'You will receive reminders on the day of your events!' });
+            } else {
+                toast({ title: 'Notifications Blocked', description: 'Please enable notifications in your browser settings.', variant: 'destructive' });
+            }
+        }
+    };
+
+    // Fetch events and setup notifications
     useEffect(() => {
         const fetchMyEvents = async () => {
             setIsLoading(true);
@@ -70,6 +94,30 @@ export default function MyEvents() {
                     // Sort by date
                     myEvents.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
                     setEvents(myEvents);
+
+                    // Initialize countdown timers
+                    const initialCountdowns: Record<string, ReturnType<typeof getTimeUntilEvent>> = {};
+                    myEvents.forEach(event => {
+                        initialCountdowns[event.id] = getTimeUntilEvent(event.date, event.time);
+                    });
+                    setCountdowns(initialCountdowns);
+
+                    // Request notification permission and setup reminder check
+                    const permitted = await requestNotificationPermission();
+                    setNotificationsEnabled(permitted);
+
+                    if (permitted && user) {
+                        initializeReminderCheck(
+                            myEvents.map(e => ({
+                                id: e.id,
+                                title: e.title,
+                                date: e.date,
+                                time: e.time,
+                                location: e.location
+                            })),
+                            user.id
+                        );
+                    }
                 }
             } catch (error: any) {
                 console.error("Error fetching events:", error);
@@ -81,6 +129,21 @@ export default function MyEvents() {
 
         fetchMyEvents();
     }, [toast]);
+
+    // Update countdowns every minute
+    useEffect(() => {
+        if (events.length === 0) return;
+
+        const interval = setInterval(() => {
+            const updatedCountdowns: Record<string, ReturnType<typeof getTimeUntilEvent>> = {};
+            events.forEach(event => {
+                updatedCountdowns[event.id] = getTimeUntilEvent(event.date, event.time);
+            });
+            setCountdowns(updatedCountdowns);
+        }, 60000);
+
+        return () => clearInterval(interval);
+    }, [events]);
 
     if (isLoading) {
         return (
@@ -99,9 +162,21 @@ export default function MyEvents() {
             <Header />
             <main className="flex-1 pt-24 pb-16">
                 <div className="container mx-auto px-4">
-                    <div className="mb-8">
-                        <h1 className="text-4xl font-display font-bold text-foreground mb-2">My Events</h1>
-                        <p className="text-muted-foreground">Events you've RSVP'd to</p>
+                    <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div>
+                            <h1 className="text-4xl font-display font-bold text-foreground mb-2">My Events</h1>
+                            <p className="text-muted-foreground">Events you've RSVP'd to</p>
+                        </div>
+                        {user && events.length > 0 && (
+                            <Button
+                                variant={notificationsEnabled ? "default" : "outline"}
+                                onClick={handleToggleNotifications}
+                                className="gap-2"
+                            >
+                                {notificationsEnabled ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
+                                {notificationsEnabled ? 'Reminders On' : 'Enable Reminders'}
+                            </Button>
+                        )}
                     </div>
 
                     {!user ? (
@@ -135,6 +210,18 @@ export default function MyEvents() {
                                         ) : (
                                             <div className="w-full h-full bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center">
                                                 <Calendar className="w-12 h-12 text-muted-foreground/50" />
+                                            </div>
+                                        )}
+                                        {/* Countdown Badge */}
+                                        {countdowns[event.id] && !countdowns[event.id].isPast && (
+                                            <div className={`absolute top-3 right-3 px-3 py-1.5 rounded-md text-sm font-mono font-bold backdrop-blur-sm ${countdowns[event.id].isToday
+                                                    ? 'bg-neon-red/90 text-white animate-pulse'
+                                                    : 'bg-primary/90 text-primary-foreground'
+                                                }`}>
+                                                {countdowns[event.id].isToday ? '🔥 TODAY' :
+                                                    countdowns[event.id].days > 0 ?
+                                                        `⏰ ${countdowns[event.id].days}d ${countdowns[event.id].hours}h` :
+                                                        `⏰ ${countdowns[event.id].hours}h ${countdowns[event.id].minutes}m`}
                                             </div>
                                         )}
                                         <div className="absolute top-3 left-3">

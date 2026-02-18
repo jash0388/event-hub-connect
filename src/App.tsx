@@ -15,6 +15,8 @@ import AdminDashboard from "./pages/AdminDashboard";
 import Profile from "./pages/Profile";
 import UserAuth from "./pages/UserAuth";
 import NotFound from "./pages/NotFound";
+import EventQRCodes from "./pages/EventQRCodes";
+import CheckIn from "./pages/CheckIn";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -43,6 +45,14 @@ const App = () => (
           <Route
             path="/admin/dashboard"
             element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>}
+          />
+          <Route
+            path="/event-qrcodes"
+            element={<ProtectedRoute><EventQRCodes /></ProtectedRoute>}
+          />
+          <Route
+            path="/checkin"
+            element={<ProtectedRoute><CheckIn /></ProtectedRoute>}
           />
           <Route path="*" element={<NotFound />} />
         </Routes>

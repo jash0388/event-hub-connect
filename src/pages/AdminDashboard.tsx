@@ -64,6 +64,13 @@ interface Event {
   registration_link: string | null;
   photos: string[] | null;
   videos: string[] | null;
+  attendance_count?: number;
+  registered_count?: number;
+  popularity_score?: number;
+  trending_score?: number;
+  created_by?: string | null;
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface Project {
@@ -346,13 +353,44 @@ const AdminDashboard = () => {
 
   const fetchEvents = async () => {
     try {
+      // Fetch events with attendance counts from both registrations and attendees tables
       const { data, error } = await supabase
         .from('events')
         .select('*')
         .order('date', { ascending: true });
 
       if (error) throw error;
-      setEvents(data || []);
+
+      // Get attendance counts for each event
+      const eventsWithCounts = await Promise.all((data || []).map(async (event: any) => {
+        // Count registrations
+        const { count: regCount } = await (supabase as any)
+          .from('event_registrations')
+          .select('*', { count: 'exact', head: true })
+          .eq('event_id', event.id);
+
+        // Count attendees
+        const { count: attCount } = await supabase
+          .from('event_attendees')
+          .select('*', { count: 'exact', head: true })
+          .eq('event_id', event.id)
+          .eq('rsvp_status', 'going');
+
+        // Count scanned (checked-in)
+        const { count: scannedCount } = await (supabase as any)
+          .from('event_registrations')
+          .select('*', { count: 'exact', head: true })
+          .eq('event_id', event.id)
+          .not('scanned_at', 'is', null);
+
+        return {
+          ...event,
+          registered_count: (regCount || 0) + (attCount || 0),
+          attendance_count: scannedCount || 0
+        };
+      }));
+
+      setEvents(eventsWithCounts);
     } catch (error: any) {
       console.error('Error fetching events:', error);
       toast({
@@ -578,7 +616,12 @@ const AdminDashboard = () => {
     console.log('Verifying QR code:', qrCode);
     try {
       // Accept any QR code format - try multiple approaches
-      const trimmedCode = qrCode.trim();
+      let trimmedCode = qrCode.trim();
+
+      // Handle EVENT: prefix from generated QR codes
+      if (trimmedCode.startsWith('EVENT:')) {
+        trimmedCode = trimmedCode.replace('EVENT:', '');
+      }
 
       console.log('Trimmed QR:', trimmedCode);
 
@@ -1408,6 +1451,8 @@ const AdminDashboard = () => {
                         <TableHead>Date</TableHead>
                         <TableHead>Category</TableHead>
                         <TableHead>Location</TableHead>
+                        <TableHead>Registered</TableHead>
+                        <TableHead>Checked In</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -1418,6 +1463,19 @@ const AdminDashboard = () => {
                           <TableCell>{format(new Date(event.date), 'PPP p')}</TableCell>
                           <TableCell>{event.category || '—'}</TableCell>
                           <TableCell>{event.location || '—'}</TableCell>
+                          <TableCell>
+                            <span className="inline-flex items-center px-2 py-1 rounded-md bg-primary/10 text-primary text-sm font-medium">
+                              {event.registered_count || 0} registered
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <span className={`inline-flex items-center px-2 py-1 rounded-md text-sm font-medium ${(event.attendance_count || 0) > 0
+                              ? 'bg-green-500/10 text-green-500'
+                              : 'bg-muted text-muted-foreground'
+                              }`}>
+                              {event.attendance_count || 0} checked in
+                            </span>
+                          </TableCell>
                           <TableCell className="text-right">
                             <Button
                               variant="ghost"
