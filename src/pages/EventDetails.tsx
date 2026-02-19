@@ -378,7 +378,23 @@ export default function EventDetails() {
                                         </div>
 
                                         <div className="pt-6 border-t border-gray-200 flex flex-col gap-3">
-                                            <Button variant="outline" className="w-full h-12 rounded-xl gap-2 font-bold text-gray-700">
+                                            <Button
+                                                variant="outline"
+                                                className="w-full h-12 rounded-xl gap-2 font-bold text-gray-700"
+                                                onClick={() => {
+                                                    const shareData = {
+                                                        title: event.title,
+                                                        text: `Check out this event: ${event.title}`,
+                                                        url: window.location.href
+                                                    };
+                                                    if (navigator.share) {
+                                                        navigator.share(shareData);
+                                                    } else {
+                                                        navigator.clipboard.writeText(window.location.href);
+                                                        toast({ title: "Link copied!", description: "Event link copied to clipboard" });
+                                                    }
+                                                }}
+                                            >
                                                 <Share2 className="w-4 h-4" />
                                                 Share Event
                                             </Button>
