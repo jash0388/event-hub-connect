@@ -17,6 +17,7 @@ import UserAuth from "./pages/UserAuth";
 import NotFound from "./pages/NotFound";
 import EventQRCodes from "./pages/EventQRCodes";
 import CheckIn from "./pages/CheckIn";
+import Compilers from "./pages/Compilers";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -54,6 +55,7 @@ const App = () => (
             path="/checkin"
             element={<ProtectedRoute><CheckIn /></ProtectedRoute>}
           />
+          <Route path="/compilers" element={<Compilers />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

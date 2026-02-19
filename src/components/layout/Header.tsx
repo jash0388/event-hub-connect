@@ -9,6 +9,7 @@ import { isAdmin } from "@/lib/isAdmin";
 const navItems = [
   { path: "/", label: "Home" },
   { path: "/events", label: "Events" },
+  { path: "/compilers", label: "Compilers" },
   { path: "/profile", label: "My Events" },
   { path: "/about", label: "About" },
   { path: "/contact", label: "Contact" },
