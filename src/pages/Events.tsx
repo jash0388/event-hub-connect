@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Calendar, Clock, Flame, MapPin, Search, Star, Users, Bookmark, Bell, MessageSquare, Trash2, Filter, ChevronRight } from "lucide-react";
+import { Calendar, Clock, Flame, MapPin, Search, Star, Users, Bookmark, Bell, MessageSquare, Trash2, Filter, ChevronRight, Image } from "lucide-react";
 import { addDays, format, isAfter, isBefore, isPast, isToday, parseISO, startOfDay } from "date-fns";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -73,6 +74,8 @@ export default function Events() {
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const [registeredEvents, setRegisteredEvents] = useState<Set<string>>(new Set());
   const [showRegisterModal, setShowRegisterModal] = useState<string | null>(null);
+  const [showPhotosModal, setShowPhotosModal] = useState<string | null>(null);
+  const [currentPhotos, setCurrentPhotos] = useState<string[]>([]);
   const [registerForm, setRegisterForm] = useState({ full_name: "", roll_number: "", year: "" });
   const [isRegistering, setIsRegistering] = useState(false);
 
@@ -251,6 +254,14 @@ export default function Events() {
                       >
                         <Bookmark className={cn("w-5 h-5", isSaved && "fill-current")} />
                       </button>
+                      {event.photos && event.photos.length > 0 && (
+                        <button
+                          onClick={(e) => { e.preventDefault(); setCurrentPhotos(event.photos || []); setShowPhotosModal(event.id); }}
+                          className="absolute bottom-4 right-4 w-10 h-10 rounded-full bg-white/80 hover:bg-white text-gray-600 backdrop-blur-sm flex items-center justify-center transition-all shadow-md"
+                        >
+                          <Image className="w-5 h-5" />
+                        </button>
+                      )}
                     </Link>
 
                     {/* Event Info */}
@@ -307,6 +318,28 @@ export default function Events() {
           )}
         </div>
       </main>
+
+      {/* Photos Modal */}
+      <Dialog open={!!showPhotosModal} onOpenChange={() => setShowPhotosModal(null)}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Event Photos</DialogTitle>
+            <DialogDescription>View all photos from this event</DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
+            {currentPhotos.map((photo, index) => (
+              <div key={index} className="aspect-square rounded-lg overflow-hidden bg-gray-100">
+                <img
+                  src={photo}
+                  alt={`Photo ${index + 1}`}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Footer />
     </div>
   );
