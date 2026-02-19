@@ -18,6 +18,8 @@ import NotFound from "./pages/NotFound";
 import EventQRCodes from "./pages/EventQRCodes";
 import CheckIn from "./pages/CheckIn";
 import Compilers from "./pages/Compilers";
+import CollegeEventsHub from "./components/ui/college-events-hub";
+import CodeCompiler from "./components/ui/code-compiler";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -30,6 +32,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/landing" element={<CollegeEventsHub />} />
           <Route path="/feed" element={<Feed />} />
           <Route path="/events" element={<Events />} />
           <Route path="/events/:id" element={<EventDetails />} />
@@ -55,7 +58,7 @@ const App = () => (
             path="/checkin"
             element={<ProtectedRoute><CheckIn /></ProtectedRoute>}
           />
-          <Route path="/compilers" element={<Compilers />} />
+          <Route path="/compilers" element={<CodeCompiler />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

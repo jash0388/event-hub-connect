@@ -88,6 +88,14 @@
   body {
     @apply bg-background text-foreground font-sans;
     font-family: 'Inter', sans-serif;
+    /* Crayon-like soft pastel gradient background */
+    background:
+      radial-gradient(ellipse at 20% 20%, rgba(255, 230, 200, 0.4) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 80%, rgba(230, 240, 255, 0.4) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 50%, rgba(255, 240, 230, 0.3) 0%, transparent 60%),
+      linear-gradient(180deg, #fafafa 0%, #f5f5f5 50%, #fafafa 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
   }
 
   h1,
