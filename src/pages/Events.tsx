@@ -326,11 +326,13 @@ export default function Events() {
                             </Button>
                           </Link>
                         )}
-                        <Link to={`/events/${event.id}`}>
-                          <Button variant="outline" size="icon" className="w-12 h-12 rounded-2xl border-gray-200 hover:bg-gray-50">
-                            <ChevronRight className="w-5 h-5" />
-                          </Button>
-                        </Link>
+                        {!isEventEnded && (
+                          <Link to={`/events/${event.id}`}>
+                            <Button variant="outline" size="icon" className="w-12 h-12 rounded-2xl border-gray-200 hover:bg-gray-50">
+                              <ChevronRight className="w-5 h-5" />
+                            </Button>
+                          </Link>
+                        )}
                       </div>
                     </div>
                   </div>
