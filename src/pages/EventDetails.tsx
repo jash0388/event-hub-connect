@@ -381,17 +381,25 @@ export default function EventDetails() {
                                             <Button
                                                 variant="outline"
                                                 className="w-full h-12 rounded-xl gap-2 font-bold text-gray-700"
-                                                onClick={() => {
-                                                    const shareData = {
-                                                        title: event.title,
-                                                        text: `Check out this event: ${event.title}`,
-                                                        url: window.location.href
-                                                    };
-                                                    if (navigator.share) {
-                                                        navigator.share(shareData);
-                                                    } else {
-                                                        navigator.clipboard.writeText(window.location.href);
-                                                        toast({ title: "Link copied!", description: "Event link copied to clipboard" });
+                                                onClick={async () => {
+                                                    const shareUrl = window.location.href;
+                                                    try {
+                                                        if (navigator.share) {
+                                                            await navigator.share({
+                                                                title: event.title,
+                                                                text: `Check out this event: ${event.title}`,
+                                                                url: shareUrl
+                                                            });
+                                                        } else {
+                                                            await navigator.clipboard.writeText(shareUrl);
+                                                            toast({ title: "Link copied!", description: "Event link copied to clipboard" });
+                                                        }
+                                                    } catch (err) {
+                                                        // Always show toast with link as fallback
+                                                        toast({
+                                                            title: "Share Event",
+                                                            description: "Copy this link to share: " + shareUrl.substring(0, 50) + "..."
+                                                        });
                                                     }
                                                 }}
                                             >
