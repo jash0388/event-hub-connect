@@ -50,11 +50,11 @@ export function Footer() {
           </div>
 
           {/* Copyright & Made with */}
-          <div className="text-center flex flex-col items-center justify-center gap-2">
+          <div className="text-center flex flex-col items-center justify-center gap-2 w-full">
             <p className="text-sm text-gray-600 font-medium">
               © 2026 Alpha Team
             </p>
-            <p className="text-xs text-gray-400 flex items-center gap-1">
+            <p className="text-xs text-gray-400 flex items-center gap-1 whitespace-nowrap">
               Made with <Heart className="w-3 h-3 text-red-400 fill-current" /> for the Students of SPHN
             </p>
           </div>

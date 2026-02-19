@@ -71,7 +71,7 @@ export function Header() {
           </nav>
 
           {/* Desktop Right Section */}
-          <div className="hidden md:flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-3 min-w-[200px] justify-end">
             {user ? (
               <>
                 <Link to="/profile">
