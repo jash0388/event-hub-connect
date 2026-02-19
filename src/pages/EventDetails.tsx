@@ -66,11 +66,11 @@ export default function EventDetails() {
             if (user && id) {
                 const { data } = await (supabase
                     .from('event_registrations' as any)
-                    .select('rsvp_status')
+                    .select('id')
                     .eq('event_id', id)
                     .eq('user_id', user.id)
-                    .single() as any);
-                if (data) setUserRsvp(data.rsvp_status);
+                    .maybeSingle());
+                if (data) setUserRsvp('going');
             }
         };
         checkUserAndRsvp();
@@ -83,8 +83,7 @@ export default function EventDetails() {
             const { count } = await (supabase as any)
                 .from('event_registrations')
                 .select('*', { count: 'exact', head: true })
-                .eq('event_id', id)
-                .eq('rsvp_status', 'going');
+                .eq('event_id', id);
             setAttendeeCount(count || 0);
         };
         fetchAttendeeCount();
@@ -157,8 +156,6 @@ export default function EventDetails() {
                 .insert({
                     event_id: id,
                     user_id: user.id,
-                    rsvp_status: 'going',
-                    joined_at: new Date().toISOString(),
                     qr_code: qrCode,
                     full_name: registerForm.full_name,
                     roll_number: registerForm.roll_number,
