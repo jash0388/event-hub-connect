@@ -33,8 +33,8 @@ interface EventRecord {
   trending_score: number;
   registration_link: string | null;
   created_at: string;
-  photos: string[] | null;
-  videos: string[] | null;
+  photos: string | string[] | null;
+  videos: string | string[] | null;
 }
 
 interface EnhancedEvent extends EventRecord {
@@ -60,6 +60,14 @@ function normalizeCategory(value: string | null | undefined): Category {
   if (!value) return "Uncategorized";
   const found = [...categories, "Uncategorized" as const].find((category) => category.toLowerCase() === value.toLowerCase());
   return found || "Uncategorized";
+}
+
+// Helper to convert photos to array
+function getPhotosArray(photos: string | string[] | null | undefined): string[] {
+  if (!photos) return [];
+  if (Array.isArray(photos)) return photos;
+  // Handle comma-separated string
+  return photos.split(',').map(p => p.trim()).filter(p => p);
 }
 
 export default function Events() {
@@ -254,9 +262,9 @@ export default function Events() {
                       >
                         <Bookmark className={cn("w-5 h-5", isSaved && "fill-current")} />
                       </button>
-                      {event.photos && event.photos.length > 0 && (
+                      {getPhotosArray(event.photos).length > 0 && (
                         <button
-                          onClick={(e) => { e.preventDefault(); setCurrentPhotos(event.photos || []); setShowPhotosModal(event.id); }}
+                          onClick={(e) => { e.preventDefault(); setCurrentPhotos(getPhotosArray(event.photos)); setShowPhotosModal(event.id); }}
                           className="absolute bottom-4 right-4 w-10 h-10 rounded-full bg-white/80 hover:bg-white text-gray-600 backdrop-blur-sm flex items-center justify-center transition-all shadow-md"
                         >
                           <Image className="w-5 h-5" />
