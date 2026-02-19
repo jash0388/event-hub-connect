@@ -15,7 +15,7 @@ import {
     DialogFooter,
 } from "@/components/ui/dialog";
 import { Loader2, Calendar, MapPin, Clock, ArrowLeft, Users, Check, Heart, Share2 } from "lucide-react";
-import { format } from "date-fns";
+import { format, isBefore, startOfDay, parseISO } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import {
@@ -260,6 +260,9 @@ export default function EventDetails() {
         );
     }
 
+    const eventDate = parseISO(event.date);
+    const isEventEnded = isBefore(eventDate, startOfDay(new Date()));
+
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
             <Header />
@@ -350,13 +353,17 @@ export default function EventDetails() {
                                                 size="lg"
                                                 className={cn(
                                                     "w-full h-14 rounded-2xl text-lg font-bold shadow-lg shadow-primary/20",
-                                                    userRsvp === 'going' ? "bg-green-600 hover:bg-green-700" : ""
+                                                    isEventEnded
+                                                        ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                                        : userRsvp === 'going' ? "bg-green-600 hover:bg-green-700" : ""
                                                 )}
                                                 onClick={handleRsvp}
-                                                disabled={isRsvping}
+                                                disabled={isRsvping || isEventEnded}
                                             >
                                                 {isRsvping ? (
                                                     <Loader2 className="w-5 h-5 animate-spin" />
+                                                ) : isEventEnded ? (
+                                                    "Ended"
                                                 ) : userRsvp === 'going' ? (
                                                     <><Check className="w-5 h-5 mr-2" /> Registered</>
                                                 ) : (
