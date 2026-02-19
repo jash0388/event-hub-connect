@@ -536,13 +536,29 @@ const AdminDashboard = () => {
 
       if (!authData.user) throw new Error('Failed to create user');
 
-      // Add role to user_roles table (upsert to handle existing entries)
-      const { error: roleError } = await supabase
+      // First check if user already has a role
+      const { data: existingRole } = await supabase
         .from('user_roles')
-        .upsert([{
-          user_id: authData.user.id,
-          role: adminForm.role,
-        }], { onConflict: 'user_id' });
+        .select('role')
+        .eq('user_id', authData.user.id)
+        .maybeSingle();
+
+      // Add role to user_roles table
+      let roleError;
+      if (existingRole) {
+        // Update existing role
+        const result = await supabase
+          .from('user_roles')
+          .update({ role: adminForm.role })
+          .eq('user_id', authData.user.id);
+        roleError = result.error;
+      } else {
+        // Insert new role
+        const result = await supabase
+          .from('user_roles')
+          .insert([{ user_id: authData.user.id, role: adminForm.role }]);
+        roleError = result.error;
+      }
 
       if (roleError) throw roleError;
 
