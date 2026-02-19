@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { Play, Copy, Check } from "lucide-react";
+import { Play, Copy, Check, Home } from "lucide-react";
+import { Link } from "react-router-dom";
 
 declare global { interface Window { loadPyodide: any; } }
 
@@ -96,15 +97,25 @@ const Compilers = () => {
         }}>
             <div className="max-w-4xl mx-auto px-4 py-12">
 
-                {/* Header */}
-                <div className="text-center mb-8">
-                    <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-orange-500 to-amber-600 rounded-2xl mb-4 shadow-lg">
-                        <span className="text-4xl">⚡</span>
+                {/* Header with Home Button */}
+                <div className="flex items-center justify-center mb-8 relative">
+                    <Link
+                        to="/"
+                        className="absolute left-0 flex items-center gap-2 px-4 py-2 rounded-lg bg-white/80 backdrop-blur shadow-md hover:shadow-lg text-gray-700 hover:text-orange-600 transition-all"
+                    >
+                        <Home size={20} />
+                        <span className="font-medium">Home</span>
+                    </Link>
+
+                    <div className="text-center">
+                        <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-orange-500 to-amber-600 rounded-2xl mb-4 shadow-lg">
+                            <span className="text-4xl">⚡</span>
+                        </div>
+                        <h1 className="text-4xl font-bold text-gray-800 mb-2">
+                            Code <span className="text-orange-600">Compiler</span>
+                        </h1>
+                        <p className="text-gray-600 text-lg">Write and run code in your browser - completely free!</p>
                     </div>
-                    <h1 className="text-4xl font-bold text-gray-800 mb-2">
-                        Code <span className="text-orange-600">Compiler</span>
-                    </h1>
-                    <p className="text-gray-600 text-lg">Write and run code in your browser - completely free!</p>
                 </div>
 
                 {/* Language Buttons */}
