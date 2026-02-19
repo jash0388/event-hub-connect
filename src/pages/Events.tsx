@@ -302,22 +302,30 @@ export default function Events() {
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <Link to={`/events/${event.id}`} className="flex-1">
-                          <Button
-                            disabled={isEventEnded}
-                            className={cn(
-                              "w-full rounded-2xl h-12 text-sm font-bold transition-all",
-                              isEventEnded
-                                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                                : isRegistered
+                        {isEventEnded ? (
+                          <div className="flex-1">
+                            <Button
+                              disabled
+                              className="w-full rounded-2xl h-12 text-sm font-bold bg-gray-100 text-gray-400 cursor-not-allowed"
+                            >
+                              Ended
+                            </Button>
+                          </div>
+                        ) : (
+                          <Link to={`/events/${event.id}`} className="flex-1">
+                            <Button
+                              className={cn(
+                                "w-full rounded-2xl h-12 text-sm font-bold transition-all",
+                                isRegistered
                                   ? "bg-green-100 text-green-700 hover:bg-green-200 border-none"
                                   : "shadow-md hover:shadow-lg"
-                            )}
-                            variant={isRegistered ? "secondary" : "default"}
-                          >
-                            {isEventEnded ? "Ended" : isRegistered ? "✓ Registered" : "Register Now"}
-                          </Button>
-                        </Link>
+                              )}
+                              variant={isRegistered ? "secondary" : "default"}
+                            >
+                              {isRegistered ? "✓ Registered" : "Register Now"}
+                            </Button>
+                          </Link>
+                        )}
                         <Link to={`/events/${event.id}`}>
                           <Button variant="outline" size="icon" className="w-12 h-12 rounded-2xl border-gray-200 hover:bg-gray-50">
                             <ChevronRight className="w-5 h-5" />
