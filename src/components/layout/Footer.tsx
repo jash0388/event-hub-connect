@@ -1,6 +1,7 @@
-import { Github, Twitter, Instagram, Mail, Linkedin, Globe, Heart } from "lucide-react";
+import { Github, Twitter, Instagram, Mail, Linkedin, Globe, Heart, Home } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { Link } from "react-router-dom";
 
 interface SocialLink {
   id: string;
@@ -36,22 +37,23 @@ export function Footer() {
   }, []);
 
   return (
-    <footer className="bg-gray-50 mt-auto">
-      <div className="container mx-auto px-4 py-10 md:py-12">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-6 md:gap-8">
-          {/* Logo & Info */}
-          <div className="text-center md:text-left space-y-3 order-2 md:order-1">
-            <span className="text-xl font-bold tracking-tight text-gray-900">
-              Data<span className="text-primary">Nauts</span>
-            </span>
-            <p className="text-sm text-gray-500 max-w-xs mx-auto md:mx-0">
-              The central hub for all college tech events, projects, and innovation.
-            </p>
-          </div>
+    <footer className="bg-gray-50 mt-auto border-t">
+      <div className="container mx-auto px-4 py-6">
+        {/* Top Row: Home Button | Copyright (Centered) | Social Links */}
+        <div className="flex flex-row items-center justify-between gap-4">
 
-          {/* Copyright & Made with */}
-          <div className="text-center flex flex-col items-center gap-2 order-1 md:order-2">
-            <p className="text-sm text-gray-600 font-medium">
+          {/* Home Button - Left */}
+          <Link
+            to="/"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors text-sm font-medium"
+          >
+            <Home size={18} />
+            <span className="hidden sm:inline">Home</span>
+          </Link>
+
+          {/* Copyright - Center (Always centered) */}
+          <div className="flex flex-col items-center text-center">
+            <p className="text-sm text-gray-600 font-medium whitespace-nowrap">
               © 2026 Alpha Team
             </p>
             <p className="text-xs text-gray-400 flex items-center gap-1 whitespace-nowrap">
@@ -59,10 +61,10 @@ export function Footer() {
             </p>
           </div>
 
-          {/* Social Links */}
-          <div className="flex items-center justify-center gap-5 order-3">
+          {/* Social Links - Right */}
+          <div className="flex items-center justify-end gap-3">
             {links.length > 0 ? (
-              links.map((link) => {
+              links.slice(0, 4).map((link) => {
                 const IconComponent = iconMap[link.platform.toLowerCase()] || iconMap.default;
                 return (
                   <a
@@ -70,15 +72,15 @@ export function Footer() {
                     href={link.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-10 h-10 flex items-center justify-center rounded-full bg-white border border-gray-200 text-gray-500 hover:text-primary hover:border-primary transition-all shadow-sm"
+                    className="w-9 h-9 flex items-center justify-center rounded-full bg-white border border-gray-200 text-gray-500 hover:text-primary hover:border-primary transition-all shadow-sm"
                     aria-label={link.platform}
                   >
-                    <IconComponent size={18} />
+                    <IconComponent size={16} />
                   </a>
                 );
               })
             ) : (
-              <p className="text-xs text-gray-400">Join our community</p>
+              <span className="text-xs text-gray-400 hidden sm:inline">Join our community</span>
             )}
           </div>
         </div>
