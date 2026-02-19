@@ -227,6 +227,7 @@ export default function Events() {
                 const eventDate = parseISO(event.date);
                 const isRegistered = registeredEvents.has(event.id);
                 const isSaved = savedIds.includes(event.id);
+                const isEventEnded = isBefore(eventDate, startOfDay(new Date()));
 
                 return (
                   <div key={event.id} className="group bg-white rounded-[2.5rem] border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col h-full">
@@ -303,13 +304,18 @@ export default function Events() {
                       <div className="flex items-center gap-2">
                         <Link to={`/events/${event.id}`} className="flex-1">
                           <Button
+                            disabled={isEventEnded}
                             className={cn(
                               "w-full rounded-2xl h-12 text-sm font-bold transition-all",
-                              isRegistered ? "bg-green-100 text-green-700 hover:bg-green-200 border-none" : "shadow-md hover:shadow-lg"
+                              isEventEnded
+                                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                : isRegistered
+                                  ? "bg-green-100 text-green-700 hover:bg-green-200 border-none"
+                                  : "shadow-md hover:shadow-lg"
                             )}
                             variant={isRegistered ? "secondary" : "default"}
                           >
-                            {isRegistered ? "✓ Registered" : "Register Now"}
+                            {isEventEnded ? "Ended" : isRegistered ? "✓ Registered" : "Register Now"}
                           </Button>
                         </Link>
                         <Link to={`/events/${event.id}`}>
