@@ -38,19 +38,19 @@ export function Footer() {
   return (
     <footer className="bg-gray-50 mt-auto">
       <div className="container mx-auto px-4 py-10 md:py-12">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-6 md:gap-8">
           {/* Logo & Info */}
-          <div className="text-center md:text-left space-y-3">
+          <div className="text-center md:text-left space-y-3 order-2 md:order-1">
             <span className="text-xl font-bold tracking-tight text-gray-900">
               Data<span className="text-primary">Nauts</span>
             </span>
-            <p className="text-sm text-gray-500 max-w-xs">
+            <p className="text-sm text-gray-500 max-w-xs mx-auto md:mx-0">
               The central hub for all college tech events, projects, and innovation.
             </p>
           </div>
 
           {/* Copyright & Made with */}
-          <div className="text-center flex flex-col items-center justify-center gap-2 w-full">
+          <div className="text-center flex flex-col items-center gap-2 order-1 md:order-2">
             <p className="text-sm text-gray-600 font-medium">
               © 2026 Alpha Team
             </p>
@@ -60,7 +60,7 @@ export function Footer() {
           </div>
 
           {/* Social Links */}
-          <div className="flex items-center justify-center md:justify-end gap-5">
+          <div className="flex items-center justify-center gap-5 order-3">
             {links.length > 0 ? (
               links.map((link) => {
                 const IconComponent = iconMap[link.platform.toLowerCase()] || iconMap.default;
