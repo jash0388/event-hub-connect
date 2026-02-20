@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Calendar, MapPin, Loader2, ExternalLink, Github } from 'lucide-react';
 import { format } from 'date-fns';
+import { Link } from 'react-router-dom';
 
 interface Event {
   id: string;
@@ -32,16 +33,25 @@ interface Internship {
   id: string;
   title: string;
   company: string;
-  description: string | null;
+  description: string;
   image_url: string | null;
-  internship_link: string | null;
-  created_at: string;
+  internship_link: string;
 }
+
+// AI-curated internships - always available
+const aiInternships: Internship[] = [
+  { id: "1", title: "AI/ML Research Intern", company: "OpenAI", description: "Work on cutting-edge artificial intelligence research.", image_url: "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400", internship_link: "https://openai.com/careers/internships/" },
+  { id: "2", title: "Cloud Architecture Intern", company: "AWS", description: "Learn cloud computing at scale.", image_url: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=400", internship_link: "https://amazon.jobs/en/teams/aws" },
+  { id: "3", title: "Cybersecurity Intern", company: "CrowdStrike", description: "Work on next-gen endpoint security.", image_url: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=400", internship_link: "https://careers.crowdstrike.com/" },
+  { id: "4", title: "Data Science Intern", company: "Netflix", description: "Analyze massive datasets for recommendation algorithms.", image_url: "https://images.unsplash.com/photo-1574267432553-4b4628081c31?w=400", internship_link: "https://jobs.netflix.com/" },
+  { id: "5", title: "DevOps Engineer Intern", company: "GitLab", description: "Work on DevOps platform, CI/CD, containerization.", image_url: "https://images.unsplash.com/photo-1618401471353-b98afee0b2eb?w=400", internship_link: "https://about.gitlab.com/careers/" },
+  { id: "6", title: "Mobile App Intern", company: "Spotify", description: "Build features for world's largest music streaming platform.", image_url: "https://images.unsplash.com/photo-1616348436918-d2273d9397a2?w=400", internship_link: "https://jobs.spotify.com/" },
+];
 
 const Feed = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
-  const [internships, setInternships] = useState<Internship[]>([]);
+  const [internships] = useState<Internship[]>(aiInternships);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -50,7 +60,7 @@ const Feed = () => {
 
   const fetchAllData = async () => {
     setIsLoading(true);
-    await Promise.all([fetchEvents(), fetchProjects(), fetchInternships()]);
+    await Promise.all([fetchEvents(), fetchProjects()]);
     setIsLoading(false);
   };
 
@@ -68,20 +78,6 @@ const Feed = () => {
       .select('*')
       .order('created_at', { ascending: false });
     setProjects(data || []);
-  };
-
-  const fetchInternships = async () => {
-    const { data, error } = await (supabase as any)
-      .from("internships")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      setInternships([]);
-      return;
-    }
-
-    setInternships(data || []);
   };
 
   return (
@@ -224,14 +220,19 @@ const Feed = () => {
                         <span className="px-2 py-1 bg-primary/10 text-primary text-xs rounded">{internship.company}</span>
                       </div>
                       <p className="text-muted-foreground mb-4">{internship.description || "No description provided."}</p>
-                      {internship.internship_link && (
-                        <Button asChild>
-                          <a href={internship.internship_link} target="_blank" rel="noopener noreferrer">
-                            Apply Now
-                            <ExternalLink className="ml-2 w-4 h-4" />
-                          </a>
+                      <div className="flex gap-2">
+                        {internship.internship_link && (
+                          <Button asChild>
+                            <a href={internship.internship_link} target="_blank" rel="noopener noreferrer">
+                              Apply Now
+                              <ExternalLink className="ml-2 w-4 h-4" />
+                            </a>
+                          </Button>
+                        )}
+                        <Button variant="outline" asChild>
+                          <Link to="/internships">View All</Link>
                         </Button>
-                      )}
+                      </div>
                     </div>
                   ))}
                 </div>

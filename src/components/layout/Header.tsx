@@ -3,12 +3,12 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Menu, X, Shield, LogOut, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
-import { isAdmin } from "@/lib/isAdmin";
+import { useAuth } from "@/hooks/useAuth";
 
 const navItems = [
   { path: "/", label: "Home" },
   { path: "/events", label: "Events" },
+  { path: "/internships", label: "Internships" },
   { path: "/compilers", label: "Compilers" },
   { path: "/profile", label: "My Events" },
   { path: "/about", label: "About" },
@@ -17,27 +17,12 @@ const navItems = [
 
 export function Header() {
   const [isOpen, setIsOpen] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  const { user, signOut, loading } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-    };
-    getUser();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user || null);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
+    await signOut();
     navigate("/");
   };
 
@@ -73,7 +58,9 @@ export function Header() {
 
           {/* Desktop Right Section */}
           <div className="hidden md:flex items-center gap-3 min-w-[200px] justify-end">
-            {user ? (
+            {loading ? (
+              <div className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
+            ) : user ? (
               <>
                 <Link to="/profile">
                   <Button variant="ghost" size="sm" className="rounded-full gap-2">
@@ -162,7 +149,13 @@ export function Header() {
                 </>
               ) : (
                 <Link to="/login" onClick={() => setIsOpen(false)}>
-                  <Button className="w-full rounded-xl">Login</Button>
+                  {loading ? (
+                    <div className="w-full flex items-center justify-center py-3">
+                      <div className="w-6 h-6 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
+                    </div>
+                  ) : (
+                    <Button className="w-full rounded-xl">Login</Button>
+                  )}
                 </Link>
               )}
               <Link to="/admin/login" onClick={() => setIsOpen(false)}>

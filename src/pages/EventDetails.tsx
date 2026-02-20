@@ -261,7 +261,10 @@ export default function EventDetails() {
     }
 
     const eventDate = parseISO(event.date);
-    const isEventEnded = isBefore(eventDate, startOfDay(new Date()));
+    // Event is only considered ended if it's before today AND the event has actually started
+    const today = startOfDay(new Date());
+    const eventStartDate = startOfDay(eventDate);
+    const isEventEnded = isBefore(eventStartDate, today);
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -345,7 +348,7 @@ export default function EventDetails() {
                                     <div className="bg-gray-50 border border-gray-100 rounded-[2rem] p-8 sticky top-28 space-y-6">
                                         <div className="text-center pb-6 border-b border-gray-200">
                                             <p className="text-3xl font-extrabold text-gray-900">Free</p>
-                                            <p className="text-sm text-gray-500 font-medium mt-1">Limited seats available</p>
+                                            <p className="text-sm text-gray-500 font-medium mt-1">Unlimited seats available</p>
                                         </div>
 
                                         <div className="space-y-4">

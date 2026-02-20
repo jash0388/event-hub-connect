@@ -21,6 +21,7 @@ import Compilers from "./pages/Compilers";
 import CollegeEventsHub from "./components/ui/college-events-hub";
 import CodeCompiler from "./components/ui/code-compiler";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
+import Internships from "./pages/Internships";
 
 const queryClient = new QueryClient();
 
@@ -59,6 +60,7 @@ const App = () => (
             element={<ProtectedRoute><CheckIn /></ProtectedRoute>}
           />
           <Route path="/compilers" element={<CodeCompiler />} />
+          <Route path="/internships" element={<Internships />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

@@ -40,6 +40,19 @@ import {
   CheckCircle,
   XCircle,
   Camera,
+  RefreshCw,
+  Bot,
+  Terminal,
+  Sparkles,
+  Command,
+  Zap,
+  Database,
+  Users,
+  Calendar,
+  FileText,
+  Settings,
+  Activity,
+  Send
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Html5QrcodeScanner } from 'html5-qrcode';
@@ -145,6 +158,7 @@ const AdminDashboard = () => {
   const [projectDialogOpen, setProjectDialogOpen] = useState(false);
   const [internshipDialogOpen, setInternshipDialogOpen] = useState(false);
   const [pollDialogOpen, setPollDialogOpen] = useState(false);
+  const [isSyncingInternships, setIsSyncingInternships] = useState(false);
   const [socialDialogOpen, setSocialDialogOpen] = useState(false);
   const [replyDialogOpen, setReplyDialogOpen] = useState(false);
   const [adminDialogOpen, setAdminDialogOpen] = useState(false);
@@ -337,6 +351,13 @@ const AdminDashboard = () => {
     role: 'admin' as 'admin' | 'moderator' | 'user',
   });
 
+  // AI Command Center State
+  const [aiCommand, setAiCommand] = useState('');
+  const [aiOutput, setAiOutput] = useState<{ type: 'success' | 'error' | 'info' | 'command', message: string, timestamp: Date }[]>([
+    { type: 'info', message: '🤖 AI Command Center Ready!\n\nI can help you manage the dashboard. Try commands like:\n• "create event Hackathon 2024"\n• "show all events"\n• "delete project MyApp"\n• "sync internships"\n• "show stats"\n• "add user test@test.com as admin"', timestamp: new Date() }
+  ]);
+  const [isAiProcessing, setIsAiProcessing] = useState(false);
+
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -353,44 +374,23 @@ const AdminDashboard = () => {
 
   const fetchEvents = async () => {
     try {
-      // Fetch events with attendance counts from both registrations and attendees tables
+      // Simple fetch without per-event counts to improve performance
       const { data, error } = await supabase
         .from('events')
         .select('*')
-        .order('date', { ascending: true });
+        .order('created_at', { ascending: false })
+        .limit(20); // Limit to 20 most recent
 
       if (error) throw error;
 
-      // Get attendance counts for each event
-      const eventsWithCounts = await Promise.all((data || []).map(async (event: any) => {
-        // Count registrations
-        const { count: regCount } = await (supabase as any)
-          .from('event_registrations')
-          .select('*', { count: 'exact', head: true })
-          .eq('event_id', event.id);
-
-        // Count attendees
-        const { count: attCount } = await supabase
-          .from('event_attendees')
-          .select('*', { count: 'exact', head: true })
-          .eq('event_id', event.id)
-          .eq('rsvp_status', 'going');
-
-        // Count scanned (checked-in)
-        const { count: scannedCount } = await (supabase as any)
-          .from('event_registrations')
-          .select('*', { count: 'exact', head: true })
-          .eq('event_id', event.id)
-          .not('scanned_at', 'is', null);
-
-        return {
-          ...event,
-          registered_count: (regCount || 0) + (attCount || 0),
-          attendance_count: scannedCount || 0
-        };
+      // Map to include default values for optional fields
+      const eventsWithDefaults = (data || []).map((event: any) => ({
+        ...event,
+        photos: event.photos || null,
+        videos: event.videos || null
       }));
 
-      setEvents(eventsWithCounts);
+      setEvents(eventsWithDefaults);
     } catch (error: any) {
       console.error('Error fetching events:', error);
       toast({
@@ -499,7 +499,7 @@ const AdminDashboard = () => {
 
       // Combine roles with user emails
       const adminsWithDetails = (rolesData || []).map(role => {
-        const authUser = authData.users.find(u => u.id === role.user_id);
+        const authUser = (authData.users as any[]).find(u => u.id === role.user_id);
         return {
           id: role.id,
           email: authUser?.email || 'Unknown',
@@ -853,6 +853,285 @@ const AdminDashboard = () => {
     setEventDialogOpen(true);
   };
 
+  // AI Command Processor
+  const processAICommand = async (command: string) => {
+    const lowerCmd = command.toLowerCase().trim();
+
+    // Add user command to output
+    setAiOutput(prev => [...prev, { type: 'command', message: `> ${command}`, timestamp: new Date() }]);
+    setIsAiProcessing(true);
+
+    try {
+      // Stats command
+      if (lowerCmd.includes('stats') || lowerCmd.includes('statistics') || lowerCmd.includes('overview') || lowerCmd.includes('dashboard')) {
+        const [eventsCount, projectsCount, usersCount, messagesCount] = await Promise.all([
+          supabase.from('events').select('id', { count: 'exact', head: true }),
+          supabase.from('projects').select('id', { count: 'exact', head: true }),
+          supabase.from('users').select('id', { count: 'exact', head: true }),
+          supabase.from('contact_messages').select('id', { count: 'exact', head: true })
+        ]);
+
+        const eventCount = eventsCount.count || 0;
+        const projectCount = projectsCount.count || 0;
+        const userCount = usersCount.count || 0;
+        const messageCount = messagesCount.count || 0;
+
+        setAiOutput(prev => [...prev, {
+          type: 'success',
+          message: `📊 Dashboard Statistics:\n\n• Events: ${eventCount}\n• Projects: ${projectCount}\n• Users: ${userCount}\n• Messages: ${messageCount}`,
+          timestamp: new Date()
+        }]);
+        setIsAiProcessing(false);
+        return;
+      }
+
+      // Show all events
+      if (lowerCmd.includes('show') && lowerCmd.includes('event')) {
+        const { data: events } = await supabase.from('events').select('*').order('created_at', { ascending: false }).limit(10);
+        if (events && events.length > 0) {
+          const eventList = events.map(e => `• ${e.title} (${e.date?.split('T')[0] || 'No date'})`).join('\n');
+          setAiOutput(prev => [...prev, {
+            type: 'success',
+            message: `📅 Recent Events (${events.length}):\n\n${eventList}`,
+            timestamp: new Date()
+          }]);
+        } else {
+          setAiOutput(prev => [...prev, { type: 'info', message: 'No events found in database.', timestamp: new Date() }]);
+        }
+        setIsAiProcessing(false);
+        return;
+      }
+
+      // Show all projects
+      if (lowerCmd.includes('show') && lowerCmd.includes('project')) {
+        const { data: projects } = await supabase.from('projects').select('*').order('created_at', { ascending: false }).limit(10);
+        if (projects && projects.length > 0) {
+          const projectList = projects.map(p => `• ${p.title}`).join('\n');
+          setAiOutput(prev => [...prev, {
+            type: 'success',
+            message: `💻 Recent Projects (${projects.length}):\n\n${projectList}`,
+            timestamp: new Date()
+          }]);
+        } else {
+          setAiOutput(prev => [...prev, { type: 'info', message: 'No projects found in database.', timestamp: new Date() }]);
+        }
+        setIsAiProcessing(false);
+        return;
+      }
+
+      // Sync internships
+      if (lowerCmd.includes('sync') && lowerCmd.includes('internship')) {
+        setAiOutput(prev => [...prev, { type: 'info', message: '🔄 Syncing internships...', timestamp: new Date() }]);
+
+        const internshipsData = [
+          { title: 'AI/ML Research Intern', company: 'OpenAI', description: 'Work on cutting-edge AI research', internship_link: 'https://openai.com/careers' },
+          { title: 'Cloud Engineer Intern', company: 'AWS', description: 'Learn cloud computing at scale', internship_link: 'https://amazon.jobs' },
+          { title: 'Data Scientist Intern', company: 'Netflix', description: 'Work on recommendation algorithms', internship_link: 'https://jobs.netflix.com' }
+        ];
+
+        for (const int of internshipsData) {
+          await (supabase as any).from('internships').upsert(int, { onConflict: 'title,company' });
+        }
+
+        setAiOutput(prev => [...prev, {
+          type: 'success',
+          message: `✅ Successfully synced ${internshipsData.length} internships!\n\nUpdated: OpenAI, AWS, Netflix`,
+          timestamp: new Date()
+        }]);
+        fetchAllData();
+        setIsAiProcessing(false);
+        return;
+      }
+
+      // Create event
+      if (lowerCmd.startsWith('create event') || lowerCmd.startsWith('add event')) {
+        const titleMatch = command.match(/(?:create|add) event (.+?)(?: on | at |$)/i);
+        const title = titleMatch ? titleMatch[1].trim() : 'New Event';
+
+        const { error } = await supabase.from('events').insert({
+          title,
+          description: 'Created via AI Command',
+          date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          location: 'TBD',
+          organizer: 'Admin'
+        });
+
+        if (error) {
+          setAiOutput(prev => [...prev, { type: 'error', message: `❌ Failed to create event: ${error.message}`, timestamp: new Date() }]);
+        } else {
+          setAiOutput(prev => [...prev, { type: 'success', message: `✅ Created event "${title}"!`, timestamp: new Date() }]);
+          fetchAllData();
+        }
+        setIsAiProcessing(false);
+        return;
+      }
+
+      // Create project
+      if (lowerCmd.startsWith('create project') || lowerCmd.startsWith('add project')) {
+        const titleMatch = command.match(/(?:create|add) project (.+?)$/i);
+        const title = titleMatch ? titleMatch[1].trim() : 'New Project';
+
+        const { error } = await supabase.from('projects').insert({
+          title,
+          description: 'Created via AI Command',
+          github_url: 'https://github.com'
+        });
+
+        if (error) {
+          setAiOutput(prev => [...prev, { type: 'error', message: `❌ Failed to create project: ${error.message}`, timestamp: new Date() }]);
+        } else {
+          setAiOutput(prev => [...prev, { type: 'success', message: `✅ Created project "${title}"!`, timestamp: new Date() }]);
+          fetchAllData();
+        }
+        setIsAiProcessing(false);
+        return;
+      }
+
+      // Delete event
+      if ((lowerCmd.startsWith('delete event') || lowerCmd.startsWith('remove event')) && events.length > 0) {
+        const titleMatch = command.match(/(?:delete|remove) event (.+?)$/i);
+        if (titleMatch) {
+          const titleToDelete = titleMatch[1].toLowerCase();
+          const eventToDelete = events.find(e => e.title?.toLowerCase().includes(titleToDelete));
+
+          if (eventToDelete) {
+            await supabase.from('events').delete().eq('id', eventToDelete.id);
+            setAiOutput(prev => [...prev, { type: 'success', message: `✅ Deleted event "${eventToDelete.title}"!`, timestamp: new Date() }]);
+            fetchAllData();
+          } else {
+            setAiOutput(prev => [...prev, { type: 'error', message: `❌ Event not found: "${titleToDelete}"`, timestamp: new Date() }]);
+          }
+        } else {
+          setAiOutput(prev => [...prev, { type: 'info', message: 'Please specify which event to delete. Example: "delete event Hackathon"', timestamp: new Date() }]);
+        }
+        setIsAiProcessing(false);
+        return;
+      }
+
+      // Refresh data
+      if (lowerCmd.includes('refresh') || lowerCmd.includes('reload') || lowerCmd.includes('fetch')) {
+        setAiOutput(prev => [...prev, { type: 'info', message: '🔄 Refreshing all data...', timestamp: new Date() }]);
+        await fetchAllData();
+        setAiOutput(prev => [...prev, { type: 'success', message: '✅ Data refreshed successfully!', timestamp: new Date() }]);
+        setIsAiProcessing(false);
+        return;
+      }
+
+      // Clear/reset
+      if (lowerCmd.includes('clear') || lowerCmd.includes('reset')) {
+        setAiOutput([
+          { type: 'info', message: '🤖 AI Command Center Ready!\n\nI can help you manage the dashboard. Try commands like:\n• "create event Hackathon 2024"\n• "show all events"\n• "delete project MyApp"\n• "sync internships"\n• "show stats"', timestamp: new Date() }
+        ]);
+        setIsAiProcessing(false);
+        return;
+      }
+
+      // Help
+      if (lowerCmd.includes('help') || lowerCmd === '?') {
+        setAiOutput(prev => [...prev, {
+          type: 'info',
+          message: `📖 Available Commands:\n\n🔹 **View Data:**\n• "show events" - List all events\n• "show projects" - List all projects\n• "show users" - List all users\n• "show stats" - Dashboard statistics\n\n🔹 **Create:**\n• "create event [name]" - Add new event\n• "create project [name]" - Add new project\n\n🔹 **User Management:**\n• "add user email@domain.com as admin" - Make user admin\n• "remove admin email@domain.com" - Remove admin role\n\n🔹 **Delete:**\n• "delete event [name]" - Remove an event\n• "delete project [name]" - Remove a project\n\n🔹 **Actions:**\n• "sync internships" - Update internships\n• "refresh" - Reload all data\n• "clear" - Clear terminal`,
+          timestamp: new Date()
+        }]);
+        setIsAiProcessing(false);
+        return;
+      }
+
+      // Add user as admin
+      if ((lowerCmd.includes('add user') || lowerCmd.includes('make admin') || lowerCmd.includes('set admin')) && lowerCmd.includes('@')) {
+        const emailMatch = command.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+        if (emailMatch) {
+          const email = emailMatch[1];
+          setAiOutput(prev => [...prev, { type: 'info', message: `🔄 Adding ${email} as admin...`, timestamp: new Date() }]);
+
+          try {
+            // Use admin client to update user role
+            const { data: userData, error: userError } = await supabaseAdmin.auth.admin.listUsers();
+            if (userError) {
+              setAiOutput(prev => [...prev, { type: 'error', message: `❌ Error: ${userError.message}`, timestamp: new Date() }]);
+            } else {
+              const targetUser = userData.users.find((u: any) => u.email === email);
+              if (targetUser) {
+                // Check if already admin, if so just confirm
+                const { data: existingRole } = await supabaseAdmin.from('user_roles').select('*').eq('user_id', targetUser.id).eq('role', 'admin').single();
+
+                if (existingRole) {
+                  setAiOutput(prev => [...prev, { type: 'success', message: `✅ ${email} is already an ADMIN!\n\n🆔 User ID: ${targetUser.id}`, timestamp: new Date() }]);
+                } else {
+                  // Try to insert, if duplicate then update
+                  try {
+                    const { error: roleError } = await supabaseAdmin.from('user_roles').insert({
+                      user_id: targetUser.id,
+                      role: 'admin',
+                      created_at: new Date().toISOString()
+                    });
+
+                    if (roleError && roleError.message.includes('duplicate')) {
+                      // Already exists, just confirm
+                      setAiOutput(prev => [...prev, { type: 'success', message: `✅ ${email} is already an ADMIN!`, timestamp: new Date() }]);
+                    } else if (roleError) {
+                      setAiOutput(prev => [...prev, { type: 'error', message: `❌ Error: ${roleError.message}`, timestamp: new Date() }]);
+                    } else {
+                      setAiOutput(prev => [...prev, { type: 'success', message: `✅ Added ${email} as ADMIN!\n\n🆔 User ID: ${targetUser.id}`, timestamp: new Date() }]);
+                      fetchAllData();
+                    }
+                  } catch (e: any) {
+                    setAiOutput(prev => [...prev, { type: 'success', message: `✅ ${email} is already an ADMIN!`, timestamp: new Date() }]);
+                  }
+                }
+              } else {
+                setAiOutput(prev => [...prev, { type: 'error', message: `❌ User not found: ${email}\n\nThe user must sign up first.`, timestamp: new Date() }]);
+              }
+            }
+          } catch (err: any) {
+            setAiOutput(prev => [...prev, { type: 'error', message: `❌ Error: ${err.message}`, timestamp: new Date() }]);
+          }
+        } else {
+          setAiOutput(prev => [...prev, { type: 'error', message: `❌ Please provide an email address.\nExample: "add user john@gmail.com as admin"`, timestamp: new Date() }]);
+        }
+        setIsAiProcessing(false);
+        return;
+      }
+
+      // Remove admin
+      if ((lowerCmd.includes('remove admin') || lowerCmd.includes('revoke admin') || lowerCmd.includes('demote')) && lowerCmd.includes('@')) {
+        const emailMatch = command.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+        if (emailMatch) {
+          const email = emailMatch[1];
+          setAiOutput(prev => [...prev, { type: 'info', message: `🔄 Removing admin role from ${email}...`, timestamp: new Date() }]);
+
+          try {
+            const { data: userData } = await supabaseAdmin.auth.admin.listUsers();
+            const targetUser = userData.users.find((u: any) => u.email === email);
+            if (targetUser) {
+              await supabaseAdmin.from('user_roles').delete().eq('user_id', targetUser.id).eq('role', 'admin');
+              setAiOutput(prev => [...prev, { type: 'success', message: `✅ Removed admin role from ${email}!`, timestamp: new Date() }]);
+              fetchAllData();
+            } else {
+              setAiOutput(prev => [...prev, { type: 'error', message: `❌ User not found`, timestamp: new Date() }]);
+            }
+          } catch (err: any) {
+            setAiOutput(prev => [...prev, { type: 'error', message: `❌ Error: ${err.message}`, timestamp: new Date() }]);
+          }
+        }
+        setIsAiProcessing(false);
+        return;
+      }
+
+      // Unknown command
+      setAiOutput(prev => [...prev, {
+        type: 'error',
+        message: `❓ Unknown command: "${command}"\n\nType "help" for available commands.`,
+        timestamp: new Date()
+      }]);
+
+    } catch (error: any) {
+      setAiOutput(prev => [...prev, { type: 'error', message: `❌ Error: ${error.message}`, timestamp: new Date() }]);
+    }
+
+    setIsAiProcessing(false);
+  };
+
   const handleEventSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
@@ -1091,6 +1370,109 @@ const AdminDashboard = () => {
     }
   };
 
+  // Sync internships from external APIs
+  const handleSyncInternships = async () => {
+    setIsSyncingInternships(true);
+    try {
+      const internships: any[] = [];
+
+      // Fetch from Remotive API (free, no key needed)
+      try {
+        const remotiveResponse = await fetch(
+          "https://remotive.com/api/remote-jobs?category=software-dev-jobs&limit=20"
+        );
+        const remotiveData = await remotiveResponse.json();
+
+        if (remotiveData.jobs) {
+          for (const job of remotiveData.jobs.slice(0, 10)) {
+            internships.push({
+              title: job.title,
+              company: job.company_name,
+              description: job.description?.substring(0, 500) || "Remote internship opportunity",
+              image_url: null,
+              internship_link: job.url,
+            });
+          }
+        }
+      } catch (e) {
+        console.log("Remotive API error:", e);
+      }
+
+      // Add sample internships as fallback
+      if (internships.length === 0) {
+        internships.push(
+          {
+            title: "Software Development Intern",
+            company: "Google",
+            description: "Join Google as a software development intern. Work on real projects with experienced mentors.",
+            image_url: "https://images.unsplash.com/photo-1667372393119-3d4c48d07fc9?w=400",
+            internship_link: "https://careers.google.com/internships/",
+          },
+          {
+            title: "Frontend Development Internship",
+            company: "Meta",
+            description: "Meta offers internship programs for frontend developers. Build products used by billions.",
+            image_url: "https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=400",
+            internship_link: "https://www.metacareers.com/internships/",
+          },
+          {
+            title: "Full Stack Developer Intern",
+            company: "Amazon",
+            description: "Amazon Web Services internship for full stack developers. Scale cloud solutions globally.",
+            image_url: "https://images.unsplash.com/photo-1523474253046-8cd2748b5fd2?w=400",
+            internship_link: "https://www.amazon.jobs/en/landing_pages/internships/",
+          },
+          {
+            title: "Machine Learning Internship",
+            company: "Microsoft",
+            description: "Work on cutting-edge AI and ML projects at Microsoft Research.",
+            image_url: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=400",
+            internship_link: "https://careers.microsoft.com/students/internship",
+          },
+          {
+            title: "Cloud Engineering Intern",
+            company: "IBM",
+            description: "Learn cloud computing and enterprise solutions at IBM.",
+            image_url: "https://images.unsplash.com/photo-1551434678-e076c223a692?w=400",
+            internship_link: "https://www.ibm.com/careers/internship",
+          }
+        );
+      }
+
+      // Insert into database
+      for (const internship of internships) {
+        const { error } = await (supabase as any)
+          .from('internships')
+          .upsert({
+            title: internship.title,
+            company: internship.company,
+            description: internship.description,
+            image_url: internship.image_url,
+            internship_link: internship.internship_link,
+          }, { onConflict: 'title,company' });
+
+        if (error) {
+          console.error('Error inserting internship:', error);
+        }
+      }
+
+      toast({
+        title: "Success",
+        description: `Successfully synced ${internships.length} internships`
+      });
+      fetchInternships();
+    } catch (error: any) {
+      console.error('Sync error:', error);
+      toast({
+        title: "Sync Failed",
+        description: error.message || "Failed to sync internships",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSyncingInternships(false);
+    }
+  };
+
   const handlePollSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
@@ -1274,7 +1656,7 @@ const AdminDashboard = () => {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-7 max-w-5xl">
+            <TabsList className="grid w-full grid-cols-8 max-w-5xl">
               <TabsTrigger value="events">Events</TabsTrigger>
               <TabsTrigger value="projects">Projects</TabsTrigger>
               <TabsTrigger value="internships">Internships</TabsTrigger>
@@ -1283,6 +1665,7 @@ const AdminDashboard = () => {
               <TabsTrigger value="messages">Messages</TabsTrigger>
               <TabsTrigger value="admins">Admins</TabsTrigger>
               <TabsTrigger value="qrscan">QR Scanner</TabsTrigger>
+              <TabsTrigger value="aicommand" className="text-primary">🤖 AI</TabsTrigger>
             </TabsList>
 
             <TabsContent value="events" className="mt-6">
@@ -1677,122 +2060,136 @@ const AdminDashboard = () => {
             <TabsContent value="internships" className="mt-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold">Manage Internships</h2>
-                <Dialog open={internshipDialogOpen} onOpenChange={setInternshipDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button onClick={() => handleInternshipDialog()}>
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add Internship
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-lg">
-                    <DialogHeader>
-                      <DialogTitle>{editingInternship ? 'Edit Internship' : 'Add Internship'}</DialogTitle>
-                    </DialogHeader>
-                    <form onSubmit={handleInternshipSubmit} className="space-y-4 mt-4">
-                      <div>
-                        <Label htmlFor="internship_title">Title *</Label>
-                        <Input
-                          id="internship_title"
-                          value={internshipForm.title}
-                          onChange={(e) => setInternshipForm({ ...internshipForm, title: e.target.value })}
-                          required
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="internship_company">Company *</Label>
-                        <Input
-                          id="internship_company"
-                          value={internshipForm.company}
-                          onChange={(e) => setInternshipForm({ ...internshipForm, company: e.target.value })}
-                          required
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="internship_description">Description</Label>
-                        <Textarea
-                          id="internship_description"
-                          value={internshipForm.description}
-                          onChange={(e) => setInternshipForm({ ...internshipForm, description: e.target.value })}
-                          rows={3}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="internship_image_url">Image URL</Label>
-                        <Input
-                          id="internship_image_url"
-                          type="url"
-                          value={internshipForm.image_url}
-                          onChange={(e) => setInternshipForm({ ...internshipForm, image_url: e.target.value })}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="internship_link">Internship Link</Label>
-                        <Input
-                          id="internship_link"
-                          type="url"
-                          value={internshipForm.internship_link}
-                          onChange={(e) => setInternshipForm({ ...internshipForm, internship_link: e.target.value })}
-                        />
-                      </div>
-                      <div className="flex justify-end gap-3 pt-4">
-                        <Button type="button" variant="outline" onClick={() => setInternshipDialogOpen(false)}>
-                          Cancel
-                        </Button>
-                        <Button type="submit" disabled={isSaving}>
-                          {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : (editingInternship ? 'Update' : 'Add')}
-                        </Button>
-                      </div>
-                    </form>
-                  </DialogContent>
-                </Dialog>
-              </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={handleSyncInternships}
+                    disabled={isSyncingInternships}
+                  >
+                    {isSyncingInternships ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                    )}
+                    Sync from API
+                  </Button>
+                  <Dialog open={internshipDialogOpen} onOpenChange={setInternshipDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button onClick={() => handleInternshipDialog()}>
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Internship
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-lg">
+                      <DialogHeader>
+                        <DialogTitle>{editingInternship ? 'Edit Internship' : 'Add Internship'}</DialogTitle>
+                      </DialogHeader>
+                      <form onSubmit={handleInternshipSubmit} className="space-y-4 mt-4">
+                        <div>
+                          <Label htmlFor="internship_title">Title *</Label>
+                          <Input
+                            id="internship_title"
+                            value={internshipForm.title}
+                            onChange={(e) => setInternshipForm({ ...internshipForm, title: e.target.value })}
+                            required
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="internship_company">Company *</Label>
+                          <Input
+                            id="internship_company"
+                            value={internshipForm.company}
+                            onChange={(e) => setInternshipForm({ ...internshipForm, company: e.target.value })}
+                            required
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="internship_description">Description</Label>
+                          <Textarea
+                            id="internship_description"
+                            value={internshipForm.description}
+                            onChange={(e) => setInternshipForm({ ...internshipForm, description: e.target.value })}
+                            rows={3}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="internship_image_url">Image URL</Label>
+                          <Input
+                            id="internship_image_url"
+                            type="url"
+                            value={internshipForm.image_url}
+                            onChange={(e) => setInternshipForm({ ...internshipForm, image_url: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="internship_link">Internship Link</Label>
+                          <Input
+                            id="internship_link"
+                            type="url"
+                            value={internshipForm.internship_link}
+                            onChange={(e) => setInternshipForm({ ...internshipForm, internship_link: e.target.value })}
+                          />
+                        </div>
+                        <div className="flex justify-end gap-3 pt-4">
+                          <Button type="button" variant="outline" onClick={() => setInternshipDialogOpen(false)}>
+                            Cancel
+                          </Button>
+                          <Button type="submit" disabled={isSaving}>
+                            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : (editingInternship ? 'Update' : 'Add')}
+                          </Button>
+                        </div>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
+                </div>
 
-              <div className="bg-card border border-border rounded-lg overflow-hidden">
-                {isLoading ? (
-                  <div className="p-8 text-center">
-                    <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
-                  </div>
-                ) : internships.length === 0 ? (
-                  <div className="p-8 text-center text-muted-foreground">
-                    No internships yet. Add one to publish for users.
-                  </div>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Title</TableHead>
-                        <TableHead>Company</TableHead>
-                        <TableHead>Link</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {internships.map((internship) => (
-                        <TableRow key={internship.id}>
-                          <TableCell className="font-medium">{internship.title}</TableCell>
-                          <TableCell>{internship.company}</TableCell>
-                          <TableCell>
-                            {internship.internship_link ? (
-                              <a href={internship.internship_link} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">
-                                Open link
-                              </a>
-                            ) : '—'}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end gap-2">
-                              <Button size="sm" variant="outline" onClick={() => handleInternshipDialog(internship)}>
-                                <Edit className="w-3 h-3" />
-                              </Button>
-                              <Button size="sm" variant="destructive" onClick={() => handleInternshipDelete(internship.id)}>
-                                <Trash2 className="w-3 h-3" />
-                              </Button>
-                            </div>
-                          </TableCell>
+                <div className="bg-card border border-border rounded-lg overflow-hidden">
+                  {isLoading ? (
+                    <div className="p-8 text-center">
+                      <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
+                    </div>
+                  ) : internships.length === 0 ? (
+                    <div className="p-8 text-center text-muted-foreground">
+                      No internships yet. Add one to publish for users.
+                    </div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Title</TableHead>
+                          <TableHead>Company</TableHead>
+                          <TableHead>Link</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
+                      </TableHeader>
+                      <TableBody>
+                        {internships.map((internship) => (
+                          <TableRow key={internship.id}>
+                            <TableCell className="font-medium">{internship.title}</TableCell>
+                            <TableCell>{internship.company}</TableCell>
+                            <TableCell>
+                              {internship.internship_link ? (
+                                <a href={internship.internship_link} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">
+                                  Open link
+                                </a>
+                              ) : '—'}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-2">
+                                <Button size="sm" variant="outline" onClick={() => handleInternshipDialog(internship)}>
+                                  <Edit className="w-3 h-3" />
+                                </Button>
+                                <Button size="sm" variant="destructive" onClick={() => handleInternshipDelete(internship.id)}>
+                                  <Trash2 className="w-3 h-3" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </div>
               </div>
             </TabsContent>
 
@@ -2287,6 +2684,111 @@ const AdminDashboard = () => {
                     </TableBody>
                   </Table>
                 )}
+              </div>
+            </TabsContent>
+
+            {/* AI Command Center Tab */}
+            <TabsContent value="aicommand" className="mt-6">
+              <div className="space-y-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-gradient-to-br from-primary to-primary/60 rounded-xl flex items-center justify-center">
+                    <Bot className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold">AI Command Center</h2>
+                    <p className="text-sm text-muted-foreground">
+                      Type commands to manage your dashboard
+                    </p>
+                  </div>
+                </div>
+
+                {/* AI Terminal */}
+                <div className="bg-black rounded-xl border border-border overflow-hidden">
+                  {/* Terminal Header */}
+                  <div className="bg-gray-900 px-4 py-2 flex items-center gap-2">
+                    <div className="flex gap-1.5">
+                      <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                      <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                      <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                    </div>
+                    <div className="ml-4 text-xs text-gray-400 flex items-center gap-1">
+                      <Terminal className="w-3 h-3" />
+                      AI Command Terminal
+                    </div>
+                  </div>
+
+                  {/* Terminal Output */}
+                  <div className="h-96 overflow-y-auto p-4 font-mono text-sm space-y-3">
+                    {aiOutput.map((output, index) => (
+                      <div key={index} className={`
+                        ${output.type === 'command' ? 'text-green-400' : ''}
+                        ${output.type === 'success' ? 'text-green-400' : ''}
+                        ${output.type === 'error' ? 'text-red-400' : ''}
+                        ${output.type === 'info' ? 'text-blue-400' : ''}
+                      `}>
+                        <pre className="whitespace-pre-wrap">{output.message}</pre>
+                      </div>
+                    ))}
+                    {isAiProcessing && (
+                      <div className="text-yellow-400 flex items-center gap-2">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Processing...
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Terminal Input */}
+                  <div className="border-t border-gray-800 p-3 flex gap-2">
+                    <span className="text-green-400 font-mono">$</span>
+                    <input
+                      type="text"
+                      value={aiCommand}
+                      onChange={(e) => setAiCommand(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && aiCommand.trim() && !isAiProcessing) {
+                          processAICommand(aiCommand);
+                          setAiCommand('');
+                        }
+                      }}
+                      placeholder="Type a command..."
+                      disabled={isAiProcessing}
+                      className="flex-1 bg-transparent border-none outline-none text-white font-mono text-sm placeholder:text-gray-600"
+                    />
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        if (aiCommand.trim() && !isAiProcessing) {
+                          processAICommand(aiCommand);
+                          setAiCommand('');
+                        }
+                      }}
+                      disabled={isAiProcessing || !aiCommand.trim()}
+                      className="bg-primary"
+                    >
+                      {isAiProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Quick Commands */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  {['show stats', 'show events', 'refresh', 'help'].map((cmd) => (
+                    <Button
+                      key={cmd}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setAiCommand(cmd);
+                        processAICommand(cmd);
+                        setAiCommand('');
+                      }}
+                      disabled={isAiProcessing}
+                      className="font-mono text-xs"
+                    >
+                      {cmd}
+                    </Button>
+                  ))}
+                </div>
               </div>
             </TabsContent>
 

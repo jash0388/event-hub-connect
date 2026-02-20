@@ -18,43 +18,55 @@ export function useAuth() {
     loading: true,
   });
 
+  // Check admin status - memoized to avoid recreating on each render
   const checkAdminStatus = useCallback(async (user: User | null) => {
-    if (!user) {
+    if (!user) return false;
+    try {
+      return await checkIsAdmin();
+    } catch {
       return false;
     }
-    return await checkIsAdmin();
   }, []);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
+    // Initialize auth state
+    const initAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user ?? null;
+        const adminStatus = await checkAdminStatus(user);
+        setState({
+          user,
+          session,
+          isAdmin: adminStatus,
+          loading: false,
+        });
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+        setState(prev => ({ ...prev, loading: false }));
+      }
+    };
+
+    initAuth();
+
+    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        // Skip TOKEN_REFRESHED events to avoid unnecessary updates
+        if (event === 'TOKEN_REFRESHED') {
+          return;
+        }
+
         const user = session?.user ?? null;
-        
-        // Use setTimeout to avoid potential deadlock with Supabase client
-        setTimeout(async () => {
-          const adminStatus = await checkAdminStatus(user);
-          setState({
-            user,
-            session,
-            isAdmin: adminStatus,
-            loading: false,
-          });
-        }, 0);
+        const adminStatus = await checkAdminStatus(user);
+        setState({
+          user,
+          session,
+          isAdmin: adminStatus,
+          loading: false,
+        });
       }
     );
-
-    // THEN get initial session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      const user = session?.user ?? null;
-      const adminStatus = await checkAdminStatus(user);
-      setState({
-        user,
-        session,
-        isAdmin: adminStatus,
-        loading: false,
-      });
-    });
 
     return () => {
       subscription.unsubscribe();
