@@ -10,7 +10,9 @@ export function ProtectedRoute({ children, requireAdmin = false }: ProtectedRout
   const { user, isAdmin, loading } = useAuth();
   const location = useLocation();
 
-  if (loading) {
+  // Show loading spinner only for admin routes during initial auth check
+  // For regular user routes, allow access while loading to prevent UI flash
+  if (loading && requireAdmin) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
@@ -21,11 +23,17 @@ export function ProtectedRoute({ children, requireAdmin = false }: ProtectedRout
     );
   }
 
-  if (!user) {
+  // For non-admin protected routes (like /profile), allow access if user is logged in
+  // Don't block on admin check
+  if (!requireAdmin && !user && !loading) {
     return <Navigate to="/admin/login" state={{ from: location }} replace />;
   }
 
-  if (requireAdmin && !isAdmin) {
+  if (requireAdmin && !user) {
+    return <Navigate to="/admin/login" state={{ from: location }} replace />;
+  }
+
+  if (requireAdmin && user && !isAdmin) {
     return <Navigate to="/admin/login" state={{ from: location, unauthorized: true }} replace />;
   }
 

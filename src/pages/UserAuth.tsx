@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/layout/Header";
@@ -19,15 +19,26 @@ export default function UserAuth() {
     const navigate = useNavigate();
     const { toast } = useToast();
 
-    // Check if already logged in
+    // Check if already logged in - with proper cleanup
     useEffect(() => {
+        let isMounted = true;
+
         const checkUser = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-                navigate("/profile");
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (isMounted && user) {
+                    navigate("/profile", { replace: true });
+                }
+            } catch (error) {
+                // Ignore errors during check
             }
         };
+
         checkUser();
+
+        return () => {
+            isMounted = false;
+        };
     }, [navigate]);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -44,7 +55,7 @@ export default function UserAuth() {
 
                 if (error) throw error;
                 toast({ title: "Welcome back!", description: "Login successful" });
-                navigate("/profile");
+                navigate("/profile", { replace: true });
             } else {
                 // Sign up
                 const { data, error } = await supabase.auth.signUp({
@@ -69,7 +80,7 @@ export default function UserAuth() {
                 }
 
                 toast({ title: "Account created!", description: "Please check your email to verify" });
-                navigate("/profile");
+                navigate("/profile", { replace: true });
             }
         } catch (error: any) {
             toast({

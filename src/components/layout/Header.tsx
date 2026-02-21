@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Menu, X, Shield, LogOut, User } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -20,6 +20,12 @@ export function Header() {
   const { user, signOut, loading } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Memoize nav items to prevent re-renders
+  const isActive = useMemo(() =>
+    (path: string) => location.pathname === path,
+    [location.pathname]
+  );
 
   const handleLogout = async () => {
     await signOut();

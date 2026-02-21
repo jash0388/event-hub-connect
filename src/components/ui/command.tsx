@@ -21,7 +21,9 @@ const Command = React.forwardRef<
 ));
 Command.displayName = CommandPrimitive.displayName;
 
-interface CommandDialogProps extends DialogProps {}
+interface CommandDialogProps extends DialogProps {
+  // Extends DialogProps from Radix UI
+}
 
 const CommandDialog = ({ children, ...props }: CommandDialogProps) => {
   return (

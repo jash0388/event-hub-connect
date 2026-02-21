@@ -63,10 +63,10 @@ const RotatingText = forwardRef<RotatingTextRef, RotatingTextProps>(
     const [currentTextIndex, setCurrentTextIndex] = useState<number>(0);
 
     const splitIntoCharacters = (text: string): string[] => {
-      if (typeof Intl !== "undefined" && (Intl as any).Segmenter) {
+      if (typeof Intl !== "undefined" && 'Segmenter' in Intl) {
         try {
-          const segmenter = new (Intl as any).Segmenter("en", { granularity: "grapheme" });
-          return Array.from(segmenter.segment(text), (segment: any) => segment.segment);
+          const segmenter = new (Intl as unknown as { Segmenter: new (locale: string, options: { granularity: string }) => { segment: (text: string) => IterableIterator<{ segment: string }> } }).Segmenter("en", { granularity: "grapheme" });
+          return Array.from(segmenter.segment(text), (segment: { segment: string }) => segment.segment);
         } catch (error) {
           return text.split('');
         }
@@ -111,9 +111,10 @@ const RotatingText = forwardRef<RotatingTextRef, RotatingTextProps>(
         switch (staggerFrom) {
           case "first": return index * stagger;
           case "last": return (total - 1 - index) * stagger;
-          case "center":
+          case "center": {
             const center = (total - 1) / 2;
             return Math.abs(center - index) * stagger;
+          }
           case "random": return Math.random() * (total - 1) * stagger;
           default:
             if (typeof staggerFrom === 'number') {

@@ -52,10 +52,10 @@ const RotatingText = React.forwardRef<RotatingTextRef, RotatingTextProps>(
         const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
         const splitIntoCharacters = (text: string): string[] => {
-            if (typeof Intl !== 'undefined' && (Intl as any).Segmenter) {
+            if (typeof Intl !== 'undefined' && 'Segmenter' in Intl) {
                 try {
-                    const segmenter = new (Intl as any).Segmenter('en', { granularity: 'grapheme' });
-                    return Array.from(segmenter.segment(text), (segment: any) => segment.segment);
+                    const segmenter = new (Intl as unknown as { Segmenter: new (locale: string, options: { granularity: string }) => { segment: (text: string) => IterableIterator<{ segment: string }> } }).Segmenter('en', { granularity: 'grapheme' });
+                    return Array.from(segmenter.segment(text), (segment: { segment: string }) => segment.segment);
                 } catch (error) {
                     return text.split('');
                 }
@@ -212,7 +212,7 @@ console.log(greet("Student"));`;
             try {
                 // Create a custom console that captures logs
                 const customConsole = {
-                    log: (...args: any[]) => {
+                    log: (...args: unknown[]) => {
                         const output = args.map(arg => {
                             if (arg === undefined) return 'undefined';
                             if (arg === null) return 'null';
@@ -227,13 +227,13 @@ console.log(greet("Student"));`;
                         }).join(' ');
                         logs.push(output);
                     },
-                    error: (...args: any[]) => {
+                    error: (...args: unknown[]) => {
                         logs.push('Error: ' + args.map(String).join(' '));
                     },
-                    warn: (...args: any[]) => {
+                    warn: (...args: unknown[]) => {
                         logs.push('Warning: ' + args.map(String).join(' '));
                     },
-                    info: (...args: any[]) => {
+                    info: (...args: unknown[]) => {
                         logs.push('Info: ' + args.map(String).join(' '));
                     }
                 };
@@ -261,7 +261,7 @@ console.log(greet("Student"));`;
             // Python parser - more robust implementation
             try {
                 const pythonOutput: string[] = [];
-                const variables: Record<string, any> = {};
+                const variables: Record<string, string | number> = {};
                 const functions: Record<string, string> = {};
 
                 const lines = codeContent.split('\n');
@@ -356,7 +356,7 @@ console.log(greet("Student"));`;
                     const assignMatch = trimmed.match(/^([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*(.+)$/);
                     if (assignMatch && !trimmed.includes('==') && !trimmed.includes('!=') && !trimmed.includes('<=') && !trimmed.includes('>=')) {
                         const varName = assignMatch[1];
-                        let varValue: any = assignMatch[2].trim();
+                        let varValue: string = assignMatch[2].trim();
 
                         // Remove trailing semicolon if present
                         varValue = varValue.replace(/;$/, '');
@@ -366,8 +366,8 @@ console.log(greet("Student"));`;
                             variables[varName] = Number(varValue);
                         } else if ((varValue.startsWith('"') && varValue.endsWith('"')) || (varValue.startsWith("'") && varValue.endsWith("'"))) {
                             variables[varName] = varValue.slice(1, -1);
-                        } else if (variables[varValue] !== undefined) {
-                            variables[varName] = variables[varValue];
+                        } else if (String(variables[varValue]) !== undefined) {
+                            variables[varName] = String(variables[varValue]);
                         } else if (varValue.includes('+')) {
                             // String or number concatenation
                             const parts = varValue.split('+').map((p: string) => p.trim());

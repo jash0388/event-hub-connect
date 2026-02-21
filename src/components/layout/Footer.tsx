@@ -1,4 +1,4 @@
-import { Github, Twitter, Instagram, Mail, Linkedin, Globe, Heart, Home } from "lucide-react";
+import { Github, Twitter, Instagram, Mail, Linkedin, Globe, Heart, Home, LucideIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
@@ -10,7 +10,7 @@ interface SocialLink {
   is_active: boolean;
 }
 
-const iconMap: Record<string, any> = {
+const iconMap: Record<string, LucideIcon> = {
   github: Github,
   twitter: Twitter,
   instagram: Instagram,

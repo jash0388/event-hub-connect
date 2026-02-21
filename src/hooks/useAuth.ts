@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { isAdmin as checkIsAdmin } from '@/lib/isAdmin';
@@ -10,6 +10,10 @@ interface AuthState {
   loading: boolean;
 }
 
+// Cache for admin status to avoid repeated DB queries
+let adminCache: { userId: string; isAdmin: boolean; timestamp: number } | null = null;
+const ADMIN_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
 export function useAuth() {
   const [state, setState] = useState<AuthState>({
     user: null,
@@ -18,23 +22,41 @@ export function useAuth() {
     loading: true,
   });
 
-  // Check admin status - memoized to avoid recreating on each render
+  // Check admin status with caching
   const checkAdminStatus = useCallback(async (user: User | null) => {
     if (!user) return false;
+
+    // Check cache first
+    const now = Date.now();
+    if (adminCache && adminCache.userId === user.id && (now - adminCache.timestamp) < ADMIN_CACHE_DURATION) {
+      return adminCache.isAdmin;
+    }
+
     try {
-      return await checkIsAdmin();
+      const adminStatus = await checkIsAdmin();
+      // Update cache
+      adminCache = { userId: user.id, isAdmin: adminStatus, timestamp: now };
+      return adminStatus;
     } catch {
       return false;
     }
   }, []);
 
   useEffect(() => {
-    // Initialize auth state
+    // Initialize auth state - don't await, let it set loading first
+    let isMounted = true;
+
     const initAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
+
+        if (!isMounted) return;
+
         const user = session?.user ?? null;
         const adminStatus = await checkAdminStatus(user);
+
+        if (!isMounted) return;
+
         setState({
           user,
           session,
@@ -43,7 +65,9 @@ export function useAuth() {
         });
       } catch (error) {
         console.error('Auth initialization error:', error);
-        setState(prev => ({ ...prev, loading: false }));
+        if (isMounted) {
+          setState(prev => ({ ...prev, loading: false }));
+        }
       }
     };
 
@@ -59,6 +83,7 @@ export function useAuth() {
 
         const user = session?.user ?? null;
         const adminStatus = await checkAdminStatus(user);
+
         setState({
           user,
           session,
@@ -69,6 +94,7 @@ export function useAuth() {
     );
 
     return () => {
+      isMounted = false;
       subscription.unsubscribe();
     };
   }, [checkAdminStatus]);
@@ -98,6 +124,8 @@ export function useAuth() {
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
     if (!error) {
+      // Clear admin cache on logout
+      adminCache = null;
       setState({
         user: null,
         session: null,
