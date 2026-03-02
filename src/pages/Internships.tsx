@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { GlowingEffect } from "@/components/ui/glowing-effect";
 
 interface Internship {
     id: string;
@@ -437,40 +438,42 @@ Just type your question!`;
     }, [chatMessages]);
 
     return (
-        <div className="min-h-screen bg-background flex flex-col">
+        <div className="min-h-screen flex flex-col" style={{
+            background: 'linear-gradient(to bottom, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.15) 100%), url("https://images.unsplash.com/photo-1432251407527-504a6b4174a2?q=80&w=1480&auto=format&fit=crop") center center',
+            backgroundAttachment: 'fixed',
+            backgroundSize: 'cover'
+        }}>
             <Header />
             <main className="flex-1 pt-24 pb-16">
                 <div className="container mx-auto px-4">
                     {/* Hero */}
-                    <div className="text-center mb-12">
-                        <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-full mb-4">
-                            <Briefcase className="w-8 h-8 text-primary" />
-                        </div>
-                        <h1 className="text-4xl font-display font-bold text-foreground mb-4">
-                            AI-Powered Internships
+                    <div className="bg-white/85 backdrop-blur-sm rounded-xl p-8 mb-12 shadow-sm border border-gray-100">
+                        <h1 className="text-4xl font-display font-bold text-[#111827] mb-4 text-center">
+                            Hand Picked Internships
+                            <span className="block w-24 h-1 bg-[#22C55E] mx-auto mt-3 rounded-full"></span>
                         </h1>
-                        <p className="text-muted-foreground max-w-2xl mx-auto">
-                            Curated internship opportunities from top tech companies.
-                            Updated automatically using AI to match latest trends.
+                        <p className="text-[#4B5563] max-w-2xl mx-auto text-center">
+                            Hand-picked internship opportunities from top tech companies.
+                            Carefully curated to match your career goals.
                         </p>
                     </div>
 
                     {/* Search */}
-                    <div className="bg-card border border-border rounded-xl p-6 mb-8">
+                    <div className="bg-white/90 backdrop-blur-sm rounded-xl p-6 mb-8 shadow-lg">
                         <div className="flex flex-col md:flex-row gap-4">
                             <div className="relative flex-1">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                 <Input
                                     placeholder="Search by title, company, or description..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="pl-10"
+                                    className="pl-11 rounded-full border-gray-200 focus:border-[#22C55E] focus:ring-2 focus:ring-[#22C55E]/20"
                                 />
                             </div>
                             <select
                                 value={companyFilter}
                                 onChange={(e) => setCompanyFilter(e.target.value)}
-                                className="px-4 py-2 bg-background border border-border rounded-lg text-sm"
+                                className="px-4 py-2 bg-white border border-gray-200 rounded-full text-sm text-[#4B5563] focus:border-[#22C55E] focus:ring-2 focus:ring-[#22C55E]/20"
                             >
                                 <option value="">All Companies</option>
                                 {companies.map(company => (
@@ -478,7 +481,7 @@ Just type your question!`;
                                 ))}
                             </select>
                             {(searchQuery || companyFilter) && (
-                                <Button variant="outline" onClick={() => { setSearchQuery(""); setCompanyFilter(""); }}>
+                                <Button variant="outline" onClick={() => { setSearchQuery(""); setCompanyFilter(""); }} className="rounded-full border-gray-200 text-[#4B5563] hover:bg-gray-50">
                                     Clear
                                 </Button>
                             )}
@@ -487,7 +490,7 @@ Just type your question!`;
 
                     {/* Results */}
                     <div className="mb-6">
-                        <p className="text-muted-foreground">
+                        <p className="text-[#4B5563]">
                             Showing {filteredInternships.length} AI-curated internships
                         </p>
                     </div>
@@ -495,27 +498,39 @@ Just type your question!`;
                     {/* Grid */}
                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                         {filteredInternships.map((internship) => (
-                            <div key={internship.id} className="bg-card border border-border rounded-xl overflow-hidden hover:border-primary/50">
-                                {internship.image_url && (
-                                    <div className="h-48 overflow-hidden">
-                                        <img src={internship.image_url} alt={internship.title} className="w-full h-full object-cover" />
+                            <li key={internship.id} className="list-none">
+                                <div className="relative h-full rounded-[24px] border-[0.75px] border-gray-200 p-2">
+                                    <GlowingEffect
+                                        spread={40}
+                                        glow={true}
+                                        disabled={false}
+                                        proximity={64}
+                                        inactiveZone={0.01}
+                                        borderWidth={2}
+                                    />
+                                    <div className="relative flex h-full flex-col justify-between overflow-hidden rounded-xl bg-white/95 p-6 shadow-lg">
+                                        {internship.image_url && (
+                                            <div className="h-48 overflow-hidden rounded-xl -mx-6 -mt-6 mb-4">
+                                                <img src={internship.image_url} alt={internship.title} className="w-full h-full object-cover" />
+                                            </div>
+                                        )}
+                                        <div className="flex-1">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <Badge variant="secondary" className="flex items-center gap-1 bg-[#22C55E]/10 text-[#22C55E] border-none">
+                                                    <Building2 className="w-3 h-3" />
+                                                    {internship.company}
+                                                </Badge>
+                                            </div>
+                                            <h3 className="text-xl font-bold mb-2 text-[#111827]">{internship.title}</h3>
+                                            <p className="text-[#4B5563] text-sm mb-4 line-clamp-3">{internship.description}</p>
+                                        </div>
+                                        <Button className="w-full rounded-full bg-[#22C55E] hover:bg-[#16A34A]" onClick={() => handleApplyClick(internship)}>
+                                            <ExternalLink className="w-4 h-4 mr-2" />
+                                            Apply Now
+                                        </Button>
                                     </div>
-                                )}
-                                <div className="p-6">
-                                    <div className="flex items-center justify-between mb-3">
-                                        <Badge variant="secondary" className="flex items-center gap-1">
-                                            <Building2 className="w-3 h-3" />
-                                            {internship.company}
-                                        </Badge>
-                                    </div>
-                                    <h3 className="text-xl font-bold mb-2">{internship.title}</h3>
-                                    <p className="text-muted-foreground text-sm mb-4 line-clamp-3">{internship.description}</p>
-                                    <Button className="w-full" onClick={() => handleApplyClick(internship)}>
-                                        <ExternalLink className="w-4 h-4 mr-2" />
-                                        Apply Now
-                                    </Button>
                                 </div>
-                            </div>
+                            </li>
                         ))}
                     </div>
                 </div>

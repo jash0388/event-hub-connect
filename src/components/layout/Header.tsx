@@ -51,13 +51,16 @@ export function Header() {
                 key={item.path}
                 to={item.path}
                 className={cn(
-                  "px-4 py-2 rounded-full text-sm font-medium transition-colors",
+                  "px-4 py-2 text-sm font-semibold transition-all relative",
                   location.pathname === item.path
-                    ? "bg-primary/10 text-primary"
-                    : "text-gray-600 hover:text-primary hover:bg-gray-50"
+                    ? "text-green-500"
+                    : "text-gray-600 hover:text-green-500"
                 )}
               >
                 {item.label}
+                {location.pathname === item.path && (
+                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-green-500 rounded-full" />
+                )}
               </Link>
             ))}
           </nav>

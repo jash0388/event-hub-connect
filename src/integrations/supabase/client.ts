@@ -10,12 +10,18 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   console.error('Missing Supabase environment variables. Please check your .env file.');
 }
 
+// Connectivity Hack for India: use a local proxy in dev to avoid DNS blockage
+// During production, we'd use a real reverse proxy or custom domain.
+const effectiveSupabaseUrl = import.meta.env.DEV
+  ? `${window.location.origin}/supabase-proxy`
+  : SUPABASE_URL;
+
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
 export const supabase = createClient<Database>(
-  SUPABASE_URL || '', 
-  SUPABASE_ANON_KEY || '', 
+  effectiveSupabaseUrl || '',
+  SUPABASE_ANON_KEY || '',
   {
     auth: {
       storage: localStorage,

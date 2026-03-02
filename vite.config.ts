@@ -6,7 +6,7 @@ import path from "path";
 export default defineConfig(({ mode }) => ({
   server: {
     host: "0.0.0.0",
-    port: 3000,
+    port: 3001,
     hmr: {
       overlay: false,
     },
@@ -16,6 +16,13 @@ export default defineConfig(({ mode }) => ({
       '.emergentagent.com',
       'localhost'
     ],
+    proxy: {
+      '/supabase-proxy': {
+        target: 'https://cqjjbvccldipkqqtqzqc.supabase.co',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/supabase-proxy/, ''),
+      }
+    }
   },
   plugins: [react()],
   resolve: {

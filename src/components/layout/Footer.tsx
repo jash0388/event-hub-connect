@@ -37,32 +37,43 @@ export function Footer() {
   }, []);
 
   return (
-    <footer className="bg-gray-50 mt-auto border-t">
-      <div className="container mx-auto px-4 py-6">
-        {/* Top Row: Home Button | Copyright (Centered) | Social Links */}
-        <div className="flex flex-row items-center justify-between gap-4">
+    <footer
+      className="mt-auto"
+      style={{
+        backgroundColor: 'transparent',
+        paddingTop: '48px',
+        paddingBottom: '48px',
+        boxShadow: 'none'
+      }}
+    >
+      <div className="container mx-auto px-4" style={{ maxWidth: '1280px' }}>
+        {/* Three Section Layout: Left | Center | Right */}
+        <div className="flex flex-row items-center justify-between gap-4" style={{ minHeight: '40px' }}>
 
-          {/* Home Button - Left */}
-          <Link
-            to="/"
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors text-sm font-medium"
-          >
-            <Home size={18} />
-            <span className="hidden sm:inline">Home</span>
-          </Link>
+          {/* Left Section - Home Link */}
+          <div className="flex-1">
+            <Link
+              to="/"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium transition-all hover:scale-105"
+              style={{ color: '#D1D5DB' }}
+            >
+              <Home size={18} />
+              <span className="hidden sm:inline">Home</span>
+            </Link>
+          </div>
 
-          {/* Copyright - Center (Always centered) */}
+          {/* Center Section - Copyright */}
           <div className="flex flex-col items-center text-center">
-            <p className="text-sm text-gray-600 font-medium whitespace-nowrap">
+            <p className="text-sm font-medium whitespace-nowrap" style={{ color: '#F3F4F6' }}>
               © 2026 Alpha Team
             </p>
-            <p className="text-xs text-gray-400 flex items-center gap-1 whitespace-nowrap">
+            <p className="text-xs flex items-center gap-1 whitespace-nowrap" style={{ color: '#94A3B8' }}>
               Made with <Heart className="w-3 h-3 text-red-400 fill-current" /> for the Students of SPHN
             </p>
           </div>
 
-          {/* Social Links - Right */}
-          <div className="flex items-center justify-end gap-3">
+          {/* Right Section - Social Links */}
+          <div className="flex-1 flex items-center justify-end gap-3">
             {links.length > 0 ? (
               links.slice(0, 4).map((link) => {
                 const IconComponent = iconMap[link.platform.toLowerCase()] || iconMap.default;
@@ -72,7 +83,13 @@ export function Footer() {
                     href={link.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-9 h-9 flex items-center justify-center rounded-full bg-white border border-gray-200 text-gray-500 hover:text-primary hover:border-primary transition-all shadow-sm"
+                    className="w-9 h-9 flex items-center justify-center transition-all hover:scale-110"
+                    style={{
+                      backgroundColor: 'rgba(255,255,255,0.05)',
+                      borderRadius: '50%',
+                      color: '#94A3B8',
+                      border: '1px solid rgba(255,255,255,0.08)'
+                    }}
                     aria-label={link.platform}
                   >
                     <IconComponent size={16} />
@@ -80,7 +97,7 @@ export function Footer() {
                 );
               })
             ) : (
-              <span className="text-xs text-gray-400 hidden sm:inline">Join our community</span>
+              <span className="text-xs hidden sm:inline" style={{ color: '#94A3B8' }}>Join our community</span>
             )}
           </div>
         </div>

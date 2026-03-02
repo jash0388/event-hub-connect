@@ -172,33 +172,38 @@ export default function Events() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen flex flex-col" style={{
+      background: 'linear-gradient(to bottom, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.15) 100%), url("https://images.unsplash.com/photo-1432251407527-504a6b4174a2?q=80&w=1480&auto=format&fit=crop") center center',
+      backgroundAttachment: 'fixed',
+      backgroundSize: 'cover'
+    }}>
       <Header />
-      <main className="flex-1 pt-24 pb-16">
+      <main className="flex-1 pt-32 pb-16">
         <div className="container mx-auto px-4 max-w-7xl">
           {/* Page Header */}
-          <div className="mb-12">
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">Upcoming Events</h1>
-            <p className="text-gray-600 max-w-2xl text-lg">
+          <div className="mb-12 text-center">
+            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 drop-shadow-lg">Upcoming Events</h1>
+            <p className="text-gray-200 max-w-2xl text-lg drop-shadow-md">
               Discover and participate in the most exciting events happening on campus. From hackathons to cultural festivals.
             </p>
           </div>
 
           {/* Filters & Search */}
-          <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-8 flex flex-col md:flex-row gap-4 items-center">
+          <div className="bg-white/90 backdrop-blur-sm p-4 rounded-full shadow-lg mb-8 flex flex-col md:flex-row gap-4 items-center" style={{ boxShadow: '0 8px 20px rgba(0,0,0,0.08)' }}>
             <div className="relative flex-1 w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search events..."
-                className="pl-10 bg-gray-50 border-none rounded-xl h-11"
+                className="pl-12 bg-gray-50 border-none rounded-full h-12 focus:ring-2 focus:ring-green-500 focus:shadow-lg transition-all"
+                style={{ boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06)' }}
               />
             </div>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as SortOption)}
-              className="h-11 px-4 rounded-xl border-gray-100 bg-gray-50 text-sm font-medium focus:ring-2 focus:ring-primary outline-none"
+              className="h-12 px-6 rounded-full border-gray-100 bg-gray-50 text-sm font-medium focus:ring-2 focus:ring-green-500 outline-none transition-all hover:shadow-md"
             >
               <option value="date">Latest First</option>
               <option value="popularity">Most Popular</option>
@@ -214,7 +219,7 @@ export default function Events() {
               ))}
             </div>
           ) : filteredEvents.length === 0 ? (
-            <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-gray-200">
+            <div className="text-center py-20 bg-white/90 backdrop-blur-sm rounded-3xl border border-white/20">
               <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Search className="w-8 h-8 text-gray-400" />
               </div>
@@ -223,16 +228,23 @@ export default function Events() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {filteredEvents.map((event) => {
+              {filteredEvents.map((event, index) => {
                 const eventDate = parseISO(event.date);
                 const isRegistered = registeredEvents.has(event.id);
                 const isSaved = savedIds.includes(event.id);
                 const isEventEnded = isBefore(eventDate, startOfDay(new Date()));
 
                 return (
-                  <div key={event.id} className="group bg-white rounded-[2.5rem] border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col h-full">
+                  <div
+                    key={event.id}
+                    className="group bg-white/85 backdrop-blur-sm rounded-2xl shadow-md hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 overflow-hidden flex flex-col h-full"
+                    style={{
+                      animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both`,
+                      boxShadow: '0 15px 35px rgba(0,0,0,0.12)'
+                    }}
+                  >
                     {/* Event Image */}
-                    <Link to={`/events/${event.id}`} className="relative h-56 block overflow-hidden">
+                    <Link to={`/events/${event.id}`} className="relative h-56 block overflow-hidden rounded-t-2xl">
                       {event.image || event.image_url ? (
                         <img
                           src={event.image || event.image_url || ""}
@@ -275,27 +287,27 @@ export default function Events() {
 
                     {/* Event Info */}
                     <div className="p-6 flex flex-col flex-1">
-                      <div className="flex items-center gap-2 text-primary font-bold text-sm mb-3">
+                      <div className="flex items-center gap-2 text-[#4B5563] font-bold text-sm mb-3">
                         <Calendar className="w-4 h-4" />
                         {format(eventDate, "MMMM d, yyyy")}
                       </div>
 
                       <Link to={`/events/${event.id}`} className="block group/title">
-                        <h3 className="text-xl font-bold text-gray-900 mb-3 line-clamp-2 transition-colors group-hover/title:text-primary">
+                        <h3 className="text-xl font-bold text-[#111827] mb-3 line-clamp-2 transition-colors group-hover/title:text-primary">
                           {event.title}
                         </h3>
                       </Link>
 
-                      <p className="text-gray-500 text-sm line-clamp-2 mb-6 flex-1">
+                      <p className="text-[#4B5563] text-sm line-clamp-2 mb-6 flex-1">
                         {event.description || "Join us for this exciting event!"}
                       </p>
 
                       <div className="space-y-3 mb-6">
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <div className="flex items-center gap-2 text-sm text-[#4B5563]">
                           <MapPin className="w-4 h-4 text-gray-400" />
                           <span className="truncate">{event.location || "Online"}</span>
                         </div>
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <div className="flex items-center gap-2 text-sm text-[#4B5563]">
                           <Users className="w-4 h-4 text-gray-400" />
                           <span>{event.attendees} students joining</span>
                         </div>
@@ -315,7 +327,7 @@ export default function Events() {
                           <Link to={`/events/${event.id}`} className="flex-1">
                             <Button
                               className={cn(
-                                "w-full rounded-2xl h-12 text-sm font-bold transition-all",
+                                "w-full rounded-[20px] h-12 text-sm font-bold transition-all",
                                 isRegistered
                                   ? "bg-green-100 text-green-700 hover:bg-green-200 border-none"
                                   : "shadow-md hover:shadow-lg"
@@ -328,7 +340,7 @@ export default function Events() {
                         )}
                         {!isEventEnded && (
                           <Link to={`/events/${event.id}`}>
-                            <Button variant="outline" size="icon" className="w-12 h-12 rounded-2xl border-gray-200 hover:bg-gray-50">
+                            <Button variant="outline" size="icon" className="w-12 h-12 rounded-[20px] border-gray-200 hover:bg-gray-50">
                               <ChevronRight className="w-5 h-5" />
                             </Button>
                           </Link>

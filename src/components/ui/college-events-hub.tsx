@@ -425,15 +425,15 @@ export const CollegeEventsHub: React.FC = () => {
 
   const headerVariants: Variants = {
     top: {
-      backgroundColor: "rgba(255, 255, 255, 0.8)",
-      borderBottomColor: "rgba(59, 130, 246, 0.2)",
+      backgroundColor: "transparent",
+      borderBottomColor: "transparent",
       position: 'fixed' as const,
       boxShadow: 'none',
     },
     scrolled: {
-      backgroundColor: "rgba(255, 255, 255, 0.95)",
-      borderBottomColor: "rgba(59, 130, 246, 0.3)",
-      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+      backgroundColor: "transparent",
+      borderBottomColor: "transparent",
+      boxShadow: 'none',
       position: 'fixed' as const
     }
   };
@@ -485,8 +485,19 @@ export const CollegeEventsHub: React.FC = () => {
   ];
 
   return (
-    <div className="relative bg-white text-slate-900 min-h-screen flex flex-col overflow-x-hidden">
-      <div className="absolute inset-0 bg-gradient-to-b from-white via-blue-50/30 to-white" />
+    <div className="relative bg-white text-slate-900 min-h-screen flex flex-col overflow-x-hidden" style={{
+      background: 'url("https://images.unsplash.com/photo-1432251407527-504a6b4174a2?q=80&w=1480&auto=format&fit=crop") center center',
+      backgroundAttachment: 'fixed',
+      backgroundSize: 'cover',
+      animation: 'moveBackground 60s linear infinite'
+    }}>
+      <div
+        className="absolute inset-0"
+        style={{
+          background: 'linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.35) 100%)',
+          zIndex: 1
+        }}
+      />
       <InteractiveDotBackground />
 
       <motion.header
@@ -494,11 +505,19 @@ export const CollegeEventsHub: React.FC = () => {
         initial="top"
         animate={isScrolled ? "scrolled" : "top"}
         transition={{ duration: 0.3, ease: "easeInOut" }}
-        className="px-6 w-full md:px-10 lg:px-16 sticky top-0 z-30 backdrop-blur-md border-b"
+        className="px-6 w-full md:px-10 lg:px-16 sticky top-0 z-30 !bg-transparent"
+        style={{
+          background: 'transparent !important',
+          backgroundColor: 'transparent !important',
+          boxShadow: 'none',
+          borderBottom: 'none',
+          backdropFilter: 'none',
+          WebkitBackdropFilter: 'none'
+        }}
       >
         <nav className="flex justify-between items-center max-w-screen-xl mx-auto h-[70px]">
           <div className="flex items-center flex-shrink-0">
-            <span className="text-xl font-bold text-slate-900 cursor-pointer" onClick={() => navigate("/")}>Datanauts</span>
+            <span className="text-xl font-bold cursor-pointer" style={{ color: '#22D3EE', textShadow: '0 0 20px rgba(34, 211, 238, 0.6), 0 2px 8px rgba(0,0,0,0.4)' }} onClick={() => navigate("/")}>Datanauts</span>
           </div>
         </nav>
       </motion.header>
@@ -510,8 +529,16 @@ export const CollegeEventsHub: React.FC = () => {
           animate="visible"
           className="mb-6"
         >
-          <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-1 rounded-full text-xs sm:text-sm font-medium cursor-pointer hover:border-blue-400 transition-colors inline-flex items-center gap-2">
-            <span className="flex h-2 w-2 rounded-full bg-blue-600 animate-pulse"></span>
+          <div
+            className="px-4 py-1 rounded-full text-xs sm:text-sm font-medium cursor-pointer inline-flex items-center gap-2"
+            style={{
+              background: 'rgba(255, 255, 255, 0.2)',
+              color: '#F9FAFB',
+              border: '1px solid rgba(255, 255, 255, 0.3)',
+              textShadow: '0 1px 2px rgba(0,0,0,0.3)'
+            }}
+          >
+            <span className="flex h-2 w-2 rounded-full bg-green-400 animate-pulse"></span>
             Sphoorthy Engineering College
           </div>
         </motion.div>
@@ -520,20 +547,22 @@ export const CollegeEventsHub: React.FC = () => {
           variants={headlineVariants}
           initial="hidden"
           animate="visible"
-          className="text-4xl sm:text-5xl lg:text-[64px] font-semibold text-slate-900 leading-tight max-w-4xl mb-4"
+          className="text-4xl sm:text-5xl lg:text-[64px] font-semibold leading-tight max-w-4xl mb-4"
+          style={{ color: '#F9FAFB', textShadow: '0 2px 8px rgba(0,0,0,0.4)' }}
         >
           Stay Connected with{' '}
           <span className="inline-block h-[1.2em] overflow-hidden align-bottom">
             <RotatingText
               texts={['Events', 'Updates', 'Announcements', 'Activities', 'News']}
-              mainClassName="text-blue-600 mx-1"
+              mainClassName="mx-1"
+              style={{ color: '#4ADE80', textShadow: '0 2px 8px rgba(0,0,0,0.4)' }}
               staggerFrom={"last"}
               initial={{ y: "-100%", opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: "110%", opacity: 0 }}
-              staggerDuration={0.01}
-              transition={{ type: "spring", damping: 18, stiffness: 250 }}
-              rotationInterval={2200}
+              staggerDuration={0.03}
+              transition={{ type: "spring", damping: 20, stiffness: 200 }}
+              rotationInterval={3000}
               splitBy="characters"
               auto={true}
               loop={true}
@@ -545,7 +574,8 @@ export const CollegeEventsHub: React.FC = () => {
           variants={subHeadlineVariants}
           initial="hidden"
           animate="visible"
-          className="text-base sm:text-lg lg:text-xl text-slate-600 max-w-2xl mx-auto mb-8"
+          className="text-base sm:text-lg lg:text-xl max-w-2xl mx-auto mb-8"
+          style={{ color: '#E5E7EB', textShadow: '0 2px 8px rgba(0,0,0,0.4)' }}
         >
           Your one-stop platform for all college events, announcements, and updates. Never miss what matters most in your campus life.
         </motion.p>
@@ -557,7 +587,8 @@ export const CollegeEventsHub: React.FC = () => {
           className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16"
         >
           <motion.button
-            className="bg-blue-600 text-white px-6 py-3 rounded-md text-base font-semibold hover:bg-blue-700 transition-colors shadow-lg flex items-center gap-2"
+            className="bg-blue-600/90 backdrop-blur-sm text-white px-6 py-3 rounded-md text-base font-semibold hover:bg-blue-700 transition-colors shadow-lg flex items-center gap-2 border border-blue-400/30"
+            style={{ background: 'rgba(37, 99, 235, 0.9)' }}
             whileHover={{ scale: 1.05, y: -2 }}
             whileTap={{ scale: 0.97 }}
             onClick={() => navigate('/events')}
@@ -580,7 +611,7 @@ export const CollegeEventsHub: React.FC = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: contentDelay + itemDelayIncrement * 5 + index * 0.1 }}
-                className="bg-white border border-slate-200 rounded-lg p-6 hover:shadow-lg transition-all hover:border-blue-300"
+                className="bg-white/80 backdrop-blur-md border border-white/30 rounded-lg p-6 hover:shadow-lg transition-all hover:border-blue-300"
               >
                 <div className="flex items-start gap-4">
                   <div className="text-2xl">

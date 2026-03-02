@@ -40,9 +40,8 @@ export function HeroSection() {
       <div className="relative z-10 container mx-auto px-4 text-center">
         {/* Status Badge */}
         <div
-          className={`inline-flex items-center gap-2 px-4 py-2 border border-primary/50 bg-primary/5 mb-8 transition-all duration-700 ${
-            loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-          }`}
+          className={`inline-flex items-center gap-2 px-4 py-2 border border-primary/50 bg-primary/5 mb-8 transition-all duration-700 ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+            }`}
         >
           <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
           <span className="font-mono text-xs text-primary uppercase tracking-widest">
@@ -52,9 +51,8 @@ export function HeroSection() {
 
         {/* Main Title */}
         <h1
-          className={`font-display text-5xl md:text-7xl lg:text-8xl font-black tracking-tight mb-4 transition-all duration-700 delay-200 ${
-            loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-          }`}
+          className={`font-display text-5xl md:text-7xl lg:text-8xl font-black tracking-tight mb-4 transition-all duration-700 delay-200 ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+            }`}
         >
           <span className="text-foreground">Data</span>{" "}
           <span className="text-primary glow-green">nauts</span>
@@ -62,18 +60,24 @@ export function HeroSection() {
 
         {/* Subtitle */}
         <p
-          className={`font-display text-xl md:text-2xl text-muted-foreground tracking-wider mb-8 transition-all duration-700 delay-300 ${
-            loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-          }`}
+          className={`font-display text-xl md:text-2xl text-muted-foreground tracking-wider mb-4 transition-all duration-700 delay-300 ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+            }`}
         >
           ALPHABAY X / 2026 EDITION
         </p>
 
+        {/* Tagline */}
+        <p
+          className={`font-mono text-sm md:text-base text-gray-400 max-w-2xl mx-auto mb-8 transition-all duration-700 delay-350 ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+            }`}
+        >
+          Discover and participate in the most exciting events happening on campus. From hackathons to cultural festivals.
+        </p>
+
         {/* Terminal Line */}
         <div
-          className={`inline-flex items-center gap-2 font-mono text-sm text-muted-foreground mb-12 transition-all duration-700 delay-400 ${
-            loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-          }`}
+          className={`inline-flex items-center gap-2 font-mono text-sm text-muted-foreground mb-12 transition-all duration-700 delay-400 ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+            }`}
         >
           <Terminal size={16} className="text-primary" />
           <span>{typedText}</span>
@@ -82,9 +86,8 @@ export function HeroSection() {
 
         {/* CTA Buttons */}
         <div
-          className={`flex flex-col sm:flex-row items-center justify-center gap-4 transition-all duration-700 delay-500 ${
-            loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-          }`}
+          className={`flex flex-col sm:flex-row items-center justify-center gap-4 transition-all duration-700 delay-500 ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+            }`}
         >
           <Link to="/events">
             <CyberButton variant="primary" size="lg">

@@ -87,7 +87,7 @@ const Contact = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-transparent">
       <Header />
       <main className="pt-24 pb-16">
         <div className="container mx-auto px-4">
@@ -104,112 +104,110 @@ const Contact = () => {
             </div>
 
             {/* Contact Form */}
-            <Card className="border-border bg-card/50 backdrop-blur-sm box-glow-green fade-in-up" style={{ animationDelay: "0.2s" }}>
-              <CardHeader>
-                <CardTitle className="font-display text-xl text-primary flex items-center gap-2">
+            <div className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-2xl p-8 fade-in-up" style={{ animationDelay: "0.2s" }}>
+              <div className="mb-6">
+                <h2 className="font-display text-xl text-white flex items-center gap-2">
                   <MessageSquare className="w-5 h-5" />
                   Send a Message
-                </CardTitle>
-                <CardDescription>
+                </h2>
+                <p className="text-white/80 text-sm mt-1">
                   Fill out the form below and we'll respond as soon as possible.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  {/* Name */}
-                  <div className="space-y-2">
-                    <Label htmlFor="name" className="text-foreground flex items-center gap-2">
-                      <User className="w-4 h-4 text-primary" />
-                      Name
-                    </Label>
-                    <Input
-                      id="name"
-                      name="name"
-                      type="text"
-                      placeholder="Your name"
-                      value={formData.name}
-                      onChange={handleChange}
-                      className="bg-background border-border focus:border-primary"
-                      disabled={isSubmitting}
-                    />
-                    {errors.name && <p className="text-destructive text-sm">{errors.name}</p>}
-                  </div>
-
-                  {/* Email */}
-                  <div className="space-y-2">
-                    <Label htmlFor="email" className="text-foreground flex items-center gap-2">
-                      <Mail className="w-4 h-4 text-primary" />
-                      Email
-                    </Label>
-                    <Input
-                      id="email"
-                      name="email"
-                      type="email"
-                      placeholder="you@example.com"
-                      value={formData.email}
-                      onChange={handleChange}
-                      className="bg-background border-border focus:border-primary"
-                      disabled={isSubmitting}
-                    />
-                    {errors.email && <p className="text-destructive text-sm">{errors.email}</p>}
-                  </div>
-
-                  {/* Subject */}
-                  <div className="space-y-2">
-                    <Label htmlFor="subject" className="text-foreground">
-                      Subject
-                    </Label>
-                    <Input
-                      id="subject"
-                      name="subject"
-                      type="text"
-                      placeholder="What's this about?"
-                      value={formData.subject}
-                      onChange={handleChange}
-                      className="bg-background border-border focus:border-primary"
-                      disabled={isSubmitting}
-                    />
-                    {errors.subject && <p className="text-destructive text-sm">{errors.subject}</p>}
-                  </div>
-
-                  {/* Message */}
-                  <div className="space-y-2">
-                    <Label htmlFor="message" className="text-foreground">
-                      Message
-                    </Label>
-                    <Textarea
-                      id="message"
-                      name="message"
-                      placeholder="Tell us what's on your mind..."
-                      value={formData.message}
-                      onChange={handleChange}
-                      className="bg-background border-border focus:border-primary min-h-[150px]"
-                      disabled={isSubmitting}
-                    />
-                    {errors.message && <p className="text-destructive text-sm">{errors.message}</p>}
-                  </div>
-
-                  {/* Submit Button */}
-                  <button
-                    type="submit"
+                </p>
+              </div>
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Name */}
+                <div className="space-y-2">
+                  <Label htmlFor="name" className="text-white flex items-center gap-2">
+                    <User className="w-4 h-4" />
+                    Name
+                  </Label>
+                  <Input
+                    id="name"
+                    name="name"
+                    type="text"
+                    placeholder="Your name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    className="bg-white/15 border border-white/30 text-white placeholder:text-white/60 focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
                     disabled={isSubmitting}
-                    className="w-full font-display tracking-wider py-3 px-6 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center gap-2 border border-primary box-glow-green"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                        SENDING...
-                      </>
-                    ) : (
-                      <>
-                        <Send className="w-5 h-5" />
-                        TRANSMIT MESSAGE
-                      </>
-                    )}
-                  </button>
-                </form>
-              </CardContent>
-            </Card>
+                  />
+                  {errors.name && <p className="text-destructive text-sm">{errors.name}</p>}
+                </div>
+
+                {/* Email */}
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-foreground flex items-center gap-2">
+                    <Mail className="w-4 h-4 text-primary" />
+                    Email
+                  </Label>
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    placeholder="you@example.com"
+                    value={formData.email}
+                    onChange={handleChange}
+                    className="bg-white/15 border border-white/30 text-white placeholder:text-white/60 focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
+                    disabled={isSubmitting}
+                  />
+                  {errors.email && <p className="text-destructive text-sm">{errors.email}</p>}
+                </div>
+
+                {/* Subject */}
+                <div className="space-y-2">
+                  <Label htmlFor="subject" className="text-foreground">
+                    Subject
+                  </Label>
+                  <Input
+                    id="subject"
+                    name="subject"
+                    type="text"
+                    placeholder="What's this about?"
+                    value={formData.subject}
+                    onChange={handleChange}
+                    className="bg-white/15 border border-white/30 text-white placeholder:text-white/60 focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
+                    disabled={isSubmitting}
+                  />
+                  {errors.subject && <p className="text-destructive text-sm">{errors.subject}</p>}
+                </div>
+
+                {/* Message */}
+                <div className="space-y-2">
+                  <Label htmlFor="message" className="text-white">
+                    Message
+                  </Label>
+                  <Textarea
+                    id="message"
+                    name="message"
+                    placeholder="Tell us what's on your mind..."
+                    value={formData.message}
+                    onChange={handleChange}
+                    className="bg-white/15 border border-white/30 text-white placeholder:text-white/60 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 min-h-[150px]"
+                    disabled={isSubmitting}
+                  />
+                  {errors.message && <p className="text-destructive text-sm">{errors.message}</p>}
+                </div>
+
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full font-display tracking-wider py-3 px-6 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center gap-2 border border-primary box-glow-green"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      SENDING...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-5 h-5" />
+                      TRANSMIT MESSAGE
+                    </>
+                  )}
+                </button>
+              </form>
+            </div>
 
             {/* Additional Info */}
             <div className="mt-12 text-center text-muted-foreground fade-in-up" style={{ animationDelay: "0.4s" }}>
@@ -222,9 +220,9 @@ const Contact = () => {
             </div>
           </div>
         </div>
-      </main>
+      </main >
       <Footer />
-    </div>
+    </div >
   );
 };
 

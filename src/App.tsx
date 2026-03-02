@@ -24,10 +24,11 @@ const Compilers = lazy(() => import("./pages/Compilers"));
 const Internships = lazy(() => import("./pages/Internships"));
 
 // Lazy load heavy UI components
-const CollegeEventsHub = lazy(() => import("@/components/ui/college-events-hub").then(module => ({ default: module.CollegeEventsHub })));
-const CodeCompiler = lazy(() => import("@/components/ui/code-compiler").then(module => ({ default: module.CodeCompiler })));
+const CollegeEventsHub = lazy(() => import("@/components/ui/college-events-hub"));
+const CodeCompiler = lazy(() => import("@/components/ui/code-compiler"));
 
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
+import HubAssistant from "./components/ai/HubAssistant";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -88,6 +89,7 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
+        <HubAssistant />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

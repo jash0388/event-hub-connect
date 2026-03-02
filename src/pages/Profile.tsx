@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 const skillsList = [
     "Web Development", "Mobile App", "UI/UX Design", "Data Science",
     "Machine Learning", "Cloud Computing", "DevOps", "Cybersecurity",
-    "Blockchain", "Game Dev", "AR/VR", "IoT", "Product Management",
+    "Blockchain", "Game67 Dev", "AR/VR", "IoT", "Product Management",
     "Marketing", "Content Writing", "Public Speaking"
 ];
 
@@ -202,7 +202,7 @@ const Profile = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col">
+        <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 via-white to-blue-50">
             <Header />
             <main className="flex-1 pt-24 pb-20">
                 <div className="container mx-auto px-4 max-w-4xl">
@@ -216,7 +216,7 @@ const Profile = () => {
                                 <Button
                                     variant="outline"
                                     onClick={() => setShowProfileComplete(false)}
-                                    className="rounded-xl"
+                                    className="bg-white shadow-md hover:shadow-lg rounded-xl px-4 py-2"
                                 >
                                     <Edit className="w-4 h-4 mr-2" />
                                     Edit Profile
@@ -233,12 +233,16 @@ const Profile = () => {
 
                                         return (
                                             <div key={event.id} className={cn(
-                                                "relative bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden flex flex-col md:flex-row",
+                                                "relative bg-white/70 backdrop-blur-xl border border-white/40 shadow-2xl rounded-3xl overflow-hidden flex flex-col md:flex-row hover:scale-[1.02] transition-all duration-300",
                                                 isExpired && "opacity-75 grayscale-[0.5]"
                                             )}>
                                                 {/* Ticket Side - QR */}
-                                                <div className="md:w-64 bg-gray-50 flex flex-col items-center justify-center p-8 border-b md:border-b-0 md:border-r border-dashed border-gray-200">
-                                                    <div className="bg-white p-4 rounded-2xl shadow-sm mb-4">
+                                                <div className="md:w-64 bg-gradient-to-br from-gray-50 to-white flex flex-col items-center justify-center p-8 border-b md:border-b-0 md:border-r border-dashed border-gray-300 relative">
+                                                    {/* Notch circles */}
+                                                    <div className="hidden md:block absolute -left-3 top-8 w-6 h-6 bg-white rounded-full shadow-md" />
+                                                    <div className="hidden md:block absolute -left-3 bottom-8 w-6 h-6 bg-white rounded-full shadow-md" />
+
+                                                    <div className="bg-white rounded-2xl shadow-lg p-4">
                                                         <QRCodeSVG
                                                             value={event.qr_code || event.id}
                                                             size={140}
@@ -246,7 +250,7 @@ const Profile = () => {
                                                             includeMargin
                                                         />
                                                     </div>
-                                                    <p className="text-[10px] font-mono text-gray-400 uppercase tracking-widest">
+                                                    <p className="text-[10px] font-mono text-gray-400 uppercase tracking-widest mt-4">
                                                         Ticket ID: {event.qr_code?.substring(0, 12) || event.id.substring(0, 12)}
                                                     </p>
                                                 </div>
@@ -254,50 +258,50 @@ const Profile = () => {
                                                 {/* Main Side - Info */}
                                                 <div className="flex-1 p-8 md:p-10 relative">
                                                     {/* Ticket Notch Decorations */}
-                                                    <div className="hidden md:block absolute -left-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-gray-50 rounded-full border border-gray-100 shadow-inner" />
+                                                    <div className="hidden md:block absolute -left-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-white rounded-full shadow-md" />
 
                                                     <div className="flex flex-col h-full">
                                                         <div className="mb-6">
                                                             <div className="flex items-center gap-2 mb-2">
-                                                                <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider border border-primary/10">
+                                                                <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold">
                                                                     {event.category || 'Event Pass'}
                                                                 </span>
                                                                 {isScanned ? (
-                                                                    <span className="px-3 py-1 rounded-full bg-green-100 text-green-700 text-[10px] font-bold uppercase tracking-wider">
+                                                                    <span className="px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-semibold">
                                                                         ✓ Verified
                                                                     </span>
                                                                 ) : isExpired ? (
-                                                                    <span className="px-3 py-1 rounded-full bg-rose-100 text-rose-700 text-[10px] font-bold uppercase tracking-wider">
+                                                                    <span className="px-3 py-1 rounded-full bg-rose-100 text-rose-700 text-xs font-semibold">
                                                                         Expired
                                                                     </span>
                                                                 ) : null}
                                                             </div>
-                                                            <h3 className="text-2xl md:text-3xl font-extrabold text-gray-900 leading-tight mb-2">
+                                                            <h3 className="text-3xl font-bold text-slate-900 leading-tight mb-2">
                                                                 {event.title}
                                                             </h3>
                                                         </div>
 
                                                         <div className="grid grid-cols-2 gap-6 mt-auto">
                                                             <div className="space-y-1">
-                                                                <div className="flex items-center gap-2 text-gray-400">
+                                                                <div className="flex items-center gap-2 text-slate-500">
                                                                     <Calendar className="w-4 h-4" />
-                                                                    <span className="text-[10px] font-bold uppercase tracking-widest">Date</span>
+                                                                    <span className="text-sm uppercase tracking-wide text-slate-400">Date</span>
                                                                 </div>
-                                                                <p className="font-bold text-gray-900">{format(eventDate, "MMM d, yyyy")}</p>
+                                                                <p className="font-semibold text-slate-700">{format(eventDate, "MMM d, yyyy")}</p>
                                                             </div>
                                                             <div className="space-y-1">
-                                                                <div className="flex items-center gap-2 text-gray-400">
+                                                                <div className="flex items-center gap-2 text-slate-500">
                                                                     <Clock className="w-4 h-4" />
-                                                                    <span className="text-[10px] font-bold uppercase tracking-widest">Time</span>
+                                                                    <span className="text-sm uppercase tracking-wide text-slate-400">Time</span>
                                                                 </div>
-                                                                <p className="font-bold text-gray-900">{event.time || "TBA"}</p>
+                                                                <p className="font-semibold text-slate-700">{event.time || "TBA"}</p>
                                                             </div>
                                                             <div className="space-y-1 col-span-2">
-                                                                <div className="flex items-center gap-2 text-gray-400">
+                                                                <div className="flex items-center gap-2 text-slate-500">
                                                                     <MapPin className="w-4 h-4" />
-                                                                    <span className="text-[10px] font-bold uppercase tracking-widest">Location</span>
+                                                                    <span className="text-sm uppercase tracking-wide text-slate-400">Location</span>
                                                                 </div>
-                                                                <p className="font-bold text-gray-900">{event.location || "To be announced"}</p>
+                                                                <p className="font-semibold text-slate-700">{event.location || "To be announced"}</p>
                                                             </div>
                                                         </div>
                                                     </div>

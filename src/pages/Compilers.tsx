@@ -93,47 +93,45 @@ const Compilers = () => {
 
     return (
         <div className="min-h-screen" style={{
-            background: "linear-gradient(135deg, #fff7ed 0%, #ffedd5 50%, #fed7aa 100%)"
+            background: "linear-gradient(180deg, #0F172A 0%, #111827 100%)"
         }}>
-            <div className="max-w-4xl mx-auto px-4 py-12">
+            <div className="max-w-4xl mx-auto px-4 py-16">
 
                 {/* Header with Home Button */}
-                <div className="flex items-center justify-center mb-8 relative">
+                <div className="flex items-center justify-center mb-12 relative">
                     <Link
                         to="/"
-                        className="absolute left-0 flex items-center gap-2 px-4 py-2 rounded-lg bg-white/80 backdrop-blur shadow-md hover:shadow-lg text-gray-700 hover:text-orange-600 transition-all"
+                        className="absolute left-0 flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/10 hover:bg-white/20 text-gray-300 hover:text-white transition-all"
                     >
                         <Home size={20} />
                         <span className="font-medium">Home</span>
                     </Link>
 
                     <div className="text-center">
-                        <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-orange-500 to-amber-600 rounded-2xl mb-4 shadow-lg">
-                            <span className="text-4xl">⚡</span>
-                        </div>
-                        <h1 className="text-4xl font-bold text-gray-800 mb-2">
-                            Code <span className="text-orange-600">Compiler</span>
+                        <h1 className="text-4xl font-bold text-[#F9FAFB] mb-3">
+                            Code Compiler
+                            <span className="block w-24 h-1 bg-[#22C55E] mx-auto mt-3 rounded-full"></span>
                         </h1>
-                        <p className="text-gray-600 text-lg">Write and run code in your browser - completely free!</p>
+                        <p className="text-[#9CA3AF] text-lg">Write and run code in your browser - completely free!</p>
                     </div>
                 </div>
 
                 {/* Language Buttons */}
-                <div className="flex justify-center gap-3 mb-6">
+                <div className="flex justify-center gap-3 mb-8">
                     <button
                         onClick={() => { setLang("python"); setCode(defaultCode.python); setOut(""); }}
-                        className={`px-6 py-3 rounded-xl font-semibold transition-all transform hover:scale-105 ${lang === "python"
-                                ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg"
-                                : "bg-white text-gray-700 shadow-md hover:shadow-lg"
+                        className={`px-6 py-3 rounded-full font-semibold transition-all ${lang === "python"
+                            ? "bg-[#22C55E] text-white shadow-[0_0_20px_rgba(34,197,94,0.4)]"
+                            : "bg-[#1E293B] text-gray-400 border border-white/10 hover:bg-[#334155] hover:text-white"
                             }`}
                     >
                         🐍 Python {pyLoading ? "..." : pyodide ? "✓ Ready" : "⏳"}
                     </button>
                     <button
                         onClick={() => { setLang("javascript"); setCode(defaultCode.javascript); setOut(""); }}
-                        className={`px-6 py-3 rounded-xl font-semibold transition-all transform hover:scale-105 ${lang === "javascript"
-                                ? "bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-lg"
-                                : "bg-white text-gray-700 shadow-md hover:shadow-lg"
+                        className={`px-6 py-3 rounded-full font-semibold transition-all ${lang === "javascript"
+                            ? "bg-[#22C55E] text-white shadow-[0_0_20px_rgba(34,197,94,0.4)]"
+                            : "bg-[#1E293B] text-gray-400 border border-white/10 hover:bg-[#334155] hover:text-white"
                             }`}
                     >
                         📜 JavaScript ✓ Ready
@@ -141,22 +139,22 @@ const Compilers = () => {
                 </div>
 
                 {/* Main Card */}
-                <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+                <div className="bg-[#1E293B] rounded-[24px] shadow-[0_25px_60px_rgba(0,0,0,0.4)] overflow-hidden border border-white/[0.08]" style={{ animation: 'fadeInUp 0.6s ease-out both' }}>
                     {/* Editor Header */}
-                    <div className="bg-gradient-to-r from-gray-800 to-gray-900 px-6 py-4 flex items-center justify-between">
+                    <div className="bg-gradient-to-r from-[#0F172A] to-[#1E293B] px-6 py-4 flex items-center justify-between border-b border-white/[0.08]">
                         <div className="flex items-center gap-3">
                             <div className="flex gap-2">
                                 <div className="w-3 h-3 rounded-full bg-red-500"></div>
                                 <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
                                 <div className="w-3 h-3 rounded-full bg-green-500"></div>
                             </div>
-                            <span className="text-gray-300 font-mono text-sm">
+                            <span className="text-gray-400 font-mono text-sm">
                                 {lang === "python" ? "🐍 main.py" : "📜 main.js"}
                             </span>
                         </div>
                         <button
                             onClick={copyCode}
-                            className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm"
+                            className="flex items-center gap-2 text-gray-500 hover:text-white transition-colors text-sm"
                         >
                             {copied ? <Check size={16} className="text-green-400" /> : <Copy size={16} />}
                             {copied ? "Copied!" : "Copy"}
@@ -164,13 +162,13 @@ const Compilers = () => {
                     </div>
 
                     {/* Code Editor - Simple working textarea */}
-                    <div className="bg-[#1e1e1e]">
+                    <div className="bg-[#0F172A]">
                         <textarea
                             ref={textareaRef}
                             value={code}
                             onChange={(e) => setCode(e.target.value)}
                             onScroll={handleScroll}
-                            className="w-full h-72 p-6 font-mono text-sm text-gray-100 bg-[#1e1e1e] resize-none focus:outline-none border-0"
+                            className="w-full h-72 p-6 font-mono text-sm text-gray-100 bg-[#0F172A] resize-none focus:outline-none border-0"
                             spellCheck={false}
                             style={{
                                 lineHeight: '1.6',
@@ -181,10 +179,10 @@ const Compilers = () => {
                     </div>
 
                     {/* Run Button */}
-                    <div className="px-6 py-4 bg-gray-50 border-t">
+                    <div className="px-6 py-4 bg-[#0F172A] border-t border-white/[0.08]">
                         <button
                             onClick={run}
-                            className="w-full py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-lg font-bold rounded-xl flex items-center justify-center gap-3 shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all"
+                            className="w-full py-4 bg-[#22C55E] text-white text-lg font-bold rounded-xl flex items-center justify-center gap-3 shadow-[0_0_25px_rgba(34,197,94,0.4)] hover:shadow-[0_0_35px_rgba(34,197,94,0.5)] hover:bg-[#16A34A] transition-all"
                         >
                             <Play size={24} />
                             Run Code
@@ -193,11 +191,11 @@ const Compilers = () => {
                 </div>
 
                 {/* Output */}
-                <div className="mt-6 bg-[#1e1e1e] rounded-2xl shadow-2xl overflow-hidden">
-                    <div className="bg-gradient-to-r from-gray-800 to-gray-900 px-6 py-3">
+                <div className="mt-6 bg-[#1E293B] rounded-[24px] shadow-[0_25px_60px_rgba(0,0,0,0.4)] overflow-hidden border border-white/[0.08]" style={{ animation: 'fadeInUp 0.6s ease-out 0.2s both' }}>
+                    <div className="bg-gradient-to-r from-[#0F172A] to-[#1E293B] px-6 py-3 border-b border-white/[0.08]">
                         <span className="text-gray-400 font-mono text-sm">📟 Output</span>
                     </div>
-                    <pre className="h-48 p-6 font-mono text-sm text-green-400 overflow-auto whitespace-pre-wrap">
+                    <pre className="h-48 p-6 font-mono text-sm text-[#22C55E] overflow-auto whitespace-pre-wrap">
                         {out || "👆 Click 'Run Code' to see output..."}
                     </pre>
                 </div>
@@ -205,9 +203,9 @@ const Compilers = () => {
                 {/* Info */}
                 <div className="mt-6 text-center">
                     <p className="text-gray-500 text-sm">
-                        💡 <strong>Python</strong> runs via WebAssembly (Pyodide) • <strong>JavaScript</strong> runs in browser
+                        💡 <strong className="text-gray-400">Python</strong> runs via WebAssembly (Pyodide) • <strong className="text-gray-400">JavaScript</strong> runs in browser
                     </p>
-                    <p className="text-gray-400 text-xs mt-2">
+                    <p className="text-gray-600 text-xs mt-2">
                         C/C++/Java require paid API keys. Contact us to add more languages!
                     </p>
                 </div>

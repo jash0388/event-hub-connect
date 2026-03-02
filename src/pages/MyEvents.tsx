@@ -147,7 +147,7 @@ export default function MyEvents() {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-background flex flex-col">
+            <div className="min-h-screen bg-transparent flex flex-col">
                 <Header />
                 <main className="flex-1 flex items-center justify-center">
                     <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -158,9 +158,9 @@ export default function MyEvents() {
     }
 
     return (
-        <div className="min-h-screen bg-background flex flex-col">
+        <div className="min-h-screen bg-transparent flex flex-col">
             <Header />
-            <main className="flex-1 pt-24 pb-16">
+            <main className="flex-1 pt-24 pb-16 bg-transparent">
                 <div className="container mx-auto px-4">
                     <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div>
@@ -215,8 +215,8 @@ export default function MyEvents() {
                                         {/* Countdown Badge */}
                                         {countdowns[event.id] && !countdowns[event.id].isPast && (
                                             <div className={`absolute top-3 right-3 px-3 py-1.5 rounded-md text-sm font-mono font-bold backdrop-blur-sm ${countdowns[event.id].isToday
-                                                    ? 'bg-neon-red/90 text-white animate-pulse'
-                                                    : 'bg-primary/90 text-primary-foreground'
+                                                ? 'bg-neon-red/90 text-white animate-pulse'
+                                                : 'bg-primary/90 text-primary-foreground'
                                                 }`}>
                                                 {countdowns[event.id].isToday ? '🔥 TODAY' :
                                                     countdowns[event.id].days > 0 ?
