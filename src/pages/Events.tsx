@@ -178,32 +178,32 @@ export default function Events() {
       backgroundSize: 'cover'
     }}>
       <Header />
-      <main className="flex-1 pt-32 pb-16">
-        <div className="container mx-auto px-4 max-w-7xl">
+      <main className="flex-1 pt-24 md:pt-32 pb-12 md:pb-16">
+        <div className="container mx-auto px-3 sm:px-4 max-w-7xl">
           {/* Page Header */}
-          <div className="mb-12 text-center">
-            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 drop-shadow-lg">Upcoming Events</h1>
-            <p className="text-gray-200 max-w-2xl text-lg drop-shadow-md">
+          <div className="mb-8 md:mb-12 text-center">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-3 md:mb-4 drop-shadow-lg">Upcoming Events</h1>
+            <p className="text-gray-200 max-w-2xl mx-auto text-base sm:text-lg drop-shadow-md px-2">
               Discover and participate in the most exciting events happening on campus. From hackathons to cultural festivals.
             </p>
           </div>
 
           {/* Filters & Search */}
-          <div className="bg-white/90 backdrop-blur-sm p-4 rounded-full shadow-lg mb-8 flex flex-col md:flex-row gap-4 items-center" style={{ boxShadow: '0 8px 20px rgba(0,0,0,0.08)' }}>
+          <div className="bg-white/90 backdrop-blur-sm p-3 sm:p-4 rounded-2xl md:rounded-full shadow-lg mb-6 md:mb-8 flex flex-col md:flex-row gap-3 md:gap-4 items-center" style={{ boxShadow: '0 8px 20px rgba(0,0,0,0.08)' }}>
             <div className="relative flex-1 w-full">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search events..."
-                className="pl-12 bg-gray-50 border-none rounded-full h-12 focus:ring-2 focus:ring-green-500 focus:shadow-lg transition-all"
+                className="pl-12 bg-gray-50 border-none rounded-full h-11 sm:h-12 focus:ring-2 focus:ring-green-500 focus:shadow-lg transition-all text-sm sm:text-base"
                 style={{ boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06)' }}
               />
             </div>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as SortOption)}
-              className="h-12 px-6 rounded-full border-gray-100 bg-gray-50 text-sm font-medium focus:ring-2 focus:ring-green-500 outline-none transition-all hover:shadow-md"
+              className="h-11 sm:h-12 w-full md:w-auto px-4 sm:px-6 rounded-full border-gray-100 bg-gray-50 text-sm font-medium focus:ring-2 focus:ring-green-500 outline-none transition-all hover:shadow-md"
             >
               <option value="date">Latest First</option>
               <option value="popularity">Most Popular</option>
@@ -227,7 +227,7 @@ export default function Events() {
               <p className="text-gray-500">Try adjusting your filters or search terms.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
               {filteredEvents.map((event, index) => {
                 const eventDate = parseISO(event.date);
                 const isRegistered = registeredEvents.has(event.id);
@@ -244,7 +244,7 @@ export default function Events() {
                     }}
                   >
                     {/* Event Image */}
-                    <Link to={`/events/${event.id}`} className="relative h-56 block overflow-hidden rounded-t-2xl">
+                    <Link to={`/events/${event.id}`} className="relative h-44 sm:h-56 block overflow-hidden rounded-t-2xl">
                       {event.image || event.image_url ? (
                         <img
                           src={event.image || event.image_url || ""}
@@ -286,7 +286,7 @@ export default function Events() {
                     </Link>
 
                     {/* Event Info */}
-                    <div className="p-6 flex flex-col flex-1">
+                    <div className="p-4 sm:p-6 flex flex-col flex-1">
                       <div className="flex items-center gap-2 text-[#4B5563] font-bold text-sm mb-3">
                         <Calendar className="w-4 h-4" />
                         {format(eventDate, "MMMM d, yyyy")}

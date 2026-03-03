@@ -41,17 +41,17 @@ export function Footer() {
       className="mt-auto"
       style={{
         backgroundColor: 'transparent',
-        paddingTop: '48px',
-        paddingBottom: '48px',
+        paddingTop: '32px',
+        paddingBottom: '64px',
         boxShadow: 'none'
       }}
     >
       <div className="container mx-auto px-4" style={{ maxWidth: '1280px' }}>
         {/* Three Section Layout: Left | Center | Right */}
-        <div className="flex flex-row items-center justify-between gap-4" style={{ minHeight: '40px' }}>
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4" style={{ minHeight: '40px' }}>
 
           {/* Left Section - Home Link */}
-          <div className="flex-1">
+          <div className="hidden sm:block flex-1">
             <Link
               to="/"
               className="flex items-center gap-2 px-4 py-2 text-sm font-medium transition-all hover:scale-105"
@@ -63,7 +63,7 @@ export function Footer() {
           </div>
 
           {/* Center Section - Copyright */}
-          <div className="flex flex-col items-center text-center">
+          <div className="flex flex-col items-center text-center order-first sm:order-none">
             <p className="text-sm font-medium whitespace-nowrap" style={{ color: '#F3F4F6' }}>
               © 2026 Alpha Team
             </p>
@@ -73,7 +73,7 @@ export function Footer() {
           </div>
 
           {/* Right Section - Social Links */}
-          <div className="flex-1 flex items-center justify-end gap-3">
+          <div className="flex-1 flex items-center justify-center sm:justify-end gap-3">
             {links.length > 0 ? (
               links.slice(0, 4).map((link) => {
                 const IconComponent = iconMap[link.platform.toLowerCase()] || iconMap.default;
