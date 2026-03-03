@@ -1,103 +1,165 @@
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
-import { CyberCard } from "@/components/ui/CyberCard";
-
-const teamMembers = [
-    {
-        name: "N. JASHWANTH SINGH",
-        role: "FOUNDER & LEAD DEVELOPER",
-        avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=jashwanth&backgroundColor=00ff88",
-        bio: "Full-stack developer with a passion for data science and innovative tech.",
-        rollNumber: "24N81A6758",
-    },
-];
-
-
+import { Sparkles, Code2, Users, Rocket, GraduationCap, Heart } from "lucide-react";
 
 export default function About() {
     return (
-        <div className="min-h-screen bg-background">
+        <div className="min-h-screen flex flex-col" style={{
+            background: 'url("https://images.unsplash.com/photo-1432251407527-504a6b4174a2?q=80&w=1480&auto=format&fit=crop") center center',
+            backgroundAttachment: 'fixed',
+            backgroundSize: 'cover'
+        }}>
+            <div className="absolute inset-0" style={{
+                background: 'linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.35) 50%, rgba(0,0,0,0.55) 100%)',
+                zIndex: 1
+            }} />
             <Header />
 
-            <main className="pt-24 pb-16">
-                <div className="container mx-auto px-4">
-                    {/* Page Header */}
-                    <div className="text-center mb-16">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 mb-6">
-                            <span className="relative flex h-2 w-2">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-                            </span>
-                            <span className="text-xs font-semibold text-primary uppercase tracking-wider">Learn More</span>
+            <main className="flex-1 pt-24 sm:pt-28 pb-16 relative z-10">
+                <div className="container mx-auto px-4 max-w-4xl">
+
+                    {/* Hero Section */}
+                    <div className="text-center mb-12 sm:mb-16">
+                        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-6" style={{
+                            background: 'rgba(255,255,255,0.15)',
+                            border: '1px solid rgba(255,255,255,0.25)',
+                            backdropFilter: 'blur(10px)'
+                        }}>
+                            <Sparkles className="w-3.5 h-3.5 text-cyan-300" />
+                            <span className="text-xs font-semibold text-white/90 uppercase tracking-widest">About Us</span>
                         </div>
+                        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4" style={{
+                            textShadow: '0 2px 12px rgba(0,0,0,0.4)'
+                        }}>
+                            Building the Future of
+                            <br />
+                            <span style={{
+                                background: 'linear-gradient(135deg, #67E8F9, #A78BFA, #F472B6)',
+                                WebkitBackgroundClip: 'text',
+                                WebkitTextFillColor: 'transparent',
+                                backgroundClip: 'text',
+                            }}>Campus Tech</span>
+                        </h1>
+                        <p className="text-white/70 text-sm sm:text-base max-w-lg mx-auto leading-relaxed" style={{
+                            textShadow: '0 1px 4px rgba(0,0,0,0.3)'
+                        }}>
+                            Datanauts is a student-driven platform connecting innovators,
+                            creators, and learners at Sphoorthy Engineering College.
+                        </p>
                     </div>
 
-                    {/* Team Section */}
-                    <div className="mb-16">
-                        <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-1 gap-6 max-w-md mx-auto">
-                            {teamMembers.map((member) => (
-                                <CyberCard
-                                    key={member.name}
-                                    variant="hologram"
-                                    className="text-center group"
-                                >
+                    {/* Founder Card */}
+                    <div className="mb-12 sm:mb-16">
+                        <div className="max-w-sm mx-auto">
+                            <div className="relative rounded-3xl p-[1px]" style={{
+                                background: 'linear-gradient(135deg, rgba(103,232,249,0.5), rgba(167,139,250,0.5), rgba(244,114,182,0.3))'
+                            }}>
+                                <div className="bg-white/90 backdrop-blur-xl rounded-3xl p-6 sm:p-8 text-center">
                                     {/* Avatar */}
-                                    <div className="relative w-24 h-24 mx-auto mb-4">
-                                        <div className="absolute inset-0 rounded-full border-2 border-primary/50 animate-pulse" />
-                                        <img
-                                            src={member.avatar}
-                                            alt={member.name}
-                                            className="w-full h-full rounded-full p-1"
-                                        />
+                                    <div className="relative w-24 h-24 mx-auto mb-5">
+                                        <div className="absolute inset-0 rounded-full" style={{
+                                            background: 'linear-gradient(135deg, #67E8F9, #A78BFA, #F472B6)',
+                                            padding: '3px'
+                                        }}>
+                                            <div className="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden">
+                                                <img
+                                                    src="https://api.dicebear.com/7.x/bottts/svg?seed=jashwanth&backgroundColor=6366f1"
+                                                    alt="Jashwanth Singh"
+                                                    className="w-full h-full rounded-full p-1"
+                                                />
+                                            </div>
+                                        </div>
                                     </div>
 
-                                    <h3 className="font-display text-lg font-bold tracking-wider text-foreground group-hover:text-primary transition-colors mb-1">
-                                        {member.name}
+                                    <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-1 tracking-wide">
+                                        N. JASHWANTH SINGH
                                     </h3>
-                                    <div className="font-mono text-xs text-primary mb-1">
-                                        {member.role}
+                                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold mb-2" style={{
+                                        background: 'linear-gradient(135deg, #EDE9FE, #DBEAFE)',
+                                        color: '#6366F1'
+                                    }}>
+                                        <Code2 className="w-3 h-3" />
+                                        Founder & Lead Developer
                                     </div>
-                                    {member.rollNumber && (
-                                        <div className="font-mono text-xs text-amber-500 mb-2">
-                                            Roll: {member.rollNumber}
-                                        </div>
-                                    )}
-                                    <p className="font-mono text-xs text-muted-foreground">
-                                        {member.bio}
+                                    <p className="text-xs text-amber-600 font-mono font-semibold mb-3">24N81A6758</p>
+                                    <p className="text-sm text-gray-500 leading-relaxed">
+                                        Full-stack developer with a passion for data science and innovative tech.
                                     </p>
-                                </CyberCard>
-                            ))}
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    {/* Mission Section */}
-                    <CyberCard variant="terminal" padding="lg" className="max-w-3xl mx-auto">
-                        {/* Terminal Header */}
-                        <div className="flex items-center gap-2 -mt-2 mb-6">
-                            <span className="w-3 h-3 rounded-full bg-neon-red" />
-                            <span className="w-3 h-3 rounded-full bg-neon-amber" />
-                            <span className="w-3 h-3 rounded-full bg-primary" />
-                            <span className="ml-2 font-mono text-xs text-muted-foreground">
-                                mission.txt
-                            </span>
+                    {/* Mission & Values */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 mb-12 sm:mb-16">
+                        {[
+                            {
+                                icon: Rocket,
+                                title: "Our Mission",
+                                desc: "Built for the DATANAUTS club — a platform to discover tech events, workshops, and hackathons on campus.",
+                                gradient: "from-cyan-500/20 to-blue-500/20",
+                                iconColor: "text-cyan-500",
+                                iconBg: "bg-cyan-50"
+                            },
+                            {
+                                icon: Users,
+                                title: "Community First",
+                                desc: "Connecting innovators and building the future of campus tech communities, one event at a time.",
+                                gradient: "from-violet-500/20 to-purple-500/20",
+                                iconColor: "text-violet-500",
+                                iconBg: "bg-violet-50"
+                            },
+                            {
+                                icon: GraduationCap,
+                                title: "For Students",
+                                desc: "Designed by students, for students. Stay updated with everything happening at Sphoorthy Engineering College.",
+                                gradient: "from-pink-500/20 to-rose-500/20",
+                                iconColor: "text-pink-500",
+                                iconBg: "bg-pink-50"
+                            },
+                            {
+                                icon: Heart,
+                                title: "Open & Inclusive",
+                                desc: "Every student deserves access to opportunities. We make campus life more connected and informed.",
+                                gradient: "from-amber-500/20 to-orange-500/20",
+                                iconColor: "text-amber-500",
+                                iconBg: "bg-amber-50"
+                            }
+                        ].map((item, idx) => (
+                            <div
+                                key={idx}
+                                className="bg-white/85 backdrop-blur-xl rounded-2xl p-5 sm:p-6 border border-white/30 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
+                            >
+                                <div className={`w-10 h-10 rounded-xl ${item.iconBg} flex items-center justify-center mb-4`}>
+                                    <item.icon className={`w-5 h-5 ${item.iconColor}`} />
+                                </div>
+                                <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-2">{item.title}</h3>
+                                <p className="text-sm text-gray-500 leading-relaxed">{item.desc}</p>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Tech Stack Badge */}
+                    <div className="text-center">
+                        <div className="bg-white/10 backdrop-blur-md rounded-2xl p-5 sm:p-6 border border-white/15 inline-block">
+                            <p className="text-white/50 text-xs uppercase tracking-widest mb-3 font-semibold">Built With</p>
+                            <div className="flex flex-wrap items-center justify-center gap-3">
+                                {["React", "TypeScript", "Supabase", "Vite", "Tailwind CSS"].map((tech) => (
+                                    <span
+                                        key={tech}
+                                        className="px-3 py-1.5 rounded-full text-xs font-semibold"
+                                        style={{
+                                            background: 'rgba(255,255,255,0.12)',
+                                            color: 'rgba(255,255,255,0.8)',
+                                            border: '1px solid rgba(255,255,255,0.15)'
+                                        }}
+                                    >
+                                        {tech}
+                                    </span>
+                                ))}
+                            </div>
                         </div>
-                        <div className="space-y-4 font-mono text-sm">
-                            <p>
-                                <span className="text-neon-green">➜</span> This project was built for{" "}
-                                <span className="text-neon-cyan">DATANAUTS</span> club at{" "}
-                                <span className="text-neon-magenta">Sphoorthy Engineering College</span>.
-                            </p>
-                            <p className="text-muted-foreground">
-                                <span className="text-neon-green">➜</span> A platform to discover{" "}
-                                <span className="text-neon-amber">tech events, workshops,</span> and{" "}
-                                <span className="text-neon-cyan">hackathons</span> on campus.
-                            </p>
-                            <p className="text-muted-foreground">
-                                <span className="text-neon-green">➜</span> Connecting innovators and building the{" "}
-                                <span className="text-neon-green">future of campus tech communities</span>.
-                            </p>
-                        </div>
-                    </CyberCard>
+                    </div>
                 </div>
             </main>
 

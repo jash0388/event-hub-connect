@@ -94,80 +94,92 @@ export default function UserAuth() {
     };
 
     return (
-        <div className="min-h-screen bg-background flex flex-col">
+        <div className="min-h-screen flex flex-col" style={{
+            background: 'url("https://images.unsplash.com/photo-1432251407527-504a6b4174a2?q=80&w=1480&auto=format&fit=crop") center center',
+            backgroundAttachment: 'fixed',
+            backgroundSize: 'cover'
+        }}>
+            <div className="absolute inset-0" style={{
+                background: 'linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.3) 100%)',
+                zIndex: 1
+            }} />
             <Header />
-            <main className="flex-1 pt-24 pb-16">
-                <div className="container mx-auto px-4 max-w-md">
-                    <div className="bg-card border border-border rounded-2xl p-8">
-                        <div className="text-center mb-8">
-                            <h1 className="text-3xl font-display font-bold text-foreground mb-2">
+            <main className="flex-1 flex items-center justify-center px-4 relative z-10 pt-20 pb-10">
+                <div className="w-full max-w-md">
+                    <div className="bg-white/90 backdrop-blur-xl rounded-3xl p-6 sm:p-8 shadow-2xl border border-white/40">
+                        <div className="text-center mb-6 sm:mb-8">
+                            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">
                                 {isLogin ? "Welcome Back" : "Create Account"}
                             </h1>
-                            <p className="text-muted-foreground">
+                            <p className="text-gray-500 text-sm sm:text-base">
                                 {isLogin ? "Login to manage your events" : "Join our tech community"}
                             </p>
                         </div>
 
                         <form onSubmit={handleSubmit} className="space-y-4">
                             {!isLogin && (
-                                <div className="space-y-2">
-                                    <Label htmlFor="fullName">Full Name</Label>
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="fullName" className="text-sm font-semibold text-gray-700">Full Name</Label>
                                     <div className="relative">
-                                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                         <Input
                                             id="fullName"
                                             type="text"
                                             placeholder="Your name"
                                             value={fullName}
                                             onChange={(e) => setFullName(e.target.value)}
-                                            className="pl-10"
+                                            className="pl-10 h-11 sm:h-12 rounded-xl bg-gray-50/80 border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                             required={!isLogin}
                                         />
                                     </div>
                                 </div>
                             )}
 
-                            <div className="space-y-2">
-                                <Label htmlFor="email">Email</Label>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="email" className="text-sm font-semibold text-gray-700">Email</Label>
                                 <div className="relative">
-                                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                     <Input
                                         id="email"
                                         type="email"
                                         placeholder="your@email.com"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
-                                        className="pl-10"
+                                        className="pl-10 h-11 sm:h-12 rounded-xl bg-gray-50/80 border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                         required
                                     />
                                 </div>
                             </div>
 
-                            <div className="space-y-2">
-                                <Label htmlFor="password">Password</Label>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="password" className="text-sm font-semibold text-gray-700">Password</Label>
                                 <div className="relative">
-                                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                     <Input
                                         id="password"
                                         type={showPassword ? "text" : "password"}
                                         placeholder="••••••••"
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
-                                        className="pl-10 pr-10"
+                                        className="pl-10 pr-10 h-11 sm:h-12 rounded-xl bg-gray-50/80 border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                         required
                                         minLength={6}
                                     />
                                     <button
                                         type="button"
                                         onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                                     >
                                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                     </button>
                                 </div>
                             </div>
 
-                            <Button type="submit" className="w-full" disabled={isLoading}>
+                            <Button
+                                type="submit"
+                                className="w-full h-11 sm:h-12 rounded-xl text-sm sm:text-base font-semibold shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all mt-2"
+                                disabled={isLoading}
+                            >
                                 {isLoading ? (
                                     <Loader2 className="w-4 h-4 animate-spin" />
                                 ) : (
@@ -179,20 +191,20 @@ export default function UserAuth() {
                             </Button>
                         </form>
 
-                        <div className="mt-6 text-center">
-                            <p className="text-muted-foreground">
+                        <div className="mt-5 sm:mt-6 text-center">
+                            <p className="text-gray-500 text-sm">
                                 {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
                                 <button
                                     onClick={() => setIsLogin(!isLogin)}
-                                    className="text-primary hover:underline font-medium"
+                                    className="text-blue-600 hover:underline font-semibold"
                                 >
                                     {isLogin ? "Sign Up" : "Login"}
                                 </button>
                             </p>
                         </div>
 
-                        <div className="mt-4 text-center">
-                            <Link to="/admin/login" className="text-sm text-muted-foreground hover:text-primary">
+                        <div className="mt-3 text-center">
+                            <Link to="/admin/login" className="text-xs text-gray-400 hover:text-blue-500 transition-colors">
                                 Admin Login →
                             </Link>
                         </div>

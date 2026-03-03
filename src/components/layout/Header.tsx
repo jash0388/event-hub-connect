@@ -119,14 +119,14 @@ export function Header() {
       {/* Mobile Navigation */}
       {
         isOpen && (
-          <nav className="md:hidden bg-white py-4 px-4 space-y-2 animate-in fade-in slide-in-from-top-4">
+          <nav className="md:hidden bg-white/95 backdrop-blur-md py-3 px-3 space-y-1 border-t border-gray-100 shadow-lg animate-in fade-in slide-in-from-top-4">
             {navItems.map((item) => (
               <Link
                 key={item.path}
                 to={item.path}
                 onClick={() => setIsOpen(false)}
                 className={cn(
-                  "block px-4 py-3 rounded-xl text-base font-medium transition-colors",
+                  "block px-4 py-2.5 rounded-xl text-sm font-medium transition-colors",
                   location.pathname === item.path
                     ? "bg-primary/10 text-primary"
                     : "text-gray-600 hover:bg-gray-50"

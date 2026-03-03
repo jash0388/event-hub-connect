@@ -522,7 +522,7 @@ export const CollegeEventsHub: React.FC = () => {
         </nav>
       </motion.header>
 
-      <main className="flex-grow flex flex-col items-center justify-center text-center px-4 pt-24 pb-16 relative z-10">
+      <main className="flex-grow flex flex-col items-center justify-center text-center px-3 sm:px-4 pt-16 sm:pt-24 pb-10 sm:pb-16 relative z-10">
         <motion.div
           variants={bannerVariants}
           initial="hidden"
@@ -547,7 +547,7 @@ export const CollegeEventsHub: React.FC = () => {
           variants={headlineVariants}
           initial="hidden"
           animate="visible"
-          className="text-4xl sm:text-5xl lg:text-[64px] font-semibold leading-tight max-w-4xl mb-4"
+          className="text-3xl sm:text-4xl md:text-5xl lg:text-[64px] font-semibold leading-tight max-w-4xl mb-3 sm:mb-4"
           style={{ color: '#F9FAFB', textShadow: '0 2px 8px rgba(0,0,0,0.4)' }}
         >
           Stay Connected with{' '}
@@ -574,7 +574,7 @@ export const CollegeEventsHub: React.FC = () => {
           variants={subHeadlineVariants}
           initial="hidden"
           animate="visible"
-          className="text-base sm:text-lg lg:text-xl max-w-2xl mx-auto mb-8"
+          className="text-sm sm:text-base md:text-lg lg:text-xl max-w-2xl mx-auto mb-6 sm:mb-8 px-2"
           style={{ color: '#E5E7EB', textShadow: '0 2px 8px rgba(0,0,0,0.4)' }}
         >
           Your one-stop platform for all college events, announcements, and updates. Never miss what matters most in your campus life.
@@ -587,7 +587,7 @@ export const CollegeEventsHub: React.FC = () => {
           className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16"
         >
           <motion.button
-            className="bg-blue-600/90 backdrop-blur-sm text-white px-6 py-3 rounded-md text-base font-semibold hover:bg-blue-700 transition-colors shadow-lg flex items-center gap-2 border border-blue-400/30"
+            className="bg-blue-600/90 backdrop-blur-sm text-white px-5 sm:px-6 py-2.5 sm:py-3 rounded-md text-sm sm:text-base font-semibold hover:bg-blue-700 transition-colors shadow-lg flex items-center gap-2 border border-blue-400/30"
             style={{ background: 'rgba(37, 99, 235, 0.9)' }}
             whileHover={{ scale: 1.05, y: -2 }}
             whileTap={{ scale: 0.97 }}
@@ -604,14 +604,14 @@ export const CollegeEventsHub: React.FC = () => {
           transition={{ duration: 0.6, delay: contentDelay + itemDelayIncrement * 4 }}
           className="w-full max-w-5xl mx-auto"
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 px-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 md:gap-6 px-1 sm:px-4">
             {features.map((feature, index) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: contentDelay + itemDelayIncrement * 5 + index * 0.1 }}
-                className="bg-white/80 backdrop-blur-md border border-white/30 rounded-lg p-6 hover:shadow-lg transition-all hover:border-blue-300"
+                className="bg-white/80 backdrop-blur-md border border-white/30 rounded-lg p-4 sm:p-6 hover:shadow-lg transition-all hover:border-blue-300"
               >
                 <div className="flex items-start gap-4">
                   <div className="text-2xl">

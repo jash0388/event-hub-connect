@@ -184,16 +184,31 @@ const Profile = () => {
 
     if (!user) {
         return (
-            <div className="min-h-screen bg-white flex flex-col">
+            <div className="min-h-screen flex flex-col" style={{
+                background: 'url("https://images.unsplash.com/photo-1432251407527-504a6b4174a2?q=80&w=1480&auto=format&fit=crop") center center',
+                backgroundAttachment: 'fixed',
+                backgroundSize: 'cover'
+            }}>
+                <div className="absolute inset-0" style={{
+                    background: 'linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.3) 100%)',
+                    zIndex: 1
+                }} />
                 <Header />
-                <main className="flex-1 container mx-auto px-4 py-32 text-center">
-                    <div className="max-w-md mx-auto">
-                        <User className="w-16 h-16 text-gray-200 mx-auto mb-6" />
-                        <h1 className="text-3xl font-bold mb-4">Login Required</h1>
-                        <p className="text-gray-500 mb-8">Please login to view your profile and access your event tickets.</p>
-                        <Link to="/login">
-                            <Button className="w-full h-12 rounded-xl">Go to Login</Button>
-                        </Link>
+                <main className="flex-1 flex items-center justify-center px-4 relative z-10">
+                    <div className="w-full max-w-sm">
+                        <div className="bg-white/90 backdrop-blur-xl rounded-3xl p-8 sm:p-10 text-center shadow-2xl border border-white/40">
+                            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-100 to-cyan-50 flex items-center justify-center mx-auto mb-6 shadow-lg shadow-blue-100/50">
+                                <User className="w-10 h-10 text-blue-500" />
+                            </div>
+                            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Login Required</h1>
+                            <p className="text-gray-500 text-sm sm:text-base mb-8 leading-relaxed">Please login to view your profile and access your event tickets.</p>
+                            <Link to="/login">
+                                <Button className="w-full h-12 rounded-xl text-base font-semibold shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all">
+                                    Go to Login
+                                </Button>
+                            </Link>
+                            <p className="text-xs text-gray-400 mt-4">New student? <Link to="/login" className="text-blue-500 font-medium hover:underline">Create an account</Link></p>
+                        </div>
                     </div>
                 </main>
                 <Footer />
@@ -204,13 +219,13 @@ const Profile = () => {
     return (
         <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 via-white to-blue-50">
             <Header />
-            <main className="flex-1 pt-24 pb-20">
-                <div className="container mx-auto px-4 max-w-4xl">
+            <main className="flex-1 pt-20 sm:pt-24 pb-16 sm:pb-20">
+                <div className="container mx-auto px-3 sm:px-4 max-w-4xl">
                     {showProfileComplete ? (
                         <div className="space-y-10">
                             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                                 <div>
-                                    <h1 className="text-4xl font-extrabold text-gray-900 mb-2">My Events</h1>
+                                    <h1 className="text-2xl sm:text-4xl font-extrabold text-gray-900 mb-2">My Events</h1>
                                     <p className="text-gray-500">View and manage your registered event tickets</p>
                                 </div>
                                 <Button
@@ -237,7 +252,7 @@ const Profile = () => {
                                                 isExpired && "opacity-75 grayscale-[0.5]"
                                             )}>
                                                 {/* Ticket Side - QR */}
-                                                <div className="md:w-64 bg-gradient-to-br from-gray-50 to-white flex flex-col items-center justify-center p-8 border-b md:border-b-0 md:border-r border-dashed border-gray-300 relative">
+                                                <div className="md:w-64 bg-gradient-to-br from-gray-50 to-white flex flex-col items-center justify-center p-5 sm:p-8 border-b md:border-b-0 md:border-r border-dashed border-gray-300 relative">
                                                     {/* Notch circles */}
                                                     <div className="hidden md:block absolute -left-3 top-8 w-6 h-6 bg-white rounded-full shadow-md" />
                                                     <div className="hidden md:block absolute -left-3 bottom-8 w-6 h-6 bg-white rounded-full shadow-md" />
@@ -256,7 +271,7 @@ const Profile = () => {
                                                 </div>
 
                                                 {/* Main Side - Info */}
-                                                <div className="flex-1 p-8 md:p-10 relative">
+                                                <div className="flex-1 p-5 sm:p-8 md:p-10 relative">
                                                     {/* Ticket Notch Decorations */}
                                                     <div className="hidden md:block absolute -left-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-white rounded-full shadow-md" />
 
@@ -276,12 +291,12 @@ const Profile = () => {
                                                                     </span>
                                                                 ) : null}
                                                             </div>
-                                                            <h3 className="text-3xl font-bold text-slate-900 leading-tight mb-2">
+                                                            <h3 className="text-xl sm:text-3xl font-bold text-slate-900 leading-tight mb-2">
                                                                 {event.title}
                                                             </h3>
                                                         </div>
 
-                                                        <div className="grid grid-cols-2 gap-6 mt-auto">
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mt-auto">
                                                             <div className="space-y-1">
                                                                 <div className="flex items-center gap-2 text-slate-500">
                                                                     <Calendar className="w-4 h-4" />
@@ -296,7 +311,7 @@ const Profile = () => {
                                                                 </div>
                                                                 <p className="font-semibold text-slate-700">{event.time || "TBA"}</p>
                                                             </div>
-                                                            <div className="space-y-1 col-span-2">
+                                                            <div className="space-y-1 sm:col-span-2">
                                                                 <div className="flex items-center gap-2 text-slate-500">
                                                                     <MapPin className="w-4 h-4" />
                                                                     <span className="text-sm uppercase tracking-wide text-slate-400">Location</span>
@@ -329,7 +344,7 @@ const Profile = () => {
                             </div>
 
                             <div className="space-y-8">
-                                <div className="bg-white rounded-[2rem] p-8 border border-gray-100 shadow-sm space-y-6">
+                                <div className="bg-white rounded-2xl sm:rounded-[2rem] p-5 sm:p-8 border border-gray-100 shadow-sm space-y-6">
                                     <div className="flex items-center gap-3 mb-2">
                                         <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
                                             <User className="w-5 h-5" />
