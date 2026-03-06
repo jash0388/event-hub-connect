@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle, useMemo } from 'react';
 import { motion, AnimatePresence, useScroll, useMotionValueEvent, type Transition, type VariantLabels, type TargetAndTransition, type Variants } from 'framer-motion';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Sparkles, Calendar, Bell, Users, Zap, ChevronRight, Star, Globe } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 function cn(...classes: (string | undefined | null | boolean)[]): string {
@@ -46,8 +46,8 @@ const RotatingText = forwardRef<RotatingTextRef, RotatingTextProps>(
       exit = { y: "-120%", opacity: 0 },
       animatePresenceMode = "wait",
       animatePresenceInitial = false,
-      rotationInterval = 2200,
-      staggerDuration = 0.01,
+      rotationInterval = 2500,
+      staggerDuration = 0.015,
       staggerFrom = "last",
       loop = true,
       auto = true,
@@ -67,7 +67,7 @@ const RotatingText = forwardRef<RotatingTextRef, RotatingTextProps>(
         try {
           const segmenter = new (Intl as unknown as { Segmenter: new (locale: string, options: { granularity: string }) => { segment: (text: string) => IterableIterator<{ segment: string }> } }).Segmenter("en", { granularity: "grapheme" });
           return Array.from(segmenter.segment(text), (segment: { segment: string }) => segment.segment);
-        } catch (error) {
+        } catch {
           return text.split('');
         }
       }
@@ -167,7 +167,7 @@ const RotatingText = forwardRef<RotatingTextRef, RotatingTextProps>(
 
     return (
       <motion.span
-        className={cn("inline-flex flex-wrap whitespace-pre-wrap relative align-bottom pb-[10px]", mainClassName)}
+        className={cn("inline-flex flex-wrap whitespace-pre-wrap relative align-bottom pb-[0.1em]", mainClassName)}
         {...rest}
         layout
       >
@@ -219,6 +219,37 @@ const RotatingText = forwardRef<RotatingTextRef, RotatingTextProps>(
 );
 RotatingText.displayName = "RotatingText";
 
+// Subtle grid background
+const GridBackground: React.FC = () => {
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      <div 
+        className="absolute inset-0 opacity-[0.03]"
+        style={{
+          backgroundImage: `
+            linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)
+          `,
+          backgroundSize: '64px 64px'
+        }}
+      />
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/50" />
+    </div>
+  );
+};
+
+// Floating orbs for visual interest
+const FloatingOrbs: React.FC = () => {
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      <div className="absolute top-1/4 -left-32 w-96 h-96 bg-blue-500/10 rounded-full blur-[128px]" />
+      <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-violet-500/10 rounded-full blur-[128px]" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-500/5 rounded-full blur-[100px]" />
+    </div>
+  );
+};
+
+// Interactive dot background with improved performance
 interface Dot {
   x: number;
   y: number;
@@ -238,14 +269,14 @@ const InteractiveDotBackground: React.FC = () => {
   const canvasSizeRef = useRef<{ width: number; height: number }>({ width: 0, height: 0 });
   const mousePositionRef = useRef<{ x: number | null; y: number | null }>({ x: null, y: null });
 
-  const DOT_SPACING = 25;
-  const BASE_OPACITY_MIN = 0.15;
-  const BASE_OPACITY_MAX = 0.25;
-  const BASE_RADIUS = 1.5;
-  const INTERACTION_RADIUS = 150;
+  const DOT_SPACING = 32;
+  const BASE_OPACITY_MIN = 0.08;
+  const BASE_OPACITY_MAX = 0.15;
+  const BASE_RADIUS = 1;
+  const INTERACTION_RADIUS = 120;
   const INTERACTION_RADIUS_SQ = INTERACTION_RADIUS * INTERACTION_RADIUS;
-  const OPACITY_BOOST = 0.4;
-  const RADIUS_BOOST = 2;
+  const OPACITY_BOOST = 0.35;
+  const RADIUS_BOOST = 1.5;
   const GRID_CELL_SIZE = Math.max(50, Math.floor(INTERACTION_RADIUS / 1.5));
 
   const handleMouseMove = useCallback((event: globalThis.MouseEvent) => {
@@ -291,7 +322,7 @@ const InteractiveDotBackground: React.FC = () => {
           baseColor: `rgba(59, 130, 246, ${BASE_OPACITY_MAX})`,
           targetOpacity: baseOpacity,
           currentOpacity: baseOpacity,
-          opacitySpeed: (Math.random() * 0.003) + 0.001,
+          opacitySpeed: (Math.random() * 0.002) + 0.0005,
           baseRadius: BASE_RADIUS,
           currentRadius: BASE_RADIUS,
         });
@@ -299,7 +330,7 @@ const InteractiveDotBackground: React.FC = () => {
     }
     dotsRef.current = newDots;
     gridRef.current = newGrid;
-  }, [DOT_SPACING, GRID_CELL_SIZE, BASE_OPACITY_MIN, BASE_OPACITY_MAX, BASE_RADIUS]);
+  }, []);
 
   const handleResize = useCallback(() => {
     const canvas = canvasRef.current;
@@ -375,19 +406,14 @@ const InteractiveDotBackground: React.FC = () => {
       const finalOpacity = Math.min(1, dot.currentOpacity + interactionFactor * OPACITY_BOOST);
       dot.currentRadius = dot.baseRadius + interactionFactor * RADIUS_BOOST;
 
-      const colorMatch = dot.baseColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
-      const r = colorMatch ? colorMatch[1] : '59';
-      const g = colorMatch ? colorMatch[2] : '130';
-      const b = colorMatch ? colorMatch[3] : '246';
-
       ctx.beginPath();
-      ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${finalOpacity.toFixed(3)})`;
+      ctx.fillStyle = `rgba(59, 130, 246, ${finalOpacity.toFixed(3)})`;
       ctx.arc(dot.x, dot.y, dot.currentRadius, 0, Math.PI * 2);
       ctx.fill();
     });
 
     animationFrameId.current = requestAnimationFrame(animateDots);
-  }, [GRID_CELL_SIZE, INTERACTION_RADIUS, INTERACTION_RADIUS_SQ, OPACITY_BOOST, RADIUS_BOOST, BASE_OPACITY_MIN, BASE_OPACITY_MAX, BASE_RADIUS]);
+  }, []);
 
   useEffect(() => {
     handleResize();
@@ -414,217 +440,324 @@ const InteractiveDotBackground: React.FC = () => {
   return <canvas ref={canvasRef} className="absolute inset-0 z-0 pointer-events-none" />;
 };
 
+// Feature Card Component
+interface FeatureCardProps {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  delay: number;
+}
+
+const FeatureCard: React.FC<FeatureCardProps> = ({ icon, title, description, delay }) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.5, delay }}
+      className="group relative"
+    >
+      <div className="relative p-6 rounded-2xl bg-white/[0.02] border border-white/[0.05] backdrop-blur-sm hover:bg-white/[0.04] hover:border-white/[0.1] transition-all duration-300">
+        <div className="flex items-start gap-4">
+          <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500/20 to-violet-500/20 border border-white/[0.05] flex items-center justify-center text-blue-400 group-hover:scale-110 transition-transform duration-300">
+            {icon}
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-white font-semibold text-base mb-1">{title}</h3>
+            <p className="text-zinc-400 text-sm leading-relaxed">{description}</p>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+// Stats Component
+const StatsSection: React.FC = () => {
+  const stats = [
+    { value: "500+", label: "Active Students" },
+    { value: "50+", label: "Events Hosted" },
+    { value: "20+", label: "Tech Workshops" },
+    { value: "100%", label: "Free Access" },
+  ];
+
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
+      {stats.map((stat, index) => (
+        <motion.div
+          key={index}
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: index * 0.1 }}
+          className="text-center"
+        >
+          <div className="text-3xl md:text-4xl font-bold text-white mb-1">{stat.value}</div>
+          <div className="text-sm text-zinc-500">{stat.label}</div>
+        </motion.div>
+      ))}
+    </div>
+  );
+};
+
 export const CollegeEventsHub: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState<boolean>(false);
   const { scrollY } = useScroll();
   const navigate = useNavigate();
 
   useMotionValueEvent(scrollY, "change", (latest) => {
-    setIsScrolled(latest > 10);
+    setIsScrolled(latest > 50);
   });
-
-  const headerVariants: Variants = {
-    top: {
-      backgroundColor: "transparent",
-      borderBottomColor: "transparent",
-      position: 'fixed' as const,
-      boxShadow: 'none',
-    },
-    scrolled: {
-      backgroundColor: "transparent",
-      borderBottomColor: "transparent",
-      boxShadow: 'none',
-      position: 'fixed' as const
-    }
-  };
-
-  const contentDelay = 0.3;
-  const itemDelayIncrement = 0.1;
-
-  const bannerVariants: Variants = {
-    hidden: { opacity: 0, y: -10 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.4, delay: contentDelay } }
-  };
-
-  const headlineVariants: Variants = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { duration: 0.5, delay: contentDelay + itemDelayIncrement } }
-  };
-
-  const subHeadlineVariants: Variants = {
-    hidden: { opacity: 0, y: 10 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.5, delay: contentDelay + itemDelayIncrement * 2 } }
-  };
-
-  const ctaVariants: Variants = {
-    hidden: { opacity: 0, y: 10 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.5, delay: contentDelay + itemDelayIncrement * 3 } }
-  };
 
   const features = [
     {
-      icon: "🔔",
+      icon: <Bell className="w-5 h-5" />,
       title: "Real-time Notifications",
-      description: "Get instant alerts for new events, updates, and announcements directly to your device."
+      description: "Instant alerts for events, updates, and announcements delivered to your device."
     },
     {
-      icon: "📅",
+      icon: <Calendar className="w-5 h-5" />,
       title: "Event Calendar",
-      description: "View all upcoming college events in one organized calendar with reminders and details."
+      description: "View all upcoming events in one organized calendar with reminders."
     },
     {
-      icon: "👥",
+      icon: <Users className="w-5 h-5" />,
       title: "Student Community",
-      description: "Connect with fellow students, share experiences, and stay engaged with campus life."
+      description: "Connect with peers, share experiences, and stay engaged with campus life."
     },
     {
-      icon: "📢",
-      title: "Important Announcements",
-      description: "Never miss critical updates about exams, holidays, or college-wide notifications."
+      icon: <Zap className="w-5 h-5" />,
+      title: "Quick Registration",
+      description: "One-click event registration with QR code check-in system."
     }
   ];
 
   return (
-    <div className="relative text-white min-h-screen flex flex-col overflow-x-hidden" style={{
-      background: 'linear-gradient(to bottom, #0a0a0a 0%, #111111 50%, #0a0a0a 100%)'
-    }}>
+    <div className="relative text-white min-h-screen flex flex-col overflow-x-hidden bg-[#030303]">
+      <GridBackground />
+      <FloatingOrbs />
       <InteractiveDotBackground />
 
+      {/* Header */}
       <motion.header
-        variants={headerVariants}
-        initial="top"
-        animate={isScrolled ? "scrolled" : "top"}
-        transition={{ duration: 0.3, ease: "easeInOut" }}
-        className="px-6 w-full md:px-10 lg:px-16 sticky top-0 z-30 !bg-transparent"
-        style={{
-          background: 'transparent !important',
-          backgroundColor: 'transparent !important',
-          boxShadow: 'none',
-          borderBottom: 'none',
-          backdropFilter: 'none',
-          WebkitBackdropFilter: 'none'
-        }}
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.5 }}
+        className={cn(
+          "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
+          isScrolled ? "bg-black/80 backdrop-blur-xl border-b border-white/[0.05]" : ""
+        )}
       >
-        <nav className="flex justify-between items-center max-w-screen-xl mx-auto h-[70px]">
-          <div className="flex items-center flex-shrink-0">
-            <span className="text-xl font-bold cursor-pointer" style={{ color: '#22D3EE', textShadow: '0 0 20px rgba(34, 211, 238, 0.6), 0 2px 8px rgba(0,0,0,0.4)' }} onClick={() => navigate("/")}>Datanauts</span>
+        <nav className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center">
+              <Sparkles className="w-4 h-4 text-white" />
+            </div>
+            <span className="text-lg font-bold tracking-tight cursor-pointer" onClick={() => navigate("/")}>
+              Datanauts
+            </span>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            <div className="hidden md:flex items-center gap-1 text-xs text-zinc-500 px-3 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.05]">
+              <Globe className="w-3 h-3" />
+              <span>Sphoorthy Engineering College</span>
+            </div>
+            <button 
+              onClick={() => navigate('/events')}
+              className="text-sm text-zinc-400 hover:text-white transition-colors"
+            >
+              Events
+            </button>
+            <button 
+              onClick={() => navigate('/login')}
+              className="text-sm px-4 py-2 rounded-lg bg-white text-black font-medium hover:bg-zinc-200 transition-colors"
+            >
+              Sign In
+            </button>
           </div>
         </nav>
       </motion.header>
 
-      <main className="flex-grow flex flex-col items-center justify-center text-center px-3 sm:px-4 pt-16 sm:pt-24 pb-10 sm:pb-16 relative z-10">
-        <motion.div
-          variants={bannerVariants}
-          initial="hidden"
-          animate="visible"
-          className="mb-6"
-        >
-          <div
-            className="px-4 py-1 rounded-full text-xs sm:text-sm font-medium cursor-pointer inline-flex items-center gap-2"
-            style={{
-              background: 'rgba(255, 255, 255, 0.2)',
-              color: '#F9FAFB',
-              border: '1px solid rgba(255, 255, 255, 0.3)',
-              textShadow: '0 1px 2px rgba(0,0,0,0.3)'
-            }}
-          >
-            <span className="flex h-2 w-2 rounded-full bg-green-400 animate-pulse"></span>
-            Sphoorthy Engineering College
-          </div>
-        </motion.div>
+      {/* Hero Section */}
+      <main className="flex-grow flex flex-col relative z-10">
+        <section className="min-h-screen flex flex-col items-center justify-center px-6 pt-16">
+          <div className="max-w-4xl mx-auto text-center">
+            {/* Badge */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.03] border border-white/[0.05] mb-8"
+            >
+              <Star className="w-4 h-4 text-yellow-500" />
+              <span className="text-sm text-zinc-400">Trusted by 500+ students</span>
+            </motion.div>
 
-        <motion.h1
-          variants={headlineVariants}
-          initial="hidden"
-          animate="visible"
-          className="text-3xl sm:text-4xl md:text-5xl lg:text-[64px] font-semibold leading-tight max-w-4xl mb-3 sm:mb-4"
-          style={{ color: '#F9FAFB', textShadow: '0 2px 8px rgba(0,0,0,0.4)' }}
-        >
-          Stay Connected with{' '}
-          <span className="inline-block h-[1.2em] overflow-hidden align-bottom">
-            <RotatingText
-              texts={['Events', 'Updates', 'Announcements', 'Activities', 'News']}
-              mainClassName="mx-1"
-              style={{ color: '#4ADE80', textShadow: '0 2px 8px rgba(0,0,0,0.4)' }}
-              staggerFrom={"last"}
-              initial={{ y: "-100%", opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: "110%", opacity: 0 }}
-              staggerDuration={0.03}
-              transition={{ type: "spring", damping: 20, stiffness: 200 }}
-              rotationInterval={3000}
-              splitBy="characters"
-              auto={true}
-              loop={true}
-            />
-          </span>
-        </motion.h1>
+            {/* Main Headline */}
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.1] mb-6"
+            >
+              <span className="text-white">Stay Connected with</span>
+              <br />
+              <span className="inline-flex h-[1.15em] overflow-hidden align-bottom">
+                <RotatingText
+                  texts={["Events", "Updates", "Announcements", "Activities"]}
+                  mainClassName="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-blue-500 to-violet-500"
+                  staggerFrom="last"
+                  initial={{ y: "-100%", opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: "110%", opacity: 0 }}
+                  staggerDuration={0.02}
+                  transition={{ type: "spring", damping: 20, stiffness: 200 }}
+                  rotationInterval={2500}
+                  splitBy="characters"
+                  auto={true}
+                  loop={true}
+                />
+              </span>
+            </motion.h1>
 
-        <motion.p
-          variants={subHeadlineVariants}
-          initial="hidden"
-          animate="visible"
-          className="text-sm sm:text-base md:text-lg lg:text-xl max-w-2xl mx-auto mb-6 sm:mb-8 px-2"
-          style={{ color: '#E5E7EB', textShadow: '0 2px 8px rgba(0,0,0,0.4)' }}
-        >
-          Your one-stop platform for all college events, announcements, and updates. Never miss what matters most in your campus life.
-        </motion.p>
+            {/* Subtitle */}
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="text-lg md:text-xl text-zinc-400 max-w-2xl mx-auto mb-10 leading-relaxed"
+            >
+              Your one-stop platform for all college events, announcements, and updates. 
+              Never miss what matters most in your campus life.
+            </motion.p>
 
-        <motion.div
-          variants={ctaVariants}
-          initial="hidden"
-          animate="visible"
-          className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16"
-        >
-          <motion.button
-            className="bg-white text-black px-6 sm:px-8 py-3 sm:py-4 rounded-xl text-sm sm:text-base font-semibold hover:bg-zinc-200 transition-colors shadow-lg shadow-white/20 flex items-center gap-2"
-            whileHover={{ scale: 1.05, y: -2 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={() => navigate('/login')}
-          >
-            Join Now
-            <ArrowRight className="w-4 h-4" />
-          </motion.button>
-          <motion.button
-            className="px-6 sm:px-8 py-3 sm:py-4 border border-white/30 text-white hover:bg-white/10 font-medium rounded-xl text-sm sm:text-base transition-all"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => navigate('/events')}
-          >
-            Browse Events
-          </motion.button>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: contentDelay + itemDelayIncrement * 4 }}
-          className="w-full max-w-5xl mx-auto"
-        >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 md:gap-6 px-1 sm:px-4">
-            {features.map((feature, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: contentDelay + itemDelayIncrement * 5 + index * 0.1 }}
-                className="bg-white/80 backdrop-blur-md border border-white/30 rounded-lg p-4 sm:p-6 hover:shadow-lg transition-all hover:border-blue-300"
+            {/* CTA Buttons */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              className="flex flex-col sm:flex-row items-center justify-center gap-4"
+            >
+              <button
+                onClick={() => navigate('/login')}
+                className="group flex items-center gap-2 px-8 py-4 bg-white text-black font-semibold rounded-xl hover:bg-zinc-100 transition-all hover:scale-[1.02] active:scale-[0.98]"
               >
-                <div className="flex items-start gap-4">
-                  <div className="text-2xl">
-                    {feature.icon}
-                  </div>
-                  <div className="text-left flex-1">
-                    <h3 className="text-lg font-semibold text-slate-900 mb-2">{feature.title}</h3>
-                    <p className="text-sm text-slate-600">{feature.description}</p>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
+                Get Started
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </button>
+              <button
+                onClick={() => navigate('/events')}
+                className="flex items-center gap-2 px-8 py-4 bg-white/[0.03] border border-white/[0.1] text-white font-medium rounded-xl hover:bg-white/[0.06] transition-all"
+              >
+                Browse Events
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </motion.div>
+
+            {/* Quick Features */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+              className="flex flex-wrap items-center justify-center gap-3 mt-12"
+            >
+              {["Real-time notifications", "Event calendar", "Student community", "Quick check-in"].map((feature, i) => (
+                <span
+                  key={i}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-zinc-400 bg-white/[0.02] border border-white/[0.05] rounded-full"
+                >
+                  <span className="w-1 h-1 rounded-full bg-blue-500" />
+                  {feature}
+                </span>
+              ))}
+            </motion.div>
           </div>
-        </motion.div>
+        </section>
+
+        {/* Features Section */}
+        <section className="py-24 px-6">
+          <div className="max-w-5xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center mb-16"
+            >
+              <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+                Everything you need
+              </h2>
+              <p className="text-zinc-400 text-lg max-w-xl mx-auto">
+                Powerful features to keep you connected with your college community
+              </p>
+            </motion.div>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              {features.map((feature, index) => (
+                <FeatureCard
+                  key={index}
+                  icon={feature.icon}
+                  title={feature.title}
+                  description={feature.description}
+                  delay={index * 0.1}
+                />
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Stats Section */}
+        <section className="py-24 px-6 border-t border-white/[0.05]">
+          <div className="max-w-4xl mx-auto">
+            <StatsSection />
+          </div>
+        </section>
+
+        {/* CTA Section */}
+        <section className="py-24 px-6">
+          <div className="max-w-3xl mx-auto text-center">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="p-8 md:p-12 rounded-3xl bg-gradient-to-br from-blue-500/10 to-violet-500/10 border border-white/[0.05]"
+            >
+              <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+                Ready to get started?
+              </h2>
+              <p className="text-zinc-400 text-lg mb-8">
+                Join hundreds of students already using Datanauts to stay connected.
+              </p>
+              <button
+                onClick={() => navigate('/login')}
+                className="inline-flex items-center gap-2 px-8 py-4 bg-white text-black font-semibold rounded-xl hover:bg-zinc-100 transition-all hover:scale-[1.02] active:scale-[0.98]"
+              >
+                Create Free Account
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* Footer */}
+        <footer className="py-8 px-6 border-t border-white/[0.05]">
+          <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-md bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center">
+                <Sparkles className="w-3 h-3 text-white" />
+              </div>
+              <span className="text-sm font-medium">Datanauts</span>
+            </div>
+            <p className="text-sm text-zinc-500">
+              Sphoorthy Engineering College
+            </p>
+            <p className="text-xs text-zinc-600">
+              Built with care for students
+            </p>
+          </div>
+        </footer>
       </main>
-    </div >
+    </div>
   );
 };
 
