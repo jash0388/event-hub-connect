@@ -587,14 +587,21 @@ export const CollegeEventsHub: React.FC = () => {
           className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16"
         >
           <motion.button
-            className="bg-blue-600/90 backdrop-blur-sm text-white px-5 sm:px-6 py-2.5 sm:py-3 rounded-md text-sm sm:text-base font-semibold hover:bg-blue-700 transition-colors shadow-lg flex items-center gap-2 border border-blue-400/30"
-            style={{ background: 'rgba(37, 99, 235, 0.9)' }}
+            className="bg-white text-black px-6 sm:px-8 py-3 sm:py-4 rounded-xl text-sm sm:text-base font-semibold hover:bg-zinc-200 transition-colors shadow-lg shadow-white/20 flex items-center gap-2"
             whileHover={{ scale: 1.05, y: -2 }}
             whileTap={{ scale: 0.97 }}
-            onClick={() => navigate('/events')}
+            onClick={() => navigate('/login')}
           >
             Join Now
             <ArrowRight className="w-4 h-4" />
+          </motion.button>
+          <motion.button
+            className="px-6 sm:px-8 py-3 sm:py-4 border border-white/30 text-white hover:bg-white/10 font-medium rounded-xl text-sm sm:text-base transition-all"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => navigate('/events')}
+          >
+            Browse Events
           </motion.button>
         </motion.div>
 

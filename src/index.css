@@ -36,6 +36,14 @@
 
     --radius: 0.75rem;
 
+    /* Auth page dark theme tokens */
+    --auth-bg: 0 0% 0%;
+    --auth-card: 0 0% 8%;
+    --auth-border: 0 0% 20%;
+    --auth-text: 0 0% 100%;
+    --auth-text-muted: 0 0% 60%;
+    --auth-accent: 199 89% 48%;
+
     /* Professional colors */
     --neon-green: 142.1 76.2% 36.3%;
     --neon-cyan: 199 89% 48%;
