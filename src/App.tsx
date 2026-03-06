@@ -49,6 +49,7 @@ const PageLoader = () => (
   </div>
 );
 
+// Main Application Component
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
