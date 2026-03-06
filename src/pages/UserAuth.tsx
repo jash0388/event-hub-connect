@@ -4,17 +4,82 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Mail, Lock, User, ArrowRight, Eye, EyeOff, Sparkles, CheckCircle2, X } from "lucide-react";
+import { Loader2, Mail, Lock, User, ArrowRight, Eye, EyeOff, Sparkles, CheckCircle2, X, Calendar, Bell, Users, Megaphone } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
-
-// Rotating Text Component for animated word cycling
 import type { Transition, VariantLabels, TargetAndTransition } from "framer-motion";
 
-function cn(...classes: (string | undefined | null | boolean)[]): string {
-    return classes.filter(Boolean).join(" ");
-}
+// Interactive Dot Background
+const InteractiveDotBackground = () => {
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const animationFrameId = useRef<number | null>(null);
+    const mousePosition = useRef({ x: 0, y: 0 });
 
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+
+        const resize = () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        };
+        resize();
+        window.addEventListener("resize", resize);
+
+        const dots: { x: number; y: number; baseOpacity: number }[] = [];
+        const spacing = 40;
+        const cols = Math.ceil(canvas.width / spacing);
+        const rows = Math.ceil(canvas.height / spacing);
+
+        for (let i = 0; i < cols; i++) {
+            for (let j = 0; j < rows; j++) {
+                dots.push({
+                    x: i * spacing + spacing / 2,
+                    y: j * spacing + spacing / 2,
+                    baseOpacity: Math.random() * 0.12 + 0.03,
+                });
+            }
+        }
+
+        const handleMouseMove = (e: MouseEvent) => {
+            mousePosition.current = { x: e.clientX, y: e.clientY };
+        };
+        window.addEventListener("mousemove", handleMouseMove);
+
+        const animate = () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            dots.forEach((dot) => {
+                const dx = mousePosition.current.x - dot.x;
+                const dy = mousePosition.current.y - dot.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                const maxDist = 180;
+                const intensity = Math.max(0, 1 - dist / maxDist);
+
+                ctx.beginPath();
+                ctx.fillStyle = `rgba(59, 130, 246, ${dot.baseOpacity + intensity * 0.5})`;
+                ctx.arc(dot.x, dot.y, 1.5 + intensity * 2.5, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            animationFrameId.current = requestAnimationFrame(animate);
+        };
+        animate();
+
+        return () => {
+            window.removeEventListener("resize", resize);
+            window.removeEventListener("mousemove", handleMouseMove);
+            if (animationFrameId.current) cancelAnimationFrame(animationFrameId.current);
+        };
+    }, []);
+
+    return <canvas ref={canvasRef} className="fixed inset-0 z-0 pointer-events-none" />;
+};
+
+// Rotating Text Component
 interface RotatingTextProps {
     texts: string[];
     transition?: Transition;
@@ -40,7 +105,7 @@ const RotatingText = ({
     animate = { y: 0, opacity: 1 },
     exit = { y: "-120%", opacity: 0 },
     rotationInterval = 2500,
-    staggerDuration = 0.02,
+    staggerDuration = 0.025,
     staggerFrom = "first",
     loop = true,
     auto = true,
@@ -86,11 +151,11 @@ const RotatingText = ({
     const elements = splitText(texts[currentTextIndex]);
 
     return (
-        <motion.span className={cn("inline-flex", mainClassName)} style={style}>
+        <motion.span className={`inline-flex ${mainClassName || ""}`} style={style}>
             <AnimatePresence mode="wait">
                 <motion.span
                     key={currentTextIndex}
-                    className={cn("inline-flex", splitLevelClassName)}
+                    className={`inline-flex ${splitLevelClassName || ""}`}
                 >
                     {elements.map((element, i) => (
                         <motion.span
@@ -102,7 +167,7 @@ const RotatingText = ({
                                 ...transition,
                                 delay: getStaggerDelay(i, elements.length),
                             }}
-                            className={cn("inline-block", elementLevelClassName)}
+                            className={`inline-block ${elementLevelClassName || ""}`}
                         >
                             {element === " " ? "\u00A0" : element}
                         </motion.span>
@@ -128,9 +193,9 @@ const WelcomeModal = ({
     useEffect(() => {
         if (isOpen) {
             setStep(0);
-            const timer1 = setTimeout(() => setStep(1), 500);
-            const timer2 = setTimeout(() => setStep(2), 1000);
-            const timer3 = setTimeout(() => setStep(3), 1500);
+            const timer1 = setTimeout(() => setStep(1), 400);
+            const timer2 = setTimeout(() => setStep(2), 800);
+            const timer3 = setTimeout(() => setStep(3), 1200);
             return () => {
                 clearTimeout(timer1);
                 clearTimeout(timer2);
@@ -148,91 +213,91 @@ const WelcomeModal = ({
                     exit={{ opacity: 0 }}
                     className="fixed inset-0 z-50 flex items-center justify-center p-4"
                 >
-                    {/* Backdrop */}
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+                        className="absolute inset-0 bg-black/90 backdrop-blur-md"
                         onClick={onClose}
                     />
 
-                    {/* Modal */}
                     <motion.div
-                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                        initial={{ opacity: 0, scale: 0.9, y: 30 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                        exit={{ opacity: 0, scale: 0.9, y: 30 }}
                         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                        className="relative z-10 w-full max-w-lg bg-zinc-900 border border-zinc-800 rounded-2xl p-8 shadow-2xl"
+                        className="relative z-10 w-full max-w-md bg-zinc-950 border border-zinc-800/80 rounded-3xl p-8 shadow-2xl shadow-black/50"
                     >
-                        {/* Close button */}
                         <button
                             onClick={onClose}
-                            className="absolute top-4 right-4 text-zinc-500 hover:text-white transition-colors"
+                            className="absolute top-5 right-5 text-zinc-600 hover:text-white transition-colors"
                         >
                             <X className="w-5 h-5" />
                         </button>
 
-                        {/* Content */}
                         <div className="text-center space-y-6">
-                            {/* Icon */}
                             <motion.div
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                transition={{ delay: 0.2, type: "spring", damping: 15 }}
-                                className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/25"
+                                initial={{ scale: 0, rotate: -180 }}
+                                animate={{ scale: 1, rotate: 0 }}
+                                transition={{ delay: 0.1, type: "spring", damping: 12 }}
+                                className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center shadow-xl shadow-blue-500/30"
                             >
                                 <Sparkles className="w-10 h-10 text-white" />
                             </motion.div>
 
-                            {/* Title */}
-                            <motion.h2
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: step >= 1 ? 1 : 0, y: step >= 1 ? 0 : 10 }}
-                                transition={{ duration: 0.4 }}
-                                className="text-3xl font-bold text-white"
+                            <motion.div
+                                initial={{ opacity: 0, y: 15 }}
+                                animate={{ opacity: step >= 1 ? 1 : 0, y: step >= 1 ? 0 : 15 }}
+                                transition={{ duration: 0.5 }}
                             >
-                                Welcome to Datanauts
-                            </motion.h2>
+                                <h2 className="text-3xl font-bold text-white tracking-tight">
+                                    Welcome to Datanauts
+                                </h2>
+                                <p className="text-zinc-500 mt-2 text-sm">
+                                    Sphoorthy Engineering College
+                                </p>
+                            </motion.div>
 
-                            {/* Description */}
                             <motion.p
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: step >= 2 ? 1 : 0, y: step >= 2 ? 0 : 10 }}
-                                transition={{ duration: 0.4 }}
-                                className="text-zinc-400 text-lg leading-relaxed"
+                                initial={{ opacity: 0, y: 15 }}
+                                animate={{ opacity: step >= 2 ? 1 : 0, y: step >= 2 ? 0 : 15 }}
+                                transition={{ duration: 0.5 }}
+                                className="text-zinc-400 text-base leading-relaxed"
                             >
-                                Your gateway to exclusive college events, workshops, and tech community. Join thousands of students already connected.
+                                Your gateway to exclusive college events, workshops, hackathons, and the tech community.
                             </motion.p>
 
-                            {/* Features */}
                             <motion.div
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: step >= 3 ? 1 : 0, y: step >= 3 ? 0 : 10 }}
-                                transition={{ duration: 0.4 }}
-                                className="flex flex-wrap justify-center gap-3 pt-2"
+                                initial={{ opacity: 0, y: 15 }}
+                                animate={{ opacity: step >= 3 ? 1 : 0, y: step >= 3 ? 0 : 15 }}
+                                transition={{ duration: 0.5 }}
+                                className="grid grid-cols-2 gap-3 pt-2"
                             >
-                                {["Real-time Updates", "Event Calendar", "Community Access"].map((feature, i) => (
-                                    <span
+                                {[
+                                    { icon: Bell, label: "Real-time Alerts" },
+                                    { icon: Calendar, label: "Event Calendar" },
+                                    { icon: Users, label: "Community" },
+                                    { icon: Megaphone, label: "Announcements" },
+                                ].map((feature, i) => (
+                                    <div
                                         key={i}
-                                        className="px-3 py-1.5 bg-zinc-800 border border-zinc-700 rounded-full text-sm text-zinc-300 flex items-center gap-2"
+                                        className="flex items-center gap-2 px-3 py-2.5 bg-zinc-900/80 border border-zinc-800/50 rounded-xl text-sm text-zinc-300"
                                     >
-                                        <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400" />
-                                        {feature}
-                                    </span>
+                                        <feature.icon className="w-4 h-4 text-blue-400" />
+                                        {feature.label}
+                                    </div>
                                 ))}
                             </motion.div>
 
-                            {/* CTA Button */}
                             <motion.div
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: step >= 3 ? 1 : 0, y: step >= 3 ? 0 : 10 }}
-                                transition={{ duration: 0.4, delay: 0.2 }}
+                                initial={{ opacity: 0, y: 15 }}
+                                animate={{ opacity: step >= 3 ? 1 : 0, y: step >= 3 ? 0 : 15 }}
+                                transition={{ duration: 0.5, delay: 0.15 }}
                                 className="pt-4"
                             >
                                 <Button
                                     onClick={onContinue}
-                                    className="w-full h-12 bg-white text-black hover:bg-zinc-200 font-semibold text-base rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
+                                    className="w-full h-13 bg-white text-black hover:bg-zinc-100 font-semibold text-base rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
                                 >
                                     Continue to Sign In
                                     <ArrowRight className="w-4 h-4 ml-2" />
@@ -258,7 +323,6 @@ export default function UserAuth() {
     const navigate = useNavigate();
     const { toast } = useToast();
 
-    // Check if already logged in
     useEffect(() => {
         let isMounted = true;
 
@@ -341,25 +405,28 @@ export default function UserAuth() {
 
     return (
         <div className="min-h-screen bg-black text-white relative overflow-hidden">
-            {/* Clean dark background with subtle gradient */}
             <div className="fixed inset-0 bg-gradient-to-b from-zinc-950 via-black to-zinc-950 pointer-events-none z-0" />
+            <InteractiveDotBackground />
 
-            {/* Main content */}
             <div className="relative z-10 min-h-screen flex flex-col">
                 {/* Header */}
-                <header className="px-6 py-6">
-                    <nav className="max-w-7xl mx-auto flex justify-between items-center">
+                <header className="px-6 py-5 border-b border-zinc-900/50">
+                    <nav className="max-w-6xl mx-auto flex justify-between items-center">
                         <span
-                            className="text-xl font-bold cursor-pointer text-cyan-400"
-                            style={{ textShadow: "0 0 20px rgba(34, 211, 238, 0.5)" }}
+                            className="text-xl font-bold cursor-pointer text-blue-400 tracking-tight"
                             onClick={() => navigate("/")}
                         >
                             Datanauts
                         </span>
+                        <div className="flex items-center gap-3">
+                            <span className="hidden sm:flex items-center gap-1.5 text-xs text-zinc-500 px-3 py-1.5 bg-zinc-900/50 rounded-full border border-zinc-800/50">
+                                <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                                Sphoorthy Engineering College
+                            </span>
+                        </div>
                     </nav>
                 </header>
 
-                {/* Hero Section - Manus AI Style */}
                 <AnimatePresence mode="wait">
                     {!showAuthForm ? (
                         <motion.main
@@ -367,86 +434,111 @@ export default function UserAuth() {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0, y: -20 }}
-                            className="flex-1 flex flex-col items-center justify-center px-4 -mt-16"
+                            className="flex-1 flex flex-col"
                         >
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.2 }}
-                                className="text-center space-y-8 max-w-3xl"
-                            >
-                                {/* Main headline with rotating text */}
-                                <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-semibold text-white leading-tight">
-                                    Stay Connected with{" "}
-                                    <span className="inline-block h-[1.2em] overflow-hidden align-bottom">
-                                        <RotatingText
-                                            texts={["Events", "Updates", "Announcements", "Activities", "News"]}
-                                            mainClassName="mx-1"
-                                            style={{ color: "#3B82F6" }}
-                                            staggerFrom="last"
-                                            initial={{ y: "-100%", opacity: 0 }}
-                                            animate={{ y: 0, opacity: 1 }}
-                                            exit={{ y: "110%", opacity: 0 }}
-                                            staggerDuration={0.03}
-                                            transition={{ type: "spring", damping: 20, stiffness: 200 }}
-                                            rotationInterval={3000}
-                                            splitBy="characters"
-                                            auto={true}
-                                            loop={true}
-                                        />
-                                    </span>
-                                </h1>
-
-                                {/* Subtitle */}
-                                <p className="text-zinc-400 text-lg sm:text-xl max-w-xl mx-auto">
-                                    Discover workshops, hackathons, tech talks, and more. Stay connected with your college community.
-                                </p>
-
-                                {/* CTA Buttons */}
-                                <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-                                    <motion.button
-                                        whileHover={{ scale: 1.05 }}
-                                        whileTap={{ scale: 0.98 }}
-                                        onClick={handleJoinNow}
-                                        className="group relative px-8 py-4 bg-white text-black font-semibold rounded-xl text-base sm:text-lg overflow-hidden transition-all hover:shadow-lg hover:shadow-white/20"
-                                    >
-                                        <span className="relative z-10 flex items-center gap-2">
-                                            Join Now
-                                            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                                        </span>
-                                    </motion.button>
-
-                                    <motion.button
-                                        whileHover={{ scale: 1.02 }}
-                                        whileTap={{ scale: 0.98 }}
-                                        onClick={() => navigate("/events")}
-                                        className="px-8 py-4 border border-zinc-700 text-zinc-300 hover:text-white hover:border-zinc-500 font-medium rounded-xl text-base sm:text-lg transition-all"
-                                    >
-                                        Browse Events
-                                    </motion.button>
-                                </div>
-
-                                {/* Feature pills */}
+                            {/* Hero Section */}
+                            <div className="flex-1 flex flex-col items-center justify-center px-6 py-16">
                                 <motion.div
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    transition={{ delay: 0.6 }}
-                                    className="flex flex-wrap justify-center gap-3 pt-8"
+                                    initial={{ opacity: 0, y: 30 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.1, duration: 0.6 }}
+                                    className="text-center max-w-4xl mx-auto"
                                 >
-                                    {[
-                                        "Real-time notifications",
-                                        "Event calendar",
-                                        "Student community",
-                                        "Important announcements"
-                                    ].map((feature, i) => (
-                                        <span
-                                            key={i}
-                                            className="px-4 py-2 bg-zinc-900/80 border border-zinc-800 rounded-full text-sm text-zinc-400"
-                                        >
-                                            {feature}
+                                    {/* Main Headline */}
+                                    <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white leading-[1.1] tracking-tight">
+                                        Stay Connected with
+                                        <br />
+                                        <span className="inline-flex h-[1.15em] overflow-hidden align-bottom">
+                                            <RotatingText
+                                                texts={["Events", "Updates", "Announcements", "Activities"]}
+                                                style={{ color: "#3B82F6" }}
+                                                staggerFrom="last"
+                                                initial={{ y: "-100%", opacity: 0 }}
+                                                animate={{ y: 0, opacity: 1 }}
+                                                exit={{ y: "110%", opacity: 0 }}
+                                                staggerDuration={0.025}
+                                                transition={{ type: "spring", damping: 22, stiffness: 200 }}
+                                                rotationInterval={2800}
+                                                splitBy="characters"
+                                                auto={true}
+                                                loop={true}
+                                            />
                                         </span>
-                                    ))}
+                                    </h1>
+
+                                    {/* Subtitle */}
+                                    <motion.p
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        transition={{ delay: 0.3 }}
+                                        className="text-zinc-400 text-lg sm:text-xl max-w-2xl mx-auto mt-6 leading-relaxed"
+                                    >
+                                        Your one-stop platform for all college events, announcements, and updates. 
+                                        Never miss what matters most in your campus life.
+                                    </motion.p>
+
+                                    {/* CTA Buttons */}
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.4 }}
+                                        className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-10"
+                                    >
+                                        <motion.button
+                                            whileHover={{ scale: 1.03 }}
+                                            whileTap={{ scale: 0.98 }}
+                                            onClick={handleJoinNow}
+                                            className="group px-8 py-4 bg-white text-black font-semibold rounded-xl text-base overflow-hidden transition-all hover:shadow-xl hover:shadow-white/10 flex items-center gap-2"
+                                        >
+                                            Join Now
+                                            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                        </motion.button>
+
+                                        <motion.button
+                                            whileHover={{ scale: 1.02 }}
+                                            whileTap={{ scale: 0.98 }}
+                                            onClick={() => navigate("/events")}
+                                            className="px-8 py-4 border border-zinc-800 text-zinc-300 hover:text-white hover:border-zinc-600 hover:bg-zinc-900/50 font-medium rounded-xl text-base transition-all"
+                                        >
+                                            Browse Events
+                                        </motion.button>
+                                    </motion.div>
                                 </motion.div>
+                            </div>
+
+                            {/* Features Section */}
+                            <motion.div
+                                initial={{ opacity: 0, y: 30 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.5 }}
+                                className="px-6 pb-16"
+                            >
+                                <div className="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                    {[
+                                        { icon: Bell, title: "Real-time Notifications", desc: "Get instant alerts for new events, updates, and announcements directly to your device." },
+                                        { icon: Calendar, title: "Event Calendar", desc: "View all upcoming college events in one organized calendar with reminders and details." },
+                                        { icon: Users, title: "Student Community", desc: "Connect with fellow students, share experiences, and stay engaged with campus life." },
+                                        { icon: Megaphone, title: "Important Announcements", desc: "Never miss critical updates about exams, holidays, or college-wide notifications." },
+                                    ].map((feature, i) => (
+                                        <motion.div
+                                            key={i}
+                                            initial={{ opacity: 0, y: 20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: 0.6 + i * 0.1 }}
+                                            className="group p-5 bg-zinc-950/80 border border-zinc-800/50 rounded-2xl hover:border-zinc-700/50 hover:bg-zinc-900/50 transition-all duration-300"
+                                        >
+                                            <div className="flex items-start gap-3">
+                                                <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center flex-shrink-0 group-hover:border-blue-500/30 transition-colors">
+                                                    <feature.icon className="w-5 h-5 text-blue-400" />
+                                                </div>
+                                                <div>
+                                                    <h3 className="font-semibold text-white text-sm mb-1">{feature.title}</h3>
+                                                    <p className="text-zinc-500 text-xs leading-relaxed">{feature.desc}</p>
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    ))}
+                                </div>
                             </motion.div>
                         </motion.main>
                     ) : (
@@ -455,48 +547,49 @@ export default function UserAuth() {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0 }}
-                            className="flex-1 flex items-center justify-center px-4 py-8"
+                            className="flex-1 flex items-center justify-center px-6 py-12"
                         >
                             <div className="w-full max-w-md">
-                                {/* Back button */}
                                 <motion.button
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
                                     onClick={() => setShowAuthForm(false)}
-                                    className="mb-6 text-zinc-500 hover:text-white transition-colors flex items-center gap-2 text-sm"
+                                    className="mb-8 text-zinc-500 hover:text-white transition-colors flex items-center gap-2 text-sm group"
                                 >
-                                    <ArrowRight className="w-4 h-4 rotate-180" />
+                                    <ArrowRight className="w-4 h-4 rotate-180 group-hover:-translate-x-1 transition-transform" />
                                     Back to home
                                 </motion.button>
 
-                                {/* Auth Card */}
-                                <div className="bg-zinc-900/90 backdrop-blur-xl border border-zinc-800 rounded-2xl p-8 shadow-2xl">
+                                <div className="bg-zinc-950/90 backdrop-blur-xl border border-zinc-800/80 rounded-2xl p-8 shadow-2xl shadow-black/50">
                                     <div className="text-center mb-8">
-                                        <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+                                        <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center">
+                                            <User className="w-6 h-6 text-white" />
+                                        </div>
+                                        <h2 className="text-2xl font-bold text-white tracking-tight">
                                             {isLogin ? "Welcome back" : "Create account"}
                                         </h2>
-                                        <p className="text-zinc-500">
+                                        <p className="text-zinc-500 text-sm mt-1">
                                             {isLogin
                                                 ? "Sign in to access your events"
-                                                : "Join the tech community today"}
+                                                : "Join the Datanauts community"}
                                         </p>
                                     </div>
 
-                                    <form onSubmit={handleSubmit} className="space-y-5">
+                                    <form onSubmit={handleSubmit} className="space-y-4">
                                         {!isLogin && (
                                             <div className="space-y-2">
-                                                <Label htmlFor="fullName" className="text-sm font-medium text-zinc-300">
+                                                <Label htmlFor="fullName" className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
                                                     Full Name
                                                 </Label>
                                                 <div className="relative">
-                                                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+                                                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
                                                     <Input
                                                         id="fullName"
                                                         type="text"
                                                         placeholder="Your name"
                                                         value={fullName}
                                                         onChange={(e) => setFullName(e.target.value)}
-                                                        className="pl-11 h-12 bg-zinc-800/50 border-zinc-700 text-white placeholder:text-zinc-500 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                                                        className="pl-10 h-12 bg-zinc-900/50 border-zinc-800 text-white placeholder:text-zinc-600 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
                                                         required={!isLogin}
                                                     />
                                                 </div>
@@ -504,56 +597,56 @@ export default function UserAuth() {
                                         )}
 
                                         <div className="space-y-2">
-                                            <Label htmlFor="email" className="text-sm font-medium text-zinc-300">
-                                                Email
+                                            <Label htmlFor="email" className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
+                                                Email Address
                                             </Label>
                                             <div className="relative">
-                                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+                                                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
                                                 <Input
                                                     id="email"
                                                     type="email"
                                                     placeholder="your@email.com"
                                                     value={email}
                                                     onChange={(e) => setEmail(e.target.value)}
-                                                    className="pl-11 h-12 bg-zinc-800/50 border-zinc-700 text-white placeholder:text-zinc-500 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                                                    className="pl-10 h-12 bg-zinc-900/50 border-zinc-800 text-white placeholder:text-zinc-600 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
                                                     required
                                                 />
                                             </div>
                                         </div>
 
                                         <div className="space-y-2">
-                                            <Label htmlFor="password" className="text-sm font-medium text-zinc-300">
+                                            <Label htmlFor="password" className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
                                                 Password
                                             </Label>
                                             <div className="relative">
-                                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+                                                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
                                                 <Input
                                                     id="password"
                                                     type={showPassword ? "text" : "password"}
                                                     placeholder="••••••••"
                                                     value={password}
                                                     onChange={(e) => setPassword(e.target.value)}
-                                                    className="pl-11 pr-11 h-12 bg-zinc-800/50 border-zinc-700 text-white placeholder:text-zinc-500 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                                                    className="pl-10 pr-10 h-12 bg-zinc-900/50 border-zinc-800 text-white placeholder:text-zinc-600 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
                                                     required
                                                     minLength={6}
                                                 />
                                                 <button
                                                     type="button"
                                                     onClick={() => setShowPassword(!showPassword)}
-                                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
+                                                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
                                                 >
-                                                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                                 </button>
                                             </div>
                                         </div>
 
                                         <Button
                                             type="submit"
-                                            className="w-full h-12 bg-white text-black hover:bg-zinc-200 font-semibold text-base rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98] mt-2"
+                                            className="w-full h-12 bg-white text-black hover:bg-zinc-100 font-semibold text-sm rounded-xl transition-all hover:scale-[1.01] active:scale-[0.99] mt-6"
                                             disabled={isLoading}
                                         >
                                             {isLoading ? (
-                                                <Loader2 className="w-5 h-5 animate-spin" />
+                                                <Loader2 className="w-4 h-4 animate-spin" />
                                             ) : (
                                                 <>
                                                     {isLogin ? "Sign In" : "Create Account"}
@@ -564,23 +657,23 @@ export default function UserAuth() {
                                     </form>
 
                                     <div className="mt-6 text-center">
-                                        <p className="text-zinc-500">
+                                        <p className="text-zinc-500 text-sm">
                                             {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
                                             <button
                                                 onClick={() => setIsLogin(!isLogin)}
-                                                className="text-cyan-400 hover:text-cyan-300 font-medium transition-colors"
+                                                className="text-blue-400 hover:text-blue-300 font-medium transition-colors"
                                             >
                                                 {isLogin ? "Sign Up" : "Sign In"}
                                             </button>
                                         </p>
                                     </div>
 
-                                    <div className="mt-4 text-center">
+                                    <div className="mt-6 pt-6 border-t border-zinc-800/50 text-center">
                                         <button
                                             onClick={() => navigate("/admin/login")}
                                             className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors"
                                         >
-                                            Admin Login →
+                                            Admin Login
                                         </button>
                                     </div>
                                 </div>
@@ -590,7 +683,6 @@ export default function UserAuth() {
                 </AnimatePresence>
             </div>
 
-            {/* Welcome Modal */}
             <WelcomeModal
                 isOpen={showWelcome}
                 onClose={() => setShowWelcome(false)}
