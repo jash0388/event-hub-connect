@@ -1,507 +1,313 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle, useMemo } from 'react';
-import { motion, AnimatePresence, useScroll, useMotionValueEvent, type Transition, type VariantLabels, type TargetAndTransition, type Variants } from 'framer-motion';
-import { ArrowRight, Sparkles, Calendar, Bell, Users, Zap, ChevronRight, Star, Globe } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { motion, AnimatePresence, useScroll, useMotionValueEvent } from 'framer-motion';
+import { ArrowRight, Sparkles, Calendar, Bell, Users, Zap, ChevronRight, Star, Globe, ArrowUpRight, Play } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
+// Utility function
 function cn(...classes: (string | undefined | null | boolean)[]): string {
   return classes.filter(Boolean).join(" ");
 }
 
-interface RotatingTextRef {
-  next: () => void;
-  previous: () => void;
-  jumpTo: (index: number) => void;
-  reset: () => void;
-}
-
-interface RotatingTextProps extends Omit<React.ComponentPropsWithoutRef<typeof motion.span>, "children" | "transition" | "initial" | "animate" | "exit"> {
-  texts: string[];
-  transition?: Transition;
-  initial?: boolean | VariantLabels | TargetAndTransition;
-  animate?: boolean | VariantLabels | TargetAndTransition;
-  exit?: VariantLabels | TargetAndTransition;
-  animatePresenceMode?: "sync" | "wait";
-  animatePresenceInitial?: boolean;
-  rotationInterval?: number;
-  staggerDuration?: number;
-  staggerFrom?: "first" | "last" | "center" | "random" | number;
-  loop?: boolean;
-  auto?: boolean;
-  splitBy?: "characters" | "words" | "lines" | string;
-  onNext?: (index: number) => void;
-  mainClassName?: string;
-  splitLevelClassName?: string;
-  elementLevelClassName?: string;
-}
-
-const RotatingText = forwardRef<RotatingTextRef, RotatingTextProps>(
-  (
-    {
-      texts,
-      transition = { type: "spring", damping: 25, stiffness: 300 },
-      initial = { y: "100%", opacity: 0 },
-      animate = { y: 0, opacity: 1 },
-      exit = { y: "-120%", opacity: 0 },
-      animatePresenceMode = "wait",
-      animatePresenceInitial = false,
-      rotationInterval = 2500,
-      staggerDuration = 0.015,
-      staggerFrom = "last",
-      loop = true,
-      auto = true,
-      splitBy = "characters",
-      onNext,
-      mainClassName,
-      splitLevelClassName,
-      elementLevelClassName,
-      ...rest
-    },
-    ref
-  ) => {
-    const [currentTextIndex, setCurrentTextIndex] = useState<number>(0);
-
-    const splitIntoCharacters = (text: string): string[] => {
-      if (typeof Intl !== "undefined" && 'Segmenter' in Intl) {
-        try {
-          const segmenter = new (Intl as unknown as { Segmenter: new (locale: string, options: { granularity: string }) => { segment: (text: string) => IterableIterator<{ segment: string }> } }).Segmenter("en", { granularity: "grapheme" });
-          return Array.from(segmenter.segment(text), (segment: { segment: string }) => segment.segment);
-        } catch {
-          return text.split('');
-        }
+// Text Scramble Effect Component
+const ScrambleText: React.FC<{ text: string; className?: string }> = ({ text, className }) => {
+  const [displayText, setDisplayText] = useState(text);
+  const [isAnimating, setIsAnimating] = useState(true);
+  const chars = "!@#$%^&*()_+-=[]{}|;:,.<>?";
+  
+  useEffect(() => {
+    if (!isAnimating) return;
+    let iteration = 0;
+    const interval = setInterval(() => {
+      setDisplayText(prev => 
+        text.split("").map((char, index) => {
+          if (index < iteration) return text[index];
+          return chars[Math.floor(Math.random() * chars.length)];
+        }).join("")
+      );
+      if (iteration >= text.length) {
+        clearInterval(interval);
+        setIsAnimating(false);
       }
-      return text.split('');
-    };
+      iteration += 1/3;
+    }, 30);
+    return () => clearInterval(interval);
+  }, [text, isAnimating]);
+  
+  return <span className={className}>{displayText}</span>;
+};
 
-    const elements = useMemo(() => {
-      const currentText: string = texts[currentTextIndex] ?? '';
-      if (splitBy === "characters") {
-        const words = currentText.split(/(\s+)/);
-        let charCount = 0;
-        return words.filter(part => part.length > 0).map((part) => {
-          const isSpace = /^\s+$/.test(part);
-          const chars = isSpace ? [part] : splitIntoCharacters(part);
-          const startIndex = charCount;
-          charCount += chars.length;
-          return { characters: chars, isSpace: isSpace, startIndex: startIndex };
-        });
-      }
-      if (splitBy === "words") {
-        return currentText.split(/(\s+)/).filter(word => word.length > 0).map((word, i) => ({
-          characters: [word], isSpace: /^\s+$/.test(word), startIndex: i
-        }));
-      }
-      if (splitBy === "lines") {
-        return currentText.split('\n').map((line, i) => ({
-          characters: [line], isSpace: false, startIndex: i
-        }));
-      }
-      return currentText.split(splitBy).map((part, i) => ({
-        characters: [part], isSpace: false, startIndex: i
-      }));
-    }, [texts, currentTextIndex, splitBy]);
+// Rotating Words Component
+const RotatingWords: React.FC<{ words: string[]; className?: string }> = ({ words, className }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % words.length);
+    }, 2500);
+    return () => clearInterval(interval);
+  }, [words.length]);
+  
+  return (
+    <span className={cn("relative inline-block", className)}>
+      <AnimatePresence mode="wait">
+        <motion.span
+          key={currentIndex}
+          initial={{ y: 40, opacity: 0, rotateX: -90 }}
+          animate={{ y: 0, opacity: 1, rotateX: 0 }}
+          exit={{ y: -40, opacity: 0, rotateX: 90 }}
+          transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
+          className="inline-block"
+        >
+          {words[currentIndex]}
+        </motion.span>
+      </AnimatePresence>
+    </span>
+  );
+};
 
-    const totalElements = useMemo(() => elements.reduce((sum, el) => sum + el.characters.length, 0), [elements]);
+// Animated Gradient Orbs
+const GradientOrbs: React.FC = () => {
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      <motion.div 
+        animate={{ 
+          x: [0, 100, 0],
+          y: [0, -50, 0],
+        }}
+        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+        className="absolute top-0 left-1/4 w-[800px] h-[800px] rounded-full"
+        style={{
+          background: 'radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 70%)',
+          filter: 'blur(60px)',
+        }}
+      />
+      <motion.div 
+        animate={{ 
+          x: [0, -100, 0],
+          y: [0, 50, 0],
+        }}
+        transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+        className="absolute bottom-0 right-1/4 w-[600px] h-[600px] rounded-full"
+        style={{
+          background: 'radial-gradient(circle, rgba(139, 92, 246, 0.12) 0%, transparent 70%)',
+          filter: 'blur(60px)',
+        }}
+      />
+      <motion.div 
+        animate={{ 
+          scale: [1, 1.2, 1],
+        }}
+        transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[1000px] rounded-full"
+        style={{
+          background: 'radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, transparent 50%)',
+          filter: 'blur(80px)',
+        }}
+      />
+    </div>
+  );
+};
 
-    const getStaggerDelay = useCallback(
-      (index: number, total: number): number => {
-        if (total <= 1 || !staggerDuration) return 0;
-        const stagger = staggerDuration;
-        switch (staggerFrom) {
-          case "first": return index * stagger;
-          case "last": return (total - 1 - index) * stagger;
-          case "center": {
-            const center = (total - 1) / 2;
-            return Math.abs(center - index) * stagger;
-          }
-          case "random": return Math.random() * (total - 1) * stagger;
-          default:
-            if (typeof staggerFrom === 'number') {
-              const fromIndex = Math.max(0, Math.min(staggerFrom, total - 1));
-              return Math.abs(fromIndex - index) * stagger;
-            }
-            return index * stagger;
-        }
-      },
-      [staggerFrom, staggerDuration]
-    );
+// Noise Texture Overlay
+const NoiseOverlay: React.FC = () => {
+  return (
+    <div 
+      className="fixed inset-0 pointer-events-none z-[1] opacity-[0.015]"
+      style={{
+        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
+      }}
+    />
+  );
+};
 
-    const handleIndexChange = useCallback(
-      (newIndex: number) => {
-        setCurrentTextIndex(newIndex);
-        onNext?.(newIndex);
-      },
-      [onNext]
-    );
-
-    const next = useCallback(() => {
-      const nextIndex = currentTextIndex === texts.length - 1 ? (loop ? 0 : currentTextIndex) : currentTextIndex + 1;
-      if (nextIndex !== currentTextIndex) handleIndexChange(nextIndex);
-    }, [currentTextIndex, texts.length, loop, handleIndexChange]);
-
-    const previous = useCallback(() => {
-      const prevIndex = currentTextIndex === 0 ? (loop ? texts.length - 1 : currentTextIndex) : currentTextIndex - 1;
-      if (prevIndex !== currentTextIndex) handleIndexChange(prevIndex);
-    }, [currentTextIndex, texts.length, loop, handleIndexChange]);
-
-    const jumpTo = useCallback(
-      (index: number) => {
-        const validIndex = Math.max(0, Math.min(index, texts.length - 1));
-        if (validIndex !== currentTextIndex) handleIndexChange(validIndex);
-      },
-      [texts.length, currentTextIndex, handleIndexChange]
-    );
-
-    const reset = useCallback(() => {
-      if (currentTextIndex !== 0) handleIndexChange(0);
-    }, [currentTextIndex, handleIndexChange]);
-
-    useImperativeHandle(ref, () => ({ next, previous, jumpTo, reset }), [next, previous, jumpTo, reset]);
-
-    useEffect(() => {
-      if (!auto || texts.length <= 1) return;
-      const intervalId = setInterval(next, rotationInterval);
-      return () => clearInterval(intervalId);
-    }, [next, rotationInterval, auto, texts.length]);
-
-    return (
-      <motion.span
-        className={cn("inline-flex flex-wrap whitespace-pre-wrap relative align-bottom pb-[0.1em]", mainClassName)}
-        {...rest}
-        layout
-      >
-        <span className="sr-only">{texts[currentTextIndex]}</span>
-        <AnimatePresence mode={animatePresenceMode} initial={animatePresenceInitial}>
-          <motion.div
-            key={currentTextIndex}
-            className={cn(
-              "inline-flex flex-wrap relative",
-              splitBy === "lines" ? "flex-col items-start w-full" : "flex-row items-baseline"
-            )}
-            layout
-            aria-hidden="true"
-            initial="initial"
-            animate="animate"
-            exit="exit"
-          >
-            {elements.map((elementObj, elementIndex) => (
-              <span
-                key={elementIndex}
-                className={cn("inline-flex", splitBy === 'lines' ? 'w-full' : '', splitLevelClassName)}
-                style={{ whiteSpace: 'pre' }}
-              >
-                {elementObj.characters.map((char, charIndex) => {
-                  const globalIndex = elementObj.startIndex + charIndex;
-                  return (
-                    <motion.span
-                      key={`${char}-${charIndex}`}
-                      initial={initial}
-                      animate={animate}
-                      exit={exit}
-                      transition={{
-                        ...transition,
-                        delay: getStaggerDelay(globalIndex, totalElements),
-                      }}
-                      className={cn("inline-block leading-none tracking-tight", elementLevelClassName)}
-                    >
-                      {char === ' ' ? '\u00A0' : char}
-                    </motion.span>
-                  );
-                })}
-              </span>
-            ))}
-          </motion.div>
-        </AnimatePresence>
-      </motion.span>
-    );
-  }
-);
-RotatingText.displayName = "RotatingText";
-
-// Subtle grid background
-const GridBackground: React.FC = () => {
+// Grid Pattern
+const GridPattern: React.FC = () => {
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
       <div 
-        className="absolute inset-0 opacity-[0.03]"
+        className="absolute inset-0"
         style={{
           backgroundImage: `
-            linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)
+            linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)
           `,
-          backgroundSize: '64px 64px'
+          backgroundSize: '100px 100px',
+          maskImage: 'radial-gradient(ellipse at center, black 0%, transparent 70%)',
         }}
       />
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/50" />
     </div>
   );
 };
 
-// Floating orbs for visual interest
-const FloatingOrbs: React.FC = () => {
-  return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      <div className="absolute top-1/4 -left-32 w-96 h-96 bg-blue-500/10 rounded-full blur-[128px]" />
-      <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-violet-500/10 rounded-full blur-[128px]" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-500/5 rounded-full blur-[100px]" />
-    </div>
-  );
-};
-
-// Interactive dot background with improved performance
-interface Dot {
-  x: number;
-  y: number;
-  baseColor: string;
-  targetOpacity: number;
-  currentOpacity: number;
-  opacitySpeed: number;
-  baseRadius: number;
-  currentRadius: number;
-}
-
-const InteractiveDotBackground: React.FC = () => {
+// Interactive Particles
+const ParticleField: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animationFrameId = useRef<number | null>(null);
-  const dotsRef = useRef<Dot[]>([]);
-  const gridRef = useRef<Record<string, number[]>>({});
-  const canvasSizeRef = useRef<{ width: number; height: number }>({ width: 0, height: 0 });
-  const mousePositionRef = useRef<{ x: number | null; y: number | null }>({ x: null, y: null });
-
-  const DOT_SPACING = 32;
-  const BASE_OPACITY_MIN = 0.08;
-  const BASE_OPACITY_MAX = 0.15;
-  const BASE_RADIUS = 1;
-  const INTERACTION_RADIUS = 120;
-  const INTERACTION_RADIUS_SQ = INTERACTION_RADIUS * INTERACTION_RADIUS;
-  const OPACITY_BOOST = 0.35;
-  const RADIUS_BOOST = 1.5;
-  const GRID_CELL_SIZE = Math.max(50, Math.floor(INTERACTION_RADIUS / 1.5));
-
-  const handleMouseMove = useCallback((event: globalThis.MouseEvent) => {
-    const canvas = canvasRef.current;
-    if (!canvas) {
-      mousePositionRef.current = { x: null, y: null };
-      return;
-    }
-    const rect = canvas.getBoundingClientRect();
-    const canvasX = event.clientX - rect.left;
-    const canvasY = event.clientY - rect.top;
-    mousePositionRef.current = { x: canvasX, y: canvasY };
-  }, []);
-
-  const createDots = useCallback(() => {
-    const { width, height } = canvasSizeRef.current;
-    if (width === 0 || height === 0) return;
-
-    const newDots: Dot[] = [];
-    const newGrid: Record<string, number[]> = {};
-    const cols = Math.ceil(width / DOT_SPACING);
-    const rows = Math.ceil(height / DOT_SPACING);
-
-    for (let i = 0; i < cols; i++) {
-      for (let j = 0; j < rows; j++) {
-        const x = i * DOT_SPACING + DOT_SPACING / 2;
-        const y = j * DOT_SPACING + DOT_SPACING / 2;
-        const cellX = Math.floor(x / GRID_CELL_SIZE);
-        const cellY = Math.floor(y / GRID_CELL_SIZE);
-        const cellKey = `${cellX}_${cellY}`;
-
-        if (!newGrid[cellKey]) {
-          newGrid[cellKey] = [];
-        }
-
-        const dotIndex = newDots.length;
-        newGrid[cellKey].push(dotIndex);
-
-        const baseOpacity = Math.random() * (BASE_OPACITY_MAX - BASE_OPACITY_MIN) + BASE_OPACITY_MIN;
-        newDots.push({
-          x,
-          y,
-          baseColor: `rgba(59, 130, 246, ${BASE_OPACITY_MAX})`,
-          targetOpacity: baseOpacity,
-          currentOpacity: baseOpacity,
-          opacitySpeed: (Math.random() * 0.002) + 0.0005,
-          baseRadius: BASE_RADIUS,
-          currentRadius: BASE_RADIUS,
-        });
-      }
-    }
-    dotsRef.current = newDots;
-    gridRef.current = newGrid;
-  }, []);
-
-  const handleResize = useCallback(() => {
+  const mouseRef = useRef({ x: 0, y: 0 });
+  const particlesRef = useRef<Array<{ x: number; y: number; vx: number; vy: number; size: number; opacity: number }>>([]);
+  
+  useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const container = canvas.parentElement;
-    const width = container ? container.clientWidth : window.innerWidth;
-    const height = container ? container.clientHeight : window.innerHeight;
-
-    if (canvas.width !== width || canvas.height !== height ||
-      canvasSizeRef.current.width !== width || canvasSizeRef.current.height !== height) {
-      canvas.width = width;
-      canvas.height = height;
-      canvasSizeRef.current = { width, height };
-      createDots();
-    }
-  }, [createDots]);
-
-  const animateDots = useCallback(() => {
-    const canvas = canvasRef.current;
-    const ctx = canvas?.getContext('2d');
-    const dots = dotsRef.current;
-    const grid = gridRef.current;
-    const { width, height } = canvasSizeRef.current;
-    const { x: mouseX, y: mouseY } = mousePositionRef.current;
-
-    if (!ctx || !dots || !grid || width === 0 || height === 0) {
-      animationFrameId.current = requestAnimationFrame(animateDots);
-      return;
-    }
-
-    ctx.clearRect(0, 0, width, height);
-
-    const activeDotIndices = new Set<number>();
-    if (mouseX !== null && mouseY !== null) {
-      const mouseCellX = Math.floor(mouseX / GRID_CELL_SIZE);
-      const mouseCellY = Math.floor(mouseY / GRID_CELL_SIZE);
-      const searchRadius = Math.ceil(INTERACTION_RADIUS / GRID_CELL_SIZE);
-      for (let i = -searchRadius; i <= searchRadius; i++) {
-        for (let j = -searchRadius; j <= searchRadius; j++) {
-          const checkCellX = mouseCellX + i;
-          const checkCellY = mouseCellY + j;
-          const cellKey = `${checkCellX}_${checkCellY}`;
-          if (grid[cellKey]) {
-            grid[cellKey].forEach(dotIndex => activeDotIndices.add(dotIndex));
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    const resize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    resize();
+    window.addEventListener('resize', resize);
+    
+    // Initialize particles
+    const particleCount = 80;
+    particlesRef.current = Array.from({ length: particleCount }, () => ({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      vx: (Math.random() - 0.5) * 0.3,
+      vy: (Math.random() - 0.5) * 0.3,
+      size: Math.random() * 2 + 1,
+      opacity: Math.random() * 0.5 + 0.1,
+    }));
+    
+    const handleMouseMove = (e: MouseEvent) => {
+      mouseRef.current = { x: e.clientX, y: e.clientY };
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    
+    let animationId: number;
+    const animate = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      particlesRef.current.forEach((particle, i) => {
+        // Mouse interaction
+        const dx = mouseRef.current.x - particle.x;
+        const dy = mouseRef.current.y - particle.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        
+        if (dist < 150) {
+          const force = (150 - dist) / 150;
+          particle.vx -= (dx / dist) * force * 0.02;
+          particle.vy -= (dy / dist) * force * 0.02;
+        }
+        
+        // Update position
+        particle.x += particle.vx;
+        particle.y += particle.vy;
+        
+        // Friction
+        particle.vx *= 0.99;
+        particle.vy *= 0.99;
+        
+        // Bounds
+        if (particle.x < 0) particle.x = canvas.width;
+        if (particle.x > canvas.width) particle.x = 0;
+        if (particle.y < 0) particle.y = canvas.height;
+        if (particle.y > canvas.height) particle.y = 0;
+        
+        // Draw particle
+        ctx.beginPath();
+        ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(59, 130, 246, ${particle.opacity})`;
+        ctx.fill();
+        
+        // Draw connections
+        particlesRef.current.slice(i + 1).forEach(other => {
+          const dx2 = other.x - particle.x;
+          const dy2 = other.y - particle.y;
+          const dist2 = Math.sqrt(dx2 * dx2 + dy2 * dy2);
+          
+          if (dist2 < 100) {
+            ctx.beginPath();
+            ctx.moveTo(particle.x, particle.y);
+            ctx.lineTo(other.x, other.y);
+            ctx.strokeStyle = `rgba(59, 130, 246, ${0.1 * (1 - dist2 / 100)})`;
+            ctx.stroke();
           }
-        }
-      }
-    }
-
-    dots.forEach((dot, index) => {
-      dot.currentOpacity += dot.opacitySpeed;
-      if (dot.currentOpacity >= dot.targetOpacity || dot.currentOpacity <= BASE_OPACITY_MIN) {
-        dot.opacitySpeed = -dot.opacitySpeed;
-        dot.currentOpacity = Math.max(BASE_OPACITY_MIN, Math.min(dot.currentOpacity, BASE_OPACITY_MAX));
-        dot.targetOpacity = Math.random() * (BASE_OPACITY_MAX - BASE_OPACITY_MIN) + BASE_OPACITY_MIN;
-      }
-
-      let interactionFactor = 0;
-      dot.currentRadius = dot.baseRadius;
-
-      if (mouseX !== null && mouseY !== null && activeDotIndices.has(index)) {
-        const dx = dot.x - mouseX;
-        const dy = dot.y - mouseY;
-        const distSq = dx * dx + dy * dy;
-
-        if (distSq < INTERACTION_RADIUS_SQ) {
-          const distance = Math.sqrt(distSq);
-          interactionFactor = Math.max(0, 1 - distance / INTERACTION_RADIUS);
-          interactionFactor = interactionFactor * interactionFactor;
-        }
-      }
-
-      const finalOpacity = Math.min(1, dot.currentOpacity + interactionFactor * OPACITY_BOOST);
-      dot.currentRadius = dot.baseRadius + interactionFactor * RADIUS_BOOST;
-
-      ctx.beginPath();
-      ctx.fillStyle = `rgba(59, 130, 246, ${finalOpacity.toFixed(3)})`;
-      ctx.arc(dot.x, dot.y, dot.currentRadius, 0, Math.PI * 2);
-      ctx.fill();
-    });
-
-    animationFrameId.current = requestAnimationFrame(animateDots);
-  }, []);
-
-  useEffect(() => {
-    handleResize();
-    const handleMouseLeave = () => {
-      mousePositionRef.current = { x: null, y: null };
+        });
+      });
+      
+      animationId = requestAnimationFrame(animate);
     };
-
-    window.addEventListener('mousemove', handleMouseMove, { passive: true });
-    window.addEventListener('resize', handleResize);
-    document.documentElement.addEventListener('mouseleave', handleMouseLeave);
-
-    animationFrameId.current = requestAnimationFrame(animateDots);
-
+    animate();
+    
     return () => {
-      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('resize', resize);
       window.removeEventListener('mousemove', handleMouseMove);
-      document.documentElement.removeEventListener('mouseleave', handleMouseLeave);
-      if (animationFrameId.current) {
-        cancelAnimationFrame(animationFrameId.current);
-      }
+      cancelAnimationFrame(animationId);
     };
-  }, [handleResize, handleMouseMove, animateDots]);
-
-  return <canvas ref={canvasRef} className="absolute inset-0 z-0 pointer-events-none" />;
+  }, []);
+  
+  return <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none" />;
 };
 
-// Feature Card Component
-interface FeatureCardProps {
+// Bento Card Component
+interface BentoCardProps {
   icon: React.ReactNode;
   title: string;
   description: string;
-  delay: number;
+  className?: string;
+  gradient?: string;
 }
 
-const FeatureCard: React.FC<FeatureCardProps> = ({ icon, title, description, delay }) => {
+const BentoCard: React.FC<BentoCardProps> = ({ icon, title, description, className, gradient }) => {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.5, delay }}
-      className="group relative"
+      viewport={{ once: true, margin: "-50px" }}
+      whileHover={{ y: -5, transition: { duration: 0.2 } }}
+      className={cn(
+        "group relative rounded-3xl p-8 overflow-hidden cursor-pointer",
+        "bg-gradient-to-br from-white/[0.05] to-white/[0.02]",
+        "border border-white/[0.08] hover:border-white/[0.15]",
+        "backdrop-blur-xl transition-all duration-500",
+        className
+      )}
     >
-      <div className="relative p-6 rounded-2xl bg-white/[0.02] border border-white/[0.05] backdrop-blur-sm hover:bg-white/[0.04] hover:border-white/[0.1] transition-all duration-300">
-        <div className="flex items-start gap-4">
-          <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500/20 to-violet-500/20 border border-white/[0.05] flex items-center justify-center text-blue-400 group-hover:scale-110 transition-transform duration-300">
-            {icon}
-          </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="text-white font-semibold text-base mb-1">{title}</h3>
-            <p className="text-zinc-400 text-sm leading-relaxed">{description}</p>
-          </div>
+      <div className={cn(
+        "absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500",
+        gradient || "bg-gradient-to-br from-blue-500/10 to-violet-500/10"
+      )} />
+      
+      <div className="relative z-10">
+        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500/20 to-violet-500/20 border border-white/[0.1] flex items-center justify-center text-blue-400 mb-6 group-hover:scale-110 transition-transform duration-300">
+          {icon}
         </div>
+        <h3 className="text-xl font-semibold text-white mb-3">{title}</h3>
+        <p className="text-zinc-400 leading-relaxed text-sm">{description}</p>
+      </div>
+      
+      <div className="absolute bottom-6 right-6 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
+        <ArrowUpRight className="w-5 h-5 text-blue-400" />
       </div>
     </motion.div>
   );
 };
 
-// Stats Component
-const StatsSection: React.FC = () => {
-  const stats = [
-    { value: "500+", label: "Active Students" },
-    { value: "50+", label: "Events Hosted" },
-    { value: "20+", label: "Tech Workshops" },
-    { value: "100%", label: "Free Access" },
-  ];
-
+// Stats Counter Component
+const AnimatedCounter: React.FC<{ value: string; label: string; delay: number }> = ({ value, label, delay }) => {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
-      {stats.map((stat, index) => (
-        <motion.div
-          key={index}
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5, delay: index * 0.1 }}
-          className="text-center"
-        >
-          <div className="text-3xl md:text-4xl font-bold text-white mb-1">{stat.value}</div>
-          <div className="text-sm text-zinc-500">{stat.label}</div>
-        </motion.div>
-      ))}
-    </div>
+    <motion.div
+      initial={{ opacity: 0, scale: 0.8 }}
+      whileInView={{ opacity: 1, scale: 1 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.5, delay }}
+      className="text-center"
+    >
+      <div className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent mb-2">
+        {value}
+      </div>
+      <div className="text-sm text-zinc-500 uppercase tracking-wider">{label}</div>
+    </motion.div>
   );
 };
 
+// Main Component
 export const CollegeEventsHub: React.FC = () => {
-  const [isScrolled, setIsScrolled] = useState<boolean>(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const { scrollY } = useScroll();
   const navigate = useNavigate();
 
@@ -511,252 +317,315 @@ export const CollegeEventsHub: React.FC = () => {
 
   const features = [
     {
-      icon: <Bell className="w-5 h-5" />,
-      title: "Real-time Notifications",
-      description: "Instant alerts for events, updates, and announcements delivered to your device."
+      icon: <Bell className="w-6 h-6" />,
+      title: "Smart Notifications",
+      description: "AI-powered alerts that learn your preferences and deliver what matters most.",
+      gradient: "bg-gradient-to-br from-blue-500/10 to-cyan-500/10"
     },
     {
-      icon: <Calendar className="w-5 h-5" />,
+      icon: <Calendar className="w-6 h-6" />,
       title: "Event Calendar",
-      description: "View all upcoming events in one organized calendar with reminders."
+      description: "Beautifully organized calendar with seamless sync to your favorite apps.",
+      gradient: "bg-gradient-to-br from-violet-500/10 to-purple-500/10"
     },
     {
-      icon: <Users className="w-5 h-5" />,
-      title: "Student Community",
-      description: "Connect with peers, share experiences, and stay engaged with campus life."
+      icon: <Users className="w-6 h-6" />,
+      title: "Community Hub",
+      description: "Connect with peers, join groups, and build lasting relationships.",
+      gradient: "bg-gradient-to-br from-pink-500/10 to-rose-500/10"
     },
     {
-      icon: <Zap className="w-5 h-5" />,
-      title: "Quick Registration",
-      description: "One-click event registration with QR code check-in system."
+      icon: <Zap className="w-6 h-6" />,
+      title: "Instant Check-in",
+      description: "QR-based registration that takes seconds, not minutes.",
+      gradient: "bg-gradient-to-br from-amber-500/10 to-orange-500/10"
     }
   ];
 
   return (
-    <div className="relative text-white min-h-screen flex flex-col overflow-x-hidden bg-[#030303]">
-      <GridBackground />
-      <FloatingOrbs />
-      <InteractiveDotBackground />
+    <div className="relative min-h-screen bg-[#030303] text-white overflow-hidden">
+      <NoiseOverlay />
+      <GradientOrbs />
+      <GridPattern />
+      <ParticleField />
 
       {/* Header */}
       <motion.header
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.5 }}
+        initial={{ y: -100 }}
+        animate={{ y: 0 }}
+        transition={{ duration: 0.8, ease: [0.23, 1, 0.32, 1] }}
         className={cn(
-          "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
-          isScrolled ? "bg-black/80 backdrop-blur-xl border-b border-white/[0.05]" : ""
+          "fixed top-0 left-0 right-0 z-50 transition-all duration-500",
+          isScrolled 
+            ? "bg-black/60 backdrop-blur-2xl border-b border-white/[0.05]" 
+            : ""
         )}
       >
-        <nav className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-white" />
+        <nav className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+          <motion.div 
+            className="flex items-center gap-3 cursor-pointer"
+            whileHover={{ scale: 1.02 }}
+            onClick={() => navigate("/")}
+          >
+            <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center overflow-hidden">
+              <Sparkles className="w-5 h-5 text-white relative z-10" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
             </div>
-            <span className="text-lg font-bold tracking-tight cursor-pointer" onClick={() => navigate("/")}>
-              Datanauts
-            </span>
-          </div>
+            <span className="text-xl font-bold tracking-tight">Datanauts</span>
+          </motion.div>
           
-          <div className="flex items-center gap-4">
-            <div className="hidden md:flex items-center gap-1 text-xs text-zinc-500 px-3 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.05]">
-              <Globe className="w-3 h-3" />
+          <div className="flex items-center gap-6">
+            <div className="hidden lg:flex items-center gap-2 text-xs text-zinc-500 px-4 py-2 rounded-full bg-white/[0.03] border border-white/[0.05]">
+              <Globe className="w-3.5 h-3.5" />
               <span>Sphoorthy Engineering College</span>
             </div>
-            <button 
-              onClick={() => navigate('/events')}
-              className="text-sm text-zinc-400 hover:text-white transition-colors"
-            >
-              Events
-            </button>
-            <button 
+            
+            <div className="hidden md:flex items-center gap-6">
+              <button 
+                onClick={() => navigate('/events')}
+                className="text-sm text-zinc-400 hover:text-white transition-colors"
+              >
+                Events
+              </button>
+              <button 
+                onClick={() => navigate('/about')}
+                className="text-sm text-zinc-400 hover:text-white transition-colors"
+              >
+                About
+              </button>
+            </div>
+            
+            <motion.button 
               onClick={() => navigate('/login')}
-              className="text-sm px-4 py-2 rounded-lg bg-white text-black font-medium hover:bg-zinc-200 transition-colors"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="relative px-6 py-2.5 rounded-full bg-white text-black text-sm font-semibold overflow-hidden group"
             >
-              Sign In
-            </button>
+              <span className="relative z-10">Sign In</span>
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-violet-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <span className="absolute inset-0 z-10 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">Sign In</span>
+            </motion.button>
           </div>
         </nav>
       </motion.header>
 
       {/* Hero Section */}
-      <main className="flex-grow flex flex-col relative z-10">
-        <section className="min-h-screen flex flex-col items-center justify-center px-6 pt-16">
-          <div className="max-w-4xl mx-auto text-center">
-            {/* Badge */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.03] border border-white/[0.05] mb-8"
-            >
-              <Star className="w-4 h-4 text-yellow-500" />
-              <span className="text-sm text-zinc-400">Trusted by 500+ students</span>
-            </motion.div>
+      <section className="relative min-h-screen flex items-center justify-center px-6 pt-20">
+        <div className="max-w-5xl mx-auto text-center">
+          {/* Badge */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+          >
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-500/10 to-violet-500/10 border border-white/[0.1] mb-8">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-sm text-zinc-300">500+ students already connected</span>
+            </div>
+          </motion.div>
 
-            {/* Main Headline */}
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.1 }}
-              className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.1] mb-6"
-            >
-              <span className="text-white">Stay Connected with</span>
-              <br />
-              <span className="inline-flex h-[1.15em] overflow-hidden align-bottom">
-                <RotatingText
-                  texts={["Events", "Updates", "Announcements", "Activities"]}
-                  mainClassName="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-blue-500 to-violet-500"
-                  staggerFrom="last"
-                  initial={{ y: "-100%", opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  exit={{ y: "110%", opacity: 0 }}
-                  staggerDuration={0.02}
-                  transition={{ type: "spring", damping: 20, stiffness: 200 }}
-                  rotationInterval={2500}
-                  splitBy="characters"
-                  auto={true}
-                  loop={true}
+          {/* Main Headline */}
+          <motion.h1
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.3 }}
+            className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight leading-[1.05] mb-8"
+          >
+            <span className="text-white">Stay ahead with</span>
+            <br />
+            <span className="relative">
+              <span className="bg-gradient-to-r from-blue-400 via-violet-400 to-purple-400 bg-clip-text text-transparent">
+                <RotatingWords 
+                  words={["Events", "Updates", "News", "Activities"]} 
                 />
               </span>
-            </motion.h1>
+              <motion.span
+                className="absolute -bottom-2 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-violet-500 rounded-full"
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: 1 }}
+                transition={{ duration: 0.8, delay: 0.8 }}
+              />
+            </span>
+          </motion.h1>
 
-            {/* Subtitle */}
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="text-lg md:text-xl text-zinc-400 max-w-2xl mx-auto mb-10 leading-relaxed"
+          {/* Subtitle */}
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.5 }}
+            className="text-lg md:text-xl text-zinc-400 max-w-2xl mx-auto mb-12 leading-relaxed"
+          >
+            The modern platform for college events, announcements, and community. 
+            Built for students who don't want to miss out.
+          </motion.p>
+
+          {/* CTA Buttons */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.6 }}
+            className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16"
+          >
+            <motion.button
+              onClick={() => navigate('/login')}
+              whileHover={{ scale: 1.02, y: -2 }}
+              whileTap={{ scale: 0.98 }}
+              className="group relative flex items-center gap-3 px-8 py-4 bg-white text-black font-semibold rounded-2xl overflow-hidden"
             >
-              Your one-stop platform for all college events, announcements, and updates. 
-              Never miss what matters most in your campus life.
-            </motion.p>
+              <span className="relative z-10">Get Started Free</span>
+              <ArrowRight className="w-5 h-5 relative z-10 group-hover:translate-x-1 transition-transform" />
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-200 to-violet-200 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            </motion.button>
+            
+            <motion.button
+              onClick={() => navigate('/events')}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="group flex items-center gap-3 px-8 py-4 rounded-2xl border border-white/[0.1] hover:border-white/[0.2] hover:bg-white/[0.02] transition-all"
+            >
+              <div className="w-10 h-10 rounded-full bg-white/[0.05] flex items-center justify-center group-hover:bg-white/[0.1] transition-colors">
+                <Play className="w-4 h-4 text-white fill-white" />
+              </div>
+              <span className="text-white font-medium">See How It Works</span>
+            </motion.button>
+          </motion.div>
 
-            {/* CTA Buttons */}
+          {/* Trust Indicators */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1, delay: 0.8 }}
+            className="flex flex-wrap items-center justify-center gap-8 text-zinc-500"
+          >
+            {[
+              { icon: <Star className="w-4 h-4 text-yellow-500" />, text: "4.9 rating" },
+              { icon: <Users className="w-4 h-4" />, text: "500+ users" },
+              { icon: <Zap className="w-4 h-4 text-blue-500" />, text: "Instant updates" },
+            ].map((item, i) => (
+              <div key={i} className="flex items-center gap-2 text-sm">
+                {item.icon}
+                <span>{item.text}</span>
+              </div>
+            ))}
+          </motion.div>
+        </div>
+
+        {/* Scroll Indicator */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.5 }}
+          className="absolute bottom-12 left-1/2 -translate-x-1/2"
+        >
+          <motion.div
+            animate={{ y: [0, 10, 0] }}
+            transition={{ duration: 2, repeat: Infinity }}
+            className="w-6 h-10 rounded-full border-2 border-white/[0.2] flex items-start justify-center p-2"
+          >
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-              className="flex flex-col sm:flex-row items-center justify-center gap-4"
-            >
-              <button
-                onClick={() => navigate('/login')}
-                className="group flex items-center gap-2 px-8 py-4 bg-white text-black font-semibold rounded-xl hover:bg-zinc-100 transition-all hover:scale-[1.02] active:scale-[0.98]"
-              >
-                Get Started
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </button>
-              <button
-                onClick={() => navigate('/events')}
-                className="flex items-center gap-2 px-8 py-4 bg-white/[0.03] border border-white/[0.1] text-white font-medium rounded-xl hover:bg-white/[0.06] transition-all"
-              >
-                Browse Events
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </motion.div>
+              animate={{ y: [0, 8, 0] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              className="w-1 h-2 rounded-full bg-white/50"
+            />
+          </motion.div>
+        </motion.div>
+      </section>
 
-            {/* Quick Features */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-              className="flex flex-wrap items-center justify-center gap-3 mt-12"
-            >
-              {["Real-time notifications", "Event calendar", "Student community", "Quick check-in"].map((feature, i) => (
-                <span
-                  key={i}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-zinc-400 bg-white/[0.02] border border-white/[0.05] rounded-full"
-                >
-                  <span className="w-1 h-1 rounded-full bg-blue-500" />
-                  {feature}
-                </span>
-              ))}
-            </motion.div>
+      {/* Features Section */}
+      <section className="relative py-32 px-6">
+        <div className="max-w-6xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-20"
+          >
+            <span className="text-sm text-blue-400 font-medium tracking-wider uppercase mb-4 block">Features</span>
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+              Everything you need,<br />nothing you don't
+            </h2>
+            <p className="text-zinc-400 text-lg max-w-xl mx-auto">
+              Powerful features designed to keep you connected with what matters most in your college life.
+            </p>
+          </motion.div>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            {features.map((feature, i) => (
+              <BentoCard key={i} {...feature} />
+            ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Features Section */}
-        <section className="py-24 px-6">
-          <div className="max-w-5xl mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-center mb-16"
-            >
-              <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-                Everything you need
-              </h2>
-              <p className="text-zinc-400 text-lg max-w-xl mx-auto">
-                Powerful features to keep you connected with your college community
-              </p>
-            </motion.div>
-
-            <div className="grid md:grid-cols-2 gap-4">
-              {features.map((feature, index) => (
-                <FeatureCard
-                  key={index}
-                  icon={feature.icon}
-                  title={feature.title}
-                  description={feature.description}
-                  delay={index * 0.1}
-                />
-              ))}
+      {/* Stats Section */}
+      <section className="relative py-32 px-6">
+        <div className="max-w-5xl mx-auto">
+          <div className="relative rounded-[40px] bg-gradient-to-br from-white/[0.03] to-transparent border border-white/[0.05] p-16 overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-violet-500/5" />
+            <div className="relative z-10 grid grid-cols-2 md:grid-cols-4 gap-12">
+              <AnimatedCounter value="500+" label="Active Users" delay={0} />
+              <AnimatedCounter value="50+" label="Events" delay={0.1} />
+              <AnimatedCounter value="20+" label="Workshops" delay={0.2} />
+              <AnimatedCounter value="100%" label="Free" delay={0.3} />
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Stats Section */}
-        <section className="py-24 px-6 border-t border-white/[0.05]">
-          <div className="max-w-4xl mx-auto">
-            <StatsSection />
-          </div>
-        </section>
-
-        {/* CTA Section */}
-        <section className="py-24 px-6">
-          <div className="max-w-3xl mx-auto text-center">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="p-8 md:p-12 rounded-3xl bg-gradient-to-br from-blue-500/10 to-violet-500/10 border border-white/[0.05]"
-            >
-              <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+      {/* CTA Section */}
+      <section className="relative py-32 px-6">
+        <div className="max-w-4xl mx-auto text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="relative"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-violet-500/20 to-purple-500/20 blur-3xl" />
+            <div className="relative bg-gradient-to-br from-white/[0.05] to-white/[0.02] border border-white/[0.08] rounded-[40px] p-16">
+              <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
                 Ready to get started?
               </h2>
-              <p className="text-zinc-400 text-lg mb-8">
-                Join hundreds of students already using Datanauts to stay connected.
+              <p className="text-zinc-400 text-lg mb-10 max-w-lg mx-auto">
+                Join hundreds of students already using Datanauts. It's free, it's fast, and it's awesome.
               </p>
-              <button
+              <motion.button
                 onClick={() => navigate('/login')}
-                className="inline-flex items-center gap-2 px-8 py-4 bg-white text-black font-semibold rounded-xl hover:bg-zinc-100 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="inline-flex items-center gap-3 px-10 py-5 bg-white text-black font-semibold rounded-2xl hover:bg-zinc-100 transition-colors"
               >
-                Create Free Account
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </motion.div>
-          </div>
-        </section>
-
-        {/* Footer */}
-        <footer className="py-8 px-6 border-t border-white/[0.05]">
-          <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-md bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center">
-                <Sparkles className="w-3 h-3 text-white" />
-              </div>
-              <span className="text-sm font-medium">Datanauts</span>
+                Create Your Account
+                <ArrowRight className="w-5 h-5" />
+              </motion.button>
             </div>
-            <p className="text-sm text-zinc-500">
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="relative py-16 px-6 border-t border-white/[0.05]">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center">
+                <Sparkles className="w-4 h-4 text-white" />
+              </div>
+              <span className="text-lg font-bold">Datanauts</span>
+            </div>
+            
+            <div className="flex items-center gap-8 text-sm text-zinc-500">
+              <button onClick={() => navigate('/events')} className="hover:text-white transition-colors">Events</button>
+              <button onClick={() => navigate('/about')} className="hover:text-white transition-colors">About</button>
+              <button onClick={() => navigate('/login')} className="hover:text-white transition-colors">Sign In</button>
+            </div>
+            
+            <p className="text-sm text-zinc-600">
               Sphoorthy Engineering College
             </p>
-            <p className="text-xs text-zinc-600">
-              Built with care for students
-            </p>
           </div>
-        </footer>
-      </main>
+        </div>
+      </footer>
     </div>
   );
 };

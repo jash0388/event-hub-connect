@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from "react";
-import { Play, Copy, Check, Home } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Play, Copy, Check, Terminal, Code2 } from "lucide-react";
+import { Header } from "@/components/layout/Header";
+import { Footer } from "@/components/layout/Footer";
+import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 declare global { interface Window { loadPyodide: any; } }
 
@@ -38,6 +41,7 @@ const Compilers = () => {
     const [pyodide, setPyodide] = useState<any>(null);
     const [pyLoading, setPyLoading] = useState(true);
     const [copied, setCopied] = useState(false);
+    const [isRunning, setIsRunning] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     useEffect(() => {
@@ -62,154 +66,201 @@ const Compilers = () => {
     };
 
     const run = () => {
-        setOut("⏳ Running...");
+        setOut("");
+        setIsRunning(true);
+        
         if (lang === "javascript") {
             const logs: string[] = [];
             const c = {
                 log: (...a: any[]) => logs.push(a.map(x => typeof x === "object" ? JSON.stringify(x) : String(x)).join(" ")),
-                error: (...a: any[]) => logs.push("❌ " + a.map(x => typeof x === "object" ? JSON.stringify(x) : String(x)).join(" "))
+                error: (...a: any[]) => logs.push("Error: " + a.map(x => typeof x === "object" ? JSON.stringify(x) : String(x)).join(" "))
             };
-            try { new Function("console", code)(c); } catch (e: any) { logs.push("❌ Error: " + e.message); }
-            setOut(logs.join("\n") || "✅ Done (no output)");
+            try { new Function("console", code)(c); } catch (e: any) { logs.push("Error: " + e.message); }
+            setTimeout(() => {
+                setOut(logs.join("\n") || "Done (no output)");
+                setIsRunning(false);
+            }, 300);
         }
         else if (lang === "python") {
-            if (!pyodide) { setOut("⏳ Python loading... wait a moment"); return; }
+            if (!pyodide) { setOut("Python is still loading... please wait a moment"); setIsRunning(false); return; }
             (async () => {
                 try {
                     pyodide.runPython("import sys; from io import StringIO; sys.stdout = StringIO(); sys.stderr = StringIO()");
-                    try { pyodide.runPython(code); } catch (e: any) { setOut("❌ Error: " + e.message); return; }
+                    try { pyodide.runPython(code); } catch (e: any) { setOut("Error: " + e.message); setIsRunning(false); return; }
                     const o = pyodide.runPython("sys.stdout.getvalue()");
                     const e = pyodide.runPython("sys.stderr.getvalue()");
-                    setOut(e ? "❌ Error: " + e : (o || "✅ Done (no output)"));
-                } catch (e: any) { setOut("❌ Error: " + e.message); }
+                    setOut(e ? "Error: " + e : (o || "Done (no output)"));
+                } catch (e: any) { setOut("Error: " + e.message); }
+                setIsRunning(false);
             })();
         }
     };
 
-    const handleScroll = (e: React.UIEvent<HTMLTextAreaElement>) => {
-        const target = e.currentTarget;
-        // Sync scroll if needed - for now simple textarea works
-    };
-
     return (
-        <div className="min-h-screen" style={{
-            background: "linear-gradient(180deg, #0F172A 0%, #111827 100%)"
-        }}>
-            <div className="max-w-4xl mx-auto px-4 py-16">
-
-                {/* Header with Home Button */}
-                <div className="flex items-center justify-center mb-12 relative">
-                    <Link
-                        to="/"
-                        className="absolute left-0 flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/10 hover:bg-white/20 text-gray-300 hover:text-white transition-all"
-                    >
-                        <Home size={20} />
-                        <span className="font-medium">Home</span>
-                    </Link>
-
-                    <div className="text-center">
-                        <h1 className="text-4xl font-bold text-[#F9FAFB] mb-3">
-                            Code Compiler
-                            <span className="block w-24 h-1 bg-[#22C55E] mx-auto mt-3 rounded-full"></span>
-                        </h1>
-                        <p className="text-[#9CA3AF] text-lg">Write and run code in your browser - completely free!</p>
-                    </div>
-                </div>
-
-                {/* Language Buttons */}
-                <div className="flex justify-center gap-3 mb-8">
-                    <button
-                        onClick={() => { setLang("python"); setCode(defaultCode.python); setOut(""); }}
-                        className={`px-6 py-3 rounded-full font-semibold transition-all ${lang === "python"
-                            ? "bg-[#22C55E] text-white shadow-[0_0_20px_rgba(34,197,94,0.4)]"
-                            : "bg-[#1E293B] text-gray-400 border border-white/10 hover:bg-[#334155] hover:text-white"
-                            }`}
-                    >
-                        🐍 Python {pyLoading ? "..." : pyodide ? "✓ Ready" : "⏳"}
-                    </button>
-                    <button
-                        onClick={() => { setLang("javascript"); setCode(defaultCode.javascript); setOut(""); }}
-                        className={`px-6 py-3 rounded-full font-semibold transition-all ${lang === "javascript"
-                            ? "bg-[#22C55E] text-white shadow-[0_0_20px_rgba(34,197,94,0.4)]"
-                            : "bg-[#1E293B] text-gray-400 border border-white/10 hover:bg-[#334155] hover:text-white"
-                            }`}
-                    >
-                        📜 JavaScript ✓ Ready
-                    </button>
-                </div>
-
-                {/* Main Card */}
-                <div className="bg-[#1E293B] rounded-[24px] shadow-[0_25px_60px_rgba(0,0,0,0.4)] overflow-hidden border border-white/[0.08]" style={{ animation: 'fadeInUp 0.6s ease-out both' }}>
-                    {/* Editor Header */}
-                    <div className="bg-gradient-to-r from-[#0F172A] to-[#1E293B] px-6 py-4 flex items-center justify-between border-b border-white/[0.08]">
-                        <div className="flex items-center gap-3">
-                            <div className="flex gap-2">
-                                <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                                <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                                <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                            </div>
-                            <span className="text-gray-400 font-mono text-sm">
-                                {lang === "python" ? "🐍 main.py" : "📜 main.js"}
-                            </span>
-                        </div>
-                        <button
-                            onClick={copyCode}
-                            className="flex items-center gap-2 text-gray-500 hover:text-white transition-colors text-sm"
-                        >
-                            {copied ? <Check size={16} className="text-green-400" /> : <Copy size={16} />}
-                            {copied ? "Copied!" : "Copy"}
-                        </button>
-                    </div>
-
-                    {/* Code Editor - Simple working textarea */}
-                    <div className="bg-[#0F172A]">
-                        <textarea
-                            ref={textareaRef}
-                            value={code}
-                            onChange={(e) => setCode(e.target.value)}
-                            onScroll={handleScroll}
-                            className="w-full h-72 p-6 font-mono text-sm text-gray-100 bg-[#0F172A] resize-none focus:outline-none border-0"
-                            spellCheck={false}
-                            style={{
-                                lineHeight: '1.6',
-                                tabSize: 4,
-                            }}
-                            placeholder={lang === "python" ? "# Write your Python code here..." : "// Write your JavaScript code here..."}
-                        />
-                    </div>
-
-                    {/* Run Button */}
-                    <div className="px-6 py-4 bg-[#0F172A] border-t border-white/[0.08]">
-                        <button
-                            onClick={run}
-                            className="w-full py-4 bg-[#22C55E] text-white text-lg font-bold rounded-xl flex items-center justify-center gap-3 shadow-[0_0_25px_rgba(34,197,94,0.4)] hover:shadow-[0_0_35px_rgba(34,197,94,0.5)] hover:bg-[#16A34A] transition-all"
-                        >
-                            <Play size={24} />
-                            Run Code
-                        </button>
-                    </div>
-                </div>
-
-                {/* Output */}
-                <div className="mt-6 bg-[#1E293B] rounded-[24px] shadow-[0_25px_60px_rgba(0,0,0,0.4)] overflow-hidden border border-white/[0.08]" style={{ animation: 'fadeInUp 0.6s ease-out 0.2s both' }}>
-                    <div className="bg-gradient-to-r from-[#0F172A] to-[#1E293B] px-6 py-3 border-b border-white/[0.08]">
-                        <span className="text-gray-400 font-mono text-sm">📟 Output</span>
-                    </div>
-                    <pre className="h-48 p-6 font-mono text-sm text-[#22C55E] overflow-auto whitespace-pre-wrap">
-                        {out || "👆 Click 'Run Code' to see output..."}
-                    </pre>
-                </div>
-
-                {/* Info */}
-                <div className="mt-6 text-center">
-                    <p className="text-gray-500 text-sm">
-                        💡 <strong className="text-gray-400">Python</strong> runs via WebAssembly (Pyodide) • <strong className="text-gray-400">JavaScript</strong> runs in browser
-                    </p>
-                    <p className="text-gray-600 text-xs mt-2">
-                        C/C++/Java require paid API keys. Contact us to add more languages!
-                    </p>
-                </div>
+        <div className="min-h-screen flex flex-col bg-[#030303]">
+            {/* Background */}
+            <div className="fixed inset-0 pointer-events-none">
+                <div className="absolute inset-0 bg-gradient-to-b from-zinc-950 via-black to-zinc-950" />
+                <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-[128px]" />
+                <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-[128px]" />
             </div>
+
+            <Header />
+
+            <main className="flex-1 pt-28 sm:pt-32 pb-16 relative z-10">
+                <div className="container mx-auto px-4 max-w-4xl">
+                    {/* Header */}
+                    <motion.div 
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="text-center mb-10"
+                    >
+                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.03] border border-white/[0.08] mb-6">
+                            <Terminal className="w-4 h-4 text-emerald-400" />
+                            <span className="text-sm font-medium text-zinc-400">Code Playground</span>
+                        </div>
+                        <h1 className="text-4xl sm:text-5xl font-bold text-white mb-4 tracking-tight">
+                            Online Compiler
+                        </h1>
+                        <p className="text-zinc-400 text-lg max-w-xl mx-auto">
+                            Write and run code directly in your browser - completely free!
+                        </p>
+                    </motion.div>
+
+                    {/* Language Toggle */}
+                    <motion.div 
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.1 }}
+                        className="flex justify-center gap-3 mb-8"
+                    >
+                        <button
+                            onClick={() => { setLang("python"); setCode(defaultCode.python); setOut(""); }}
+                            className={cn(
+                                "px-6 py-3 rounded-xl font-medium transition-all flex items-center gap-2",
+                                lang === "python"
+                                    ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/25"
+                                    : "bg-white/[0.03] text-zinc-400 border border-white/[0.08] hover:bg-white/[0.06] hover:text-white"
+                            )}
+                        >
+                            <span>Python</span>
+                            <span className={cn(
+                                "text-xs px-2 py-0.5 rounded-md",
+                                lang === "python" ? "bg-white/20" : "bg-white/[0.05]"
+                            )}>
+                                {pyLoading ? "Loading..." : pyodide ? "Ready" : "Error"}
+                            </span>
+                        </button>
+                        <button
+                            onClick={() => { setLang("javascript"); setCode(defaultCode.javascript); setOut(""); }}
+                            className={cn(
+                                "px-6 py-3 rounded-xl font-medium transition-all flex items-center gap-2",
+                                lang === "javascript"
+                                    ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/25"
+                                    : "bg-white/[0.03] text-zinc-400 border border-white/[0.08] hover:bg-white/[0.06] hover:text-white"
+                            )}
+                        >
+                            <span>JavaScript</span>
+                            <span className={cn(
+                                "text-xs px-2 py-0.5 rounded-md",
+                                lang === "javascript" ? "bg-white/20" : "bg-white/[0.05]"
+                            )}>Ready</span>
+                        </button>
+                    </motion.div>
+
+                    {/* Editor Card */}
+                    <motion.div 
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2 }}
+                        className="bg-zinc-950/80 backdrop-blur-xl border border-white/[0.08] rounded-2xl overflow-hidden shadow-2xl"
+                    >
+                        {/* Editor Header */}
+                        <div className="px-5 py-4 flex items-center justify-between border-b border-white/[0.06] bg-white/[0.02]">
+                            <div className="flex items-center gap-3">
+                                <div className="flex gap-1.5">
+                                    <div className="w-3 h-3 rounded-full bg-red-500/80"></div>
+                                    <div className="w-3 h-3 rounded-full bg-yellow-500/80"></div>
+                                    <div className="w-3 h-3 rounded-full bg-green-500/80"></div>
+                                </div>
+                                <div className="flex items-center gap-2 text-zinc-500 text-sm">
+                                    <Code2 className="w-4 h-4" />
+                                    <span className="font-mono">
+                                        {lang === "python" ? "main.py" : "main.js"}
+                                    </span>
+                                </div>
+                            </div>
+                            <button
+                                onClick={copyCode}
+                                className="flex items-center gap-2 text-zinc-500 hover:text-white transition-colors text-sm px-3 py-1.5 rounded-lg hover:bg-white/[0.05]"
+                            >
+                                {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                                {copied ? "Copied!" : "Copy"}
+                            </button>
+                        </div>
+
+                        {/* Code Editor */}
+                        <div className="relative">
+                            <textarea
+                                ref={textareaRef}
+                                value={code}
+                                onChange={(e) => setCode(e.target.value)}
+                                className="w-full h-72 p-5 font-mono text-sm text-zinc-100 bg-[#0a0a0a] resize-none focus:outline-none border-0"
+                                spellCheck={false}
+                                style={{ lineHeight: '1.7', tabSize: 4 }}
+                                placeholder={lang === "python" ? "# Write your Python code here..." : "// Write your JavaScript code here..."}
+                            />
+                        </div>
+
+                        {/* Run Button */}
+                        <div className="px-5 py-4 bg-[#0a0a0a] border-t border-white/[0.06]">
+                            <motion.button
+                                onClick={run}
+                                disabled={isRunning || (lang === "python" && pyLoading)}
+                                whileHover={{ scale: 1.01 }}
+                                whileTap={{ scale: 0.99 }}
+                                className="w-full h-12 bg-emerald-500 text-white font-semibold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25 hover:bg-emerald-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <Play className={cn("w-5 h-5", isRunning && "animate-pulse")} />
+                                {isRunning ? "Running..." : "Run Code"}
+                            </motion.button>
+                        </div>
+                    </motion.div>
+
+                    {/* Output Card */}
+                    <motion.div 
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3 }}
+                        className="mt-6 bg-zinc-950/80 backdrop-blur-xl border border-white/[0.08] rounded-2xl overflow-hidden"
+                    >
+                        <div className="px-5 py-3 border-b border-white/[0.06] bg-white/[0.02] flex items-center gap-2">
+                            <Terminal className="w-4 h-4 text-zinc-500" />
+                            <span className="text-zinc-400 text-sm font-medium">Output</span>
+                        </div>
+                        <pre className="h-44 p-5 font-mono text-sm text-emerald-400 overflow-auto whitespace-pre-wrap bg-[#0a0a0a]">
+                            {out || <span className="text-zinc-600">Click 'Run Code' to see output...</span>}
+                        </pre>
+                    </motion.div>
+
+                    {/* Info */}
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.4 }}
+                        className="mt-8 text-center space-y-2"
+                    >
+                        <p className="text-zinc-500 text-sm">
+                            <strong className="text-zinc-400">Python</strong> runs via WebAssembly (Pyodide) • <strong className="text-zinc-400">JavaScript</strong> runs in browser
+                        </p>
+                        <p className="text-zinc-600 text-xs">
+                            More languages coming soon!
+                        </p>
+                    </motion.div>
+                </div>
+            </main>
+
+            <Footer />
         </div>
     );
 };
