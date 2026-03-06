@@ -96,11 +96,7 @@
   body {
     @apply bg-background text-foreground font-sans;
     font-family: 'Inter', sans-serif;
-    /* Liquid glass animated background */
-    background: url("https://images.unsplash.com/photo-1432251407527-504a6b4174a2?q=80&w=1480&auto=format&fit=crop") center center;
-    background-attachment: fixed;
-    background-size: cover;
-    animation: moveBackground 60s linear infinite;
+    background: linear-gradient(to bottom, #0a0a0a, #111111, #0a0a0a);
     min-height: 100vh;
   }
 

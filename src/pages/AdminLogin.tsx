@@ -129,14 +129,8 @@ const AdminLogin = () => {
 
   return (
     <div className="min-h-screen flex flex-col" style={{
-      background: 'url("https://images.unsplash.com/photo-1432251407527-504a6b4174a2?q=80&w=1480&auto=format&fit=crop") center center',
-      backgroundAttachment: 'fixed',
-      backgroundSize: 'cover'
+      background: 'linear-gradient(to bottom, #0a0a0a 0%, #111111 50%, #0a0a0a 100%)'
     }}>
-      <div className="absolute inset-0" style={{
-        background: 'linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.35) 100%)',
-        zIndex: 1
-      }} />
       <Header />
       <main className="flex-1 flex items-center justify-center px-4 relative z-10 pt-20 pb-10">
         <div className="w-full max-w-md">

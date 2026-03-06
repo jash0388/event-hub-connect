@@ -173,9 +173,7 @@ export default function Events() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{
-      background: 'linear-gradient(to bottom, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.15) 100%), url("https://images.unsplash.com/photo-1432251407527-504a6b4174a2?q=80&w=1480&auto=format&fit=crop") center center',
-      backgroundAttachment: 'fixed',
-      backgroundSize: 'cover'
+      background: 'linear-gradient(to bottom, #0a0a0a 0%, #111111 50%, #0a0a0a 100%)'
     }}>
       <Header />
       <main className="flex-1 pt-24 md:pt-32 pb-12 md:pb-16">
