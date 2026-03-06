@@ -488,6 +488,7 @@ export const CollegeEventsHub: React.FC = () => {
     <div className="relative text-white min-h-screen flex flex-col overflow-x-hidden" style={{
       background: 'linear-gradient(to bottom, #0a0a0a 0%, #111111 50%, #0a0a0a 100%)'
     }}>
+      <InteractiveDotBackground />
 
       <motion.header
         variants={headerVariants}
