@@ -8,74 +8,109 @@ import { Loader2, Mail, Lock, User, ArrowRight, Eye, EyeOff, Sparkles, CheckCirc
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 
-// Interactive dot background similar to Manus AI
-const InteractiveDotBackground = () => {
-    const canvasRef = useRef<HTMLCanvasElement>(null);
-    const animationFrameId = useRef<number | null>(null);
-    const mousePosition = useRef({ x: 0, y: 0 });
+// Rotating Text Component for animated word cycling
+import type { Transition, VariantLabels, TargetAndTransition } from "framer-motion";
+
+function cn(...classes: (string | undefined | null | boolean)[]): string {
+    return classes.filter(Boolean).join(" ");
+}
+
+interface RotatingTextProps {
+    texts: string[];
+    transition?: Transition;
+    initial?: boolean | VariantLabels | TargetAndTransition;
+    animate?: boolean | VariantLabels | TargetAndTransition;
+    exit?: VariantLabels | TargetAndTransition;
+    rotationInterval?: number;
+    staggerDuration?: number;
+    staggerFrom?: "first" | "last" | "center" | "random" | number;
+    loop?: boolean;
+    auto?: boolean;
+    splitBy?: "characters" | "words" | "lines" | string;
+    mainClassName?: string;
+    splitLevelClassName?: string;
+    elementLevelClassName?: string;
+    style?: React.CSSProperties;
+}
+
+const RotatingText = ({
+    texts,
+    transition = { type: "spring", damping: 25, stiffness: 300 },
+    initial = { y: "100%", opacity: 0 },
+    animate = { y: 0, opacity: 1 },
+    exit = { y: "-120%", opacity: 0 },
+    rotationInterval = 2500,
+    staggerDuration = 0.02,
+    staggerFrom = "first",
+    loop = true,
+    auto = true,
+    splitBy = "characters",
+    mainClassName,
+    splitLevelClassName,
+    elementLevelClassName,
+    style,
+}: RotatingTextProps) => {
+    const [currentTextIndex, setCurrentTextIndex] = useState(0);
 
     useEffect(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
+        if (!auto) return;
+        const interval = setInterval(() => {
+            setCurrentTextIndex((prev) =>
+                loop ? (prev + 1) % texts.length : Math.min(prev + 1, texts.length - 1)
+            );
+        }, rotationInterval);
+        return () => clearInterval(interval);
+    }, [auto, loop, rotationInterval, texts.length]);
 
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return;
+    const splitText = (text: string) => {
+        if (splitBy === "characters") return text.split("");
+        if (splitBy === "words") return text.split(" ");
+        if (splitBy === "lines") return text.split("\n");
+        return text.split(splitBy);
+    };
 
-        const resize = () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        };
-        resize();
-        window.addEventListener("resize", resize);
-
-        const dots: { x: number; y: number; baseOpacity: number }[] = [];
-        const spacing = 30;
-        const cols = Math.ceil(canvas.width / spacing);
-        const rows = Math.ceil(canvas.height / spacing);
-
-        for (let i = 0; i < cols; i++) {
-            for (let j = 0; j < rows; j++) {
-                dots.push({
-                    x: i * spacing + spacing / 2,
-                    y: j * spacing + spacing / 2,
-                    baseOpacity: Math.random() * 0.15 + 0.05,
-                });
-            }
+    const getStaggerDelay = (index: number, total: number) => {
+        if (staggerFrom === "first") return index * staggerDuration;
+        if (staggerFrom === "last") return (total - 1 - index) * staggerDuration;
+        if (staggerFrom === "center") {
+            const center = (total - 1) / 2;
+            return Math.abs(center - index) * staggerDuration;
         }
+        if (staggerFrom === "random") return Math.random() * staggerDuration * total;
+        if (typeof staggerFrom === "number") {
+            return Math.abs(staggerFrom - index) * staggerDuration;
+        }
+        return index * staggerDuration;
+    };
 
-        const handleMouseMove = (e: MouseEvent) => {
-            mousePosition.current = { x: e.clientX, y: e.clientY };
-        };
-        window.addEventListener("mousemove", handleMouseMove);
+    const elements = splitText(texts[currentTextIndex]);
 
-        const animate = () => {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            dots.forEach((dot) => {
-                const dx = mousePosition.current.x - dot.x;
-                const dy = mousePosition.current.y - dot.y;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-                const maxDist = 150;
-                const intensity = Math.max(0, 1 - dist / maxDist);
-
-                ctx.beginPath();
-                ctx.fillStyle = `rgba(34, 211, 238, ${dot.baseOpacity + intensity * 0.4})`;
-                ctx.arc(dot.x, dot.y, 1.5 + intensity * 2, 0, Math.PI * 2);
-                ctx.fill();
-            });
-
-            animationFrameId.current = requestAnimationFrame(animate);
-        };
-        animate();
-
-        return () => {
-            window.removeEventListener("resize", resize);
-            window.removeEventListener("mousemove", handleMouseMove);
-            if (animationFrameId.current) cancelAnimationFrame(animationFrameId.current);
-        };
-    }, []);
-
-    return <canvas ref={canvasRef} className="fixed inset-0 z-0 pointer-events-none" />;
+    return (
+        <motion.span className={cn("inline-flex", mainClassName)} style={style}>
+            <AnimatePresence mode="wait">
+                <motion.span
+                    key={currentTextIndex}
+                    className={cn("inline-flex", splitLevelClassName)}
+                >
+                    {elements.map((element, i) => (
+                        <motion.span
+                            key={`${currentTextIndex}-${i}`}
+                            initial={initial}
+                            animate={animate}
+                            exit={exit}
+                            transition={{
+                                ...transition,
+                                delay: getStaggerDelay(i, elements.length),
+                            }}
+                            className={cn("inline-block", elementLevelClassName)}
+                        >
+                            {element === " " ? "\u00A0" : element}
+                        </motion.span>
+                    ))}
+                </motion.span>
+            </AnimatePresence>
+        </motion.span>
+    );
 };
 
 // Welcome Modal Component
@@ -306,11 +341,8 @@ export default function UserAuth() {
 
     return (
         <div className="min-h-screen bg-black text-white relative overflow-hidden">
-            <InteractiveDotBackground />
-
-            {/* Gradient overlays */}
-            <div className="fixed inset-0 bg-gradient-to-b from-black via-transparent to-black/80 pointer-events-none z-[1]" />
-            <div className="fixed inset-0 bg-gradient-to-r from-cyan-500/5 via-transparent to-blue-500/5 pointer-events-none z-[1]" />
+            {/* Clean dark background with subtle gradient */}
+            <div className="fixed inset-0 bg-gradient-to-b from-zinc-950 via-black to-zinc-950 pointer-events-none z-0" />
 
             {/* Main content */}
             <div className="relative z-10 min-h-screen flex flex-col">
@@ -343,12 +375,25 @@ export default function UserAuth() {
                                 transition={{ delay: 0.2 }}
                                 className="text-center space-y-8 max-w-3xl"
                             >
-                                {/* Main headline */}
+                                {/* Main headline with rotating text */}
                                 <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-semibold text-white leading-tight">
-                                    What events are you
-                                    <br />
-                                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-                                        looking for?
+                                    Stay Connected with{" "}
+                                    <span className="inline-block h-[1.2em] overflow-hidden align-bottom">
+                                        <RotatingText
+                                            texts={["Events", "Updates", "Announcements", "Activities", "News"]}
+                                            mainClassName="mx-1"
+                                            style={{ color: "#3B82F6" }}
+                                            staggerFrom="last"
+                                            initial={{ y: "-100%", opacity: 0 }}
+                                            animate={{ y: 0, opacity: 1 }}
+                                            exit={{ y: "110%", opacity: 0 }}
+                                            staggerDuration={0.03}
+                                            transition={{ type: "spring", damping: 20, stiffness: 200 }}
+                                            rotationInterval={3000}
+                                            splitBy="characters"
+                                            auto={true}
+                                            loop={true}
+                                        />
                                     </span>
                                 </h1>
 
