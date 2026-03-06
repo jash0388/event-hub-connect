@@ -1,4 +1,4 @@
-import { Github, Twitter, Instagram, Mail, Linkedin, Globe, Heart, Home, LucideIcon } from "lucide-react";
+import { Github, Twitter, Instagram, Mail, Linkedin, Globe, Heart, LucideIcon, ArrowUpRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
@@ -36,70 +36,85 @@ export function Footer() {
     fetchLinks();
   }, []);
 
+  const footerLinks = [
+    { label: "Home", path: "/" },
+    { label: "Events", path: "/events" },
+    { label: "Internships", path: "/internships" },
+    { label: "About", path: "/about" },
+  ];
+
   return (
-    <footer
-      className="mt-auto"
-      style={{
-        backgroundColor: 'transparent',
-        paddingTop: '32px',
-        paddingBottom: '64px',
-        boxShadow: 'none'
-      }}
-    >
-      <div className="container mx-auto px-4" style={{ maxWidth: '1280px' }}>
-        {/* Three Section Layout: Left | Center | Right */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4" style={{ minHeight: '40px' }}>
-
-          {/* Left Section - Home Link */}
-          <div className="hidden sm:block flex-1">
-            <Link
-              to="/"
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium transition-all hover:scale-105"
-              style={{ color: '#D1D5DB' }}
-            >
-              <Home size={18} />
-              <span className="hidden sm:inline">Home</span>
+    <footer className="mt-auto border-t border-white/[0.06] bg-black/40 backdrop-blur-sm">
+      <div className="container mx-auto px-6 py-12 max-w-7xl">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-16">
+          {/* Brand Section */}
+          <div className="space-y-4">
+            <Link to="/" className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+                <span className="text-white font-bold text-sm">D</span>
+              </div>
+              <span className="text-lg font-semibold text-white">
+                Data<span className="text-blue-400">Nauts</span>
+              </span>
             </Link>
-          </div>
-
-          {/* Center Section - Copyright */}
-          <div className="flex flex-col items-center text-center order-first sm:order-none">
-            <p className="text-sm font-medium whitespace-nowrap" style={{ color: '#F3F4F6' }}>
-              © 2026 Alpha Team
-            </p>
-            <p className="text-xs flex items-center gap-1 whitespace-nowrap" style={{ color: '#94A3B8' }}>
-              Made with <Heart className="w-3 h-3 text-red-400 fill-current" /> for the Students of SPHN
+            <p className="text-sm text-zinc-500 leading-relaxed max-w-xs">
+              Your gateway to college events, tech workshops, and the student community at Sphoorthy Engineering College.
             </p>
           </div>
 
-          {/* Right Section - Social Links */}
-          <div className="flex-1 flex items-center justify-center sm:justify-end gap-3">
-            {links.length > 0 ? (
-              links.slice(0, 4).map((link) => {
-                const IconComponent = iconMap[link.platform.toLowerCase()] || iconMap.default;
-                return (
-                  <a
-                    key={link.id}
-                    href={link.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-9 h-9 flex items-center justify-center transition-all hover:scale-110"
-                    style={{
-                      backgroundColor: 'rgba(255,255,255,0.05)',
-                      borderRadius: '50%',
-                      color: '#94A3B8',
-                      border: '1px solid rgba(255,255,255,0.08)'
-                    }}
-                    aria-label={link.platform}
+          {/* Quick Links */}
+          <div>
+            <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-4">Quick Links</h4>
+            <ul className="space-y-2.5">
+              {footerLinks.map((link) => (
+                <li key={link.path}>
+                  <Link 
+                    to={link.path}
+                    className="text-sm text-zinc-500 hover:text-white transition-colors inline-flex items-center gap-1 group"
                   >
-                    <IconComponent size={16} />
-                  </a>
-                );
-              })
-            ) : (
-              <span className="text-xs hidden sm:inline" style={{ color: '#94A3B8' }}>Join our community</span>
-            )}
+                    {link.label}
+                    <ArrowUpRight className="w-3 h-3 opacity-0 -translate-y-0.5 translate-x-0.5 group-hover:opacity-100 group-hover:translate-y-0 group-hover:translate-x-0 transition-all" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
           </div>
+
+          {/* Social Links */}
+          <div>
+            <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-4">Connect</h4>
+            <div className="flex items-center gap-2">
+              {links.length > 0 ? (
+                links.slice(0, 5).map((link) => {
+                  const IconComponent = iconMap[link.platform.toLowerCase()] || iconMap.default;
+                  return (
+                    <a
+                      key={link.id}
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/[0.03] border border-white/[0.06] text-zinc-500 hover:text-white hover:bg-white/[0.08] hover:border-white/[0.1] transition-all"
+                      aria-label={link.platform}
+                    >
+                      <IconComponent size={18} />
+                    </a>
+                  );
+                })
+              ) : (
+                <span className="text-sm text-zinc-600">Join our community</span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Bar */}
+        <div className="mt-12 pt-8 border-t border-white/[0.06] flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-sm text-zinc-600">
+            © 2026 DataNauts. All rights reserved.
+          </p>
+          <p className="text-sm text-zinc-600 flex items-center gap-1.5">
+            Made with <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500" /> by Alpha Team for SPHN Students
+          </p>
         </div>
       </div>
     </footer>

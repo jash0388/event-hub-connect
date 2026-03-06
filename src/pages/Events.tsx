@@ -1,22 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Calendar, Clock, Flame, MapPin, Search, Star, Users, Bookmark, Bell, MessageSquare, Trash2, Filter, ChevronRight, Image } from "lucide-react";
-import { addDays, format, isAfter, isBefore, isPast, isToday, parseISO, startOfDay } from "date-fns";
+import { Calendar, Clock, MapPin, Search, Users, Bookmark, Image, Filter, ArrowRight, Sparkles } from "lucide-react";
+import { format, isBefore, isToday, parseISO, startOfDay } from "date-fns";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 
 type Category = "Sports" | "Tech Talks" | "Cultural" | "Workshops" | "Competitions" | "Social" | "Uncategorized";
 type SortOption = "date" | "popularity" | "trending";
-type RSVPStatus = "going" | "interested" | null;
 
 interface EventRecord {
   id: string;
@@ -34,26 +32,24 @@ interface EventRecord {
   registration_link: string | null;
   created_at: string;
   photos: string | string[] | null;
-  videos: string | string[] | null;
 }
 
 interface EnhancedEvent extends EventRecord {
   category: Category;
   attendees: number;
-  attendeeNames: string[];
   trendingScore: number;
 }
 
 const categories: Category[] = ["Sports", "Tech Talks", "Cultural", "Workshops", "Competitions", "Social"];
 
-const categoryStyles: Record<Category, string> = {
-  Sports: "bg-orange-100 text-orange-700 border-orange-200",
-  "Tech Talks": "bg-blue-100 text-blue-700 border-blue-200",
-  Cultural: "bg-purple-100 text-purple-700 border-purple-200",
-  Workshops: "bg-emerald-100 text-emerald-700 border-emerald-200",
-  Competitions: "bg-rose-100 text-rose-700 border-rose-200",
-  Social: "bg-slate-100 text-slate-700 border-slate-200",
-  Uncategorized: "bg-gray-100 text-gray-700 border-gray-200",
+const categoryColors: Record<Category, { bg: string; text: string; border: string }> = {
+  Sports: { bg: "bg-orange-500/10", text: "text-orange-400", border: "border-orange-500/20" },
+  "Tech Talks": { bg: "bg-blue-500/10", text: "text-blue-400", border: "border-blue-500/20" },
+  Cultural: { bg: "bg-purple-500/10", text: "text-purple-400", border: "border-purple-500/20" },
+  Workshops: { bg: "bg-emerald-500/10", text: "text-emerald-400", border: "border-emerald-500/20" },
+  Competitions: { bg: "bg-rose-500/10", text: "text-rose-400", border: "border-rose-500/20" },
+  Social: { bg: "bg-zinc-500/10", text: "text-zinc-400", border: "border-zinc-500/20" },
+  Uncategorized: { bg: "bg-zinc-500/10", text: "text-zinc-400", border: "border-zinc-500/20" },
 };
 
 function normalizeCategory(value: string | null | undefined): Category {
@@ -62,11 +58,9 @@ function normalizeCategory(value: string | null | undefined): Category {
   return found || "Uncategorized";
 }
 
-// Helper to convert photos to array
 function getPhotosArray(photos: string | string[] | null | undefined): string[] {
   if (!photos) return [];
   if (Array.isArray(photos)) return photos;
-  // Handle comma-separated string
   return photos.split(',').map(p => p.trim()).filter(p => p);
 }
 
@@ -81,11 +75,8 @@ export default function Events() {
   const [sortBy, setSortBy] = useState<SortOption>("date");
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const [registeredEvents, setRegisteredEvents] = useState<Set<string>>(new Set());
-  const [showRegisterModal, setShowRegisterModal] = useState<string | null>(null);
   const [showPhotosModal, setShowPhotosModal] = useState<string | null>(null);
   const [currentPhotos, setCurrentPhotos] = useState<string[]>([]);
-  const [registerForm, setRegisterForm] = useState({ full_name: "", roll_number: "", year: "" });
-  const [isRegistering, setIsRegistering] = useState(false);
 
   const fetchPageData = async () => {
     setIsLoading(true);
@@ -101,11 +92,9 @@ export default function Events() {
         ...event,
         category: normalizeCategory(event.category),
         attendees: 0,
-        attendeeNames: [],
         trendingScore: Math.max(0, event.trending_score || 0),
       }));
 
-      // Fetch attendees count from event_registrations
       const { data: attendeesRows } = await (supabase as any).from("event_registrations").select("event_id");
       const attendeeCountMap = new Map<string, number>();
       (attendeesRows || []).forEach((row: any) => {
@@ -172,77 +161,144 @@ export default function Events() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{
-      background: 'linear-gradient(to bottom, #0a0a0a 0%, #111111 50%, #0a0a0a 100%)'
-    }}>
-      <Header />
-      <main className="flex-1 pt-24 md:pt-32 pb-12 md:pb-16">
-        <div className="container mx-auto px-3 sm:px-4 max-w-7xl">
-          {/* Page Header */}
-          <div className="mb-8 md:mb-12 text-center">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-3 md:mb-4 drop-shadow-lg">Upcoming Events</h1>
-            <p className="text-gray-200 max-w-2xl mx-auto text-base sm:text-lg drop-shadow-md px-2">
-              Discover and participate in the most exciting events happening on campus. From hackathons to cultural festivals.
-            </p>
-          </div>
+    <div className="min-h-screen flex flex-col bg-[#030303]">
+      {/* Background */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute inset-0 bg-gradient-to-b from-zinc-950 via-black to-zinc-950" />
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-[128px]" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-violet-500/5 rounded-full blur-[128px]" />
+      </div>
 
-          {/* Filters & Search */}
-          <div className="bg-white/90 backdrop-blur-sm p-3 sm:p-4 rounded-2xl md:rounded-full shadow-lg mb-6 md:mb-8 flex flex-col md:flex-row gap-3 md:gap-4 items-center" style={{ boxShadow: '0 8px 20px rgba(0,0,0,0.08)' }}>
-            <div className="relative flex-1 w-full">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search events..."
-                className="pl-12 bg-gray-50 border-none rounded-full h-11 sm:h-12 focus:ring-2 focus:ring-green-500 focus:shadow-lg transition-all text-sm sm:text-base"
-                style={{ boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06)' }}
-              />
+      <Header />
+      
+      <main className="flex-1 pt-28 md:pt-32 pb-16 relative z-10">
+        <div className="container mx-auto px-4 sm:px-6 max-w-7xl">
+          {/* Page Header */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-10 md:mb-14"
+          >
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+                <Calendar className="w-4 h-4 text-blue-400" />
+              </div>
+              <span className="text-sm font-medium text-blue-400">Events</span>
             </div>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as SortOption)}
-              className="h-11 sm:h-12 w-full md:w-auto px-4 sm:px-6 rounded-full border-gray-100 bg-gray-50 text-sm font-medium focus:ring-2 focus:ring-green-500 outline-none transition-all hover:shadow-md"
-            >
-              <option value="date">Latest First</option>
-              <option value="popularity">Most Popular</option>
-              <option value="trending">Trending</option>
-            </select>
-          </div>
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4 tracking-tight">
+              Discover Events
+            </h1>
+            <p className="text-zinc-400 max-w-2xl text-base sm:text-lg">
+              From hackathons to cultural festivals, find and join the most exciting events happening on campus.
+            </p>
+          </motion.div>
+
+          {/* Filters Section */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="mb-8"
+          >
+            <div className="flex flex-col lg:flex-row gap-4">
+              {/* Search */}
+              <div className="relative flex-1">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 w-5 h-5" />
+                <Input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search events..."
+                  className="pl-12 h-12 bg-white/[0.03] border-white/[0.08] rounded-xl text-white placeholder:text-zinc-500 focus:bg-white/[0.05] focus:border-white/[0.15] transition-all"
+                />
+              </div>
+
+              {/* Category Filter */}
+              <div className="flex items-center gap-2 overflow-x-auto pb-2 lg:pb-0 scrollbar-hide">
+                <button
+                  onClick={() => setActiveCategory("All")}
+                  className={cn(
+                    "px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all",
+                    activeCategory === "All"
+                      ? "bg-white text-black"
+                      : "bg-white/[0.03] text-zinc-400 border border-white/[0.08] hover:bg-white/[0.06] hover:text-white"
+                  )}
+                >
+                  All Events
+                </button>
+                {categories.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setActiveCategory(cat)}
+                    className={cn(
+                      "px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all",
+                      activeCategory === cat
+                        ? `${categoryColors[cat].bg} ${categoryColors[cat].text} border ${categoryColors[cat].border}`
+                        : "bg-white/[0.03] text-zinc-400 border border-white/[0.08] hover:bg-white/[0.06] hover:text-white"
+                    )}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+
+              {/* Sort */}
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SortOption)}
+                className="h-12 px-4 rounded-xl bg-white/[0.03] border border-white/[0.08] text-zinc-300 text-sm font-medium focus:outline-none focus:border-white/[0.15] transition-all cursor-pointer"
+              >
+                <option value="date">Latest First</option>
+                <option value="popularity">Most Popular</option>
+                <option value="trending">Trending</option>
+              </select>
+            </div>
+          </motion.div>
 
           {/* Events Grid */}
           {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[1, 2, 3, 4, 5, 6].map(i => (
-                <div key={i} className="bg-white rounded-3xl h-[400px] animate-pulse border border-gray-100" />
+                <div key={i} className="bg-white/[0.02] border border-white/[0.06] rounded-2xl h-[400px] animate-pulse" />
               ))}
             </div>
           ) : filteredEvents.length === 0 ? (
-            <div className="text-center py-20 bg-white/90 backdrop-blur-sm rounded-3xl border border-white/20">
-              <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Search className="w-8 h-8 text-gray-400" />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="text-center py-24 bg-white/[0.02] border border-white/[0.06] rounded-3xl"
+            >
+              <div className="w-16 h-16 bg-white/[0.03] border border-white/[0.08] rounded-2xl flex items-center justify-center mx-auto mb-5">
+                <Search className="w-7 h-7 text-zinc-500" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">No events found</h3>
-              <p className="text-gray-500">Try adjusting your filters or search terms.</p>
-            </div>
+              <h3 className="text-xl font-semibold text-white mb-2">No events found</h3>
+              <p className="text-zinc-500 mb-6">Try adjusting your filters or search terms.</p>
+              <Button 
+                onClick={() => { setSearch(""); setActiveCategory("All"); }}
+                variant="outline"
+                className="rounded-xl border-white/[0.1] text-white hover:bg-white/[0.05]"
+              >
+                Clear filters
+              </Button>
+            </motion.div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredEvents.map((event, index) => {
                 const eventDate = parseISO(event.date);
                 const isRegistered = registeredEvents.has(event.id);
                 const isSaved = savedIds.includes(event.id);
                 const isEventEnded = isBefore(eventDate, startOfDay(new Date()));
+                const colors = categoryColors[event.category];
 
                 return (
-                  <div
+                  <motion.div
                     key={event.id}
-                    className="group bg-white/85 backdrop-blur-sm rounded-2xl shadow-md hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 overflow-hidden flex flex-col h-full"
-                    style={{
-                      animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both`,
-                      boxShadow: '0 15px 35px rgba(0,0,0,0.12)'
-                    }}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="group relative bg-white/[0.02] border border-white/[0.06] rounded-2xl overflow-hidden hover:border-white/[0.12] hover:bg-white/[0.03] transition-all duration-300"
                   >
                     {/* Event Image */}
-                    <Link to={`/events/${event.id}`} className="relative h-44 sm:h-56 block overflow-hidden rounded-t-2xl">
+                    <Link to={`/events/${event.id}`} className="block relative h-48 overflow-hidden">
                       {event.image || event.image_url ? (
                         <img
                           src={event.image || event.image_url || ""}
@@ -250,102 +306,115 @@ export default function Events() {
                           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                         />
                       ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
-                          <Calendar className="w-12 h-12 text-blue-200" />
+                        <div className="w-full h-full bg-gradient-to-br from-zinc-900 to-zinc-800 flex items-center justify-center">
+                          <Calendar className="w-12 h-12 text-zinc-700" />
                         </div>
                       )}
-                      <div className="absolute top-4 left-4 flex gap-2">
-                        <span className={cn("px-3 py-1 rounded-full text-xs font-bold border backdrop-blur-md shadow-sm", categoryStyles[event.category])}>
+                      
+                      {/* Overlay gradient */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                      
+                      {/* Category Badge */}
+                      <div className="absolute top-4 left-4 flex items-center gap-2">
+                        <span className={cn(
+                          "px-3 py-1.5 rounded-lg text-xs font-semibold border backdrop-blur-md",
+                          colors.bg, colors.text, colors.border
+                        )}>
                           {event.category}
                         </span>
                         {isToday(eventDate) && (
-                          <span className="bg-rose-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm animate-pulse">
+                          <span className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-500/20 text-rose-400 border border-rose-500/30 backdrop-blur-md animate-pulse">
                             Today
                           </span>
                         )}
                       </div>
-                      <button
-                        onClick={(e) => { e.preventDefault(); toggleSave(event.id); }}
-                        className={cn(
-                          "absolute top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-md",
-                          isSaved ? "bg-primary text-white" : "bg-white/80 hover:bg-white text-gray-600 backdrop-blur-sm"
-                        )}
-                      >
-                        <Bookmark className={cn("w-5 h-5", isSaved && "fill-current")} />
-                      </button>
-                      {getPhotosArray(event.photos).length > 0 && (
+
+                      {/* Action Buttons */}
+                      <div className="absolute top-4 right-4 flex gap-2">
                         <button
-                          onClick={(e) => { e.preventDefault(); setCurrentPhotos(getPhotosArray(event.photos)); setShowPhotosModal(event.id); }}
-                          className="absolute bottom-4 right-4 w-10 h-10 rounded-full bg-white/80 hover:bg-white text-gray-600 backdrop-blur-sm flex items-center justify-center transition-all shadow-md"
+                          onClick={(e) => { e.preventDefault(); toggleSave(event.id); }}
+                          className={cn(
+                            "w-9 h-9 rounded-lg flex items-center justify-center backdrop-blur-md transition-all",
+                            isSaved 
+                              ? "bg-blue-500 text-white" 
+                              : "bg-black/40 text-white/70 hover:bg-black/60 hover:text-white border border-white/10"
+                          )}
                         >
-                          <Image className="w-5 h-5" />
+                          <Bookmark className={cn("w-4 h-4", isSaved && "fill-current")} />
                         </button>
-                      )}
+                        {getPhotosArray(event.photos).length > 0 && (
+                          <button
+                            onClick={(e) => { e.preventDefault(); setCurrentPhotos(getPhotosArray(event.photos)); setShowPhotosModal(event.id); }}
+                            className="w-9 h-9 rounded-lg bg-black/40 text-white/70 hover:bg-black/60 hover:text-white backdrop-blur-md flex items-center justify-center border border-white/10 transition-all"
+                          >
+                            <Image className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Date Badge */}
+                      <div className="absolute bottom-4 left-4">
+                        <div className="px-3 py-2 rounded-lg bg-black/60 backdrop-blur-md border border-white/10">
+                          <div className="text-xs text-zinc-400 uppercase tracking-wide">{format(eventDate, "MMM")}</div>
+                          <div className="text-xl font-bold text-white leading-none">{format(eventDate, "d")}</div>
+                        </div>
+                      </div>
                     </Link>
 
                     {/* Event Info */}
-                    <div className="p-4 sm:p-6 flex flex-col flex-1">
-                      <div className="flex items-center gap-2 text-[#4B5563] font-bold text-sm mb-3">
-                        <Calendar className="w-4 h-4" />
-                        {format(eventDate, "MMMM d, yyyy")}
-                      </div>
-
-                      <Link to={`/events/${event.id}`} className="block group/title">
-                        <h3 className="text-xl font-bold text-[#111827] mb-3 line-clamp-2 transition-colors group-hover/title:text-primary">
+                    <div className="p-5">
+                      <Link to={`/events/${event.id}`} className="block group/title mb-3">
+                        <h3 className="text-lg font-semibold text-white line-clamp-2 group-hover/title:text-blue-400 transition-colors">
                           {event.title}
                         </h3>
                       </Link>
 
-                      <p className="text-[#4B5563] text-sm line-clamp-2 mb-6 flex-1">
+                      <p className="text-sm text-zinc-500 line-clamp-2 mb-5">
                         {event.description || "Join us for this exciting event!"}
                       </p>
 
-                      <div className="space-y-3 mb-6">
-                        <div className="flex items-center gap-2 text-sm text-[#4B5563]">
-                          <MapPin className="w-4 h-4 text-gray-400" />
-                          <span className="truncate">{event.location || "Online"}</span>
+                      <div className="flex items-center gap-4 text-sm text-zinc-500 mb-5">
+                        <div className="flex items-center gap-1.5">
+                          <MapPin className="w-4 h-4" />
+                          <span className="truncate max-w-[100px]">{event.location || "Online"}</span>
                         </div>
-                        <div className="flex items-center gap-2 text-sm text-[#4B5563]">
-                          <Users className="w-4 h-4 text-gray-400" />
-                          <span>{event.attendees} students joining</span>
+                        <div className="flex items-center gap-1.5">
+                          <Users className="w-4 h-4" />
+                          <span>{event.attendees} going</span>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        {isEventEnded ? (
-                          <div className="flex-1">
-                            <Button
-                              disabled
-                              className="w-full rounded-2xl h-12 text-sm font-bold bg-gray-100 text-gray-400 cursor-not-allowed"
-                            >
-                              Ended
-                            </Button>
-                          </div>
-                        ) : (
-                          <Link to={`/events/${event.id}`} className="flex-1">
-                            <Button
-                              className={cn(
-                                "w-full rounded-[20px] h-12 text-sm font-bold transition-all",
-                                isRegistered
-                                  ? "bg-green-100 text-green-700 hover:bg-green-200 border-none"
-                                  : "shadow-md hover:shadow-lg"
-                              )}
-                              variant={isRegistered ? "secondary" : "default"}
-                            >
-                              {isRegistered ? "✓ Registered" : "Register Now"}
-                            </Button>
-                          </Link>
-                        )}
-                        {!isEventEnded && (
-                          <Link to={`/events/${event.id}`}>
-                            <Button variant="outline" size="icon" className="w-12 h-12 rounded-[20px] border-gray-200 hover:bg-gray-50">
-                              <ChevronRight className="w-5 h-5" />
-                            </Button>
-                          </Link>
-                        )}
-                      </div>
+                      {/* Action Button */}
+                      {isEventEnded ? (
+                        <Button
+                          disabled
+                          className="w-full h-11 rounded-xl bg-zinc-800 text-zinc-500 cursor-not-allowed"
+                        >
+                          Event Ended
+                        </Button>
+                      ) : (
+                        <Link to={`/events/${event.id}`} className="block">
+                          <Button
+                            className={cn(
+                              "w-full h-11 rounded-xl font-medium transition-all group/btn",
+                              isRegistered
+                                ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20"
+                                : "bg-white text-black hover:bg-zinc-200"
+                            )}
+                          >
+                            {isRegistered ? (
+                              "Registered"
+                            ) : (
+                              <>
+                                View Details
+                                <ArrowRight className="w-4 h-4 ml-2 group-hover/btn:translate-x-0.5 transition-transform" />
+                              </>
+                            )}
+                          </Button>
+                        </Link>
+                      )}
                     </div>
-                  </div>
+                  </motion.div>
                 );
               })}
             </div>
@@ -355,19 +424,15 @@ export default function Events() {
 
       {/* Photos Modal */}
       <Dialog open={!!showPhotosModal} onOpenChange={() => setShowPhotosModal(null)}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl bg-zinc-950 border-white/[0.08] text-white">
           <DialogHeader>
             <DialogTitle>Event Photos</DialogTitle>
-            <DialogDescription>View all photos from this event</DialogDescription>
+            <DialogDescription className="text-zinc-500">Browse photos from this event</DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-4">
             {currentPhotos.map((photo, index) => (
-              <div key={index} className="aspect-square rounded-lg overflow-hidden bg-gray-100">
-                <img
-                  src={photo}
-                  alt={`Photo ${index + 1}`}
-                  className="w-full h-full object-cover"
-                />
+              <div key={index} className="aspect-square rounded-xl overflow-hidden bg-zinc-900">
+                <img src={photo} alt={`Photo ${index + 1}`} className="w-full h-full object-cover" />
               </div>
             ))}
           </div>
