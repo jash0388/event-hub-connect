@@ -11,11 +11,7 @@ export default defineConfig(({ mode }) => ({
       overlay: false,
     },
     strictPort: true,
-    allowedHosts: [
-      'connect-staging.preview.emergentagent.com',
-      '.emergentagent.com',
-      'localhost'
-    ],
+    allowedHosts: true,
     proxy: {
       '/supabase-proxy': {
         target: 'https://cqjjbvccldipkqqtqzqc.supabase.co',
