@@ -182,13 +182,33 @@ export function LandingHero() {
         <div className="relative z-10 container mx-auto px-6 text-center">
           <div
             className={cn(
-              "inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/80 backdrop-blur-sm mb-8 transition-all duration-700",
+              "inline-flex items-center gap-3 px-5 py-2.5 rounded-full mb-8 transition-all duration-700",
               loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             )}
+            style={{
+              background: "linear-gradient(135deg, rgba(212,175,55,0.15) 0%, rgba(184,134,11,0.1) 100%)",
+              border: "1px solid rgba(212,175,55,0.3)",
+              boxShadow: "0 0 20px rgba(212,175,55,0.2), 0 0 40px rgba(212,175,55,0.1), inset 0 1px 0 rgba(255,255,255,0.1)",
+            }}
           >
-            <span className="w-2 h-2 rounded-full bg-[hsl(var(--accent))] animate-pulse" />
-            <span className="text-sm font-medium text-foreground">
-              Now Live — Spring 2026 Events
+            <span 
+              className="w-2 h-2 rounded-full animate-pulse"
+              style={{
+                background: "linear-gradient(135deg, #D4AF37, #B8860B)",
+                boxShadow: "0 0 8px #D4AF37, 0 0 16px rgba(212,175,55,0.5)",
+              }}
+            />
+            <span 
+              className="text-sm font-semibold tracking-wide"
+              style={{
+                background: "linear-gradient(135deg, #D4AF37, #F4E4BC, #B8860B)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+                textShadow: "0 0 30px rgba(212,175,55,0.3)",
+              }}
+            >
+              Sphoorthy Engineering College
             </span>
           </div>
 
