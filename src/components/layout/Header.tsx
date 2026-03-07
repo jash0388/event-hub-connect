@@ -60,23 +60,25 @@ export function Header() {
             </span>
           </Link>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center gap-1">
-            {navItems.map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={cn(
-                  "relative px-4 py-2 text-sm font-medium transition-all duration-300 rounded-full",
-                  location.pathname === item.path
-                    ? "text-foreground bg-secondary"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-                )}
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
+          {/* Desktop Navigation — only when logged in */}
+          {user && (
+            <nav className="hidden lg:flex items-center gap-1">
+              {navItems.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={cn(
+                    "relative px-4 py-2 text-sm font-medium transition-all duration-300 rounded-full",
+                    location.pathname === item.path
+                      ? "text-foreground bg-secondary"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                  )}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+          )}
 
           {/* Desktop Right Section */}
           <div className="hidden lg:flex items-center gap-3">
@@ -137,8 +139,8 @@ export function Header() {
         </div>
       </div>
 
-      {/* Mobile Navigation */}
-      {isOpen && (
+      {/* Mobile Navigation — only when logged in */}
+      {isOpen && user && (
         <nav className="lg:hidden bg-background/95 backdrop-blur-xl py-4 px-4 space-y-1 border-t border-border shadow-xl animate-fade-in-up">
           {navItems.map((item, index) => (
             <Link

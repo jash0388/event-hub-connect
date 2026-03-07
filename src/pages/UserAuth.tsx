@@ -1,12 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Mail, Lock, User, ArrowRight, Eye, EyeOff } from "lucide-react";
+import { Loader2, Mail, Lock, User, ArrowRight, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function UserAuth() {
@@ -26,7 +24,7 @@ export default function UserAuth() {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (isMounted && user) {
-          navigate("/profile", { replace: true });
+          navigate("/", { replace: true });
         }
       } catch (error) {
         // Ignore errors during check
@@ -53,7 +51,7 @@ export default function UserAuth() {
 
         if (error) throw error;
         toast({ title: "Welcome back!", description: "Login successful" });
-        navigate("/profile", { replace: true });
+        navigate("/", { replace: true });
       } else {
         const { data, error } = await supabase.auth.signUp({
           email,
@@ -76,7 +74,7 @@ export default function UserAuth() {
         }
 
         toast({ title: "Account created!", description: "Please check your email to verify" });
-        navigate("/profile", { replace: true });
+        navigate("/", { replace: true });
       }
     } catch (error: any) {
       toast({
@@ -91,25 +89,35 @@ export default function UserAuth() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <Header />
-      <main className="flex-1 flex items-center justify-center px-6 pt-28 pb-16">
-        <div className="w-full max-w-md">
-          {/* Decorative Elements */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            <div
-              className="absolute top-1/4 -left-20 w-[400px] h-[400px] rounded-full floating"
-              style={{
-                background: "radial-gradient(circle, hsl(355 78% 56% / 0.08) 0%, transparent 70%)",
-              }}
-            />
-            <div
-              className="absolute bottom-1/4 -right-20 w-[300px] h-[300px] rounded-full floating-delayed"
-              style={{
-                background: "radial-gradient(circle, hsl(199 89% 48% / 0.08) 0%, transparent 70%)",
-              }}
-            />
-          </div>
+      {/* Decorative background */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div
+          className="absolute top-1/4 -left-20 w-[400px] h-[400px] rounded-full floating"
+          style={{
+            background: "radial-gradient(circle, hsl(355 78% 56% / 0.08) 0%, transparent 70%)",
+          }}
+        />
+        <div
+          className="absolute bottom-1/4 -right-20 w-[300px] h-[300px] rounded-full floating-delayed"
+          style={{
+            background: "radial-gradient(circle, hsl(199 89% 48% / 0.08) 0%, transparent 70%)",
+          }}
+        />
+      </div>
 
+      {/* Back to home */}
+      <div className="relative z-10 p-6">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors group"
+        >
+          <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+          Back to home
+        </Link>
+      </div>
+
+      <main className="flex-1 flex items-center justify-center px-6 pb-16">
+        <div className="w-full max-w-md">
           <div className="bg-card rounded-3xl p-8 border border-border card-3d animate-fade-in-up relative z-10">
             {/* Logo */}
             <div className="flex justify-center mb-6">
@@ -234,7 +242,6 @@ export default function UserAuth() {
           </div>
         </div>
       </main>
-      <Footer />
     </div>
   );
 }
