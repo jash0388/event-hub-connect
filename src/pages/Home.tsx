@@ -72,21 +72,7 @@ function PublicAboutSection() {
           ))}
         </div>
 
-        <div className="bg-foreground rounded-3xl p-8 md:p-12 text-center">
-          <h2 className="text-2xl md:text-3xl font-bold text-background mb-6">
-            Built With Modern Tech
-          </h2>
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            {["React", "TypeScript", "Supabase", "Vite", "Tailwind CSS"].map((tech) => (
-              <span
-                key={tech}
-                className="px-4 py-2 rounded-full text-sm font-medium bg-background/10 text-background border border-background/20"
-              >
-                {tech}
-              </span>
-            ))}
-          </div>
-        </div>
+
       </div>
     </section>
   );

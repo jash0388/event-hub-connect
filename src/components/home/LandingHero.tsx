@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Sparkles, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TextShimmer } from "@/components/ui/text-shimmer";
 import { cn } from "@/lib/utils";
@@ -81,77 +81,101 @@ export function LandingHero() {
           />
         </div>
 
-        {/* 3D Floating Cards */}
+        {/* Floating 3D Geometric Shapes */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {/* Large rotating cube outline - top right */}
           <div
             className={cn(
-              "absolute top-32 right-[15%] w-48 h-32 card-glass rounded-2xl floating transition-all duration-1000",
+              "absolute top-24 right-[12%] w-32 h-32 floating transition-all duration-1000",
               loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
             )}
-            style={{
-              transform: "perspective(1000px) rotateX(10deg) rotateY(-15deg)",
-              animationDelay: "0.5s",
-            }}
+            style={{ animationDelay: "0.2s" }}
           >
-            <div className="p-4 h-full flex flex-col justify-between">
-              <div className="w-8 h-8 rounded-full bg-[hsl(var(--accent))] flex items-center justify-center">
-                <Sparkles className="w-4 h-4 text-background" />
-              </div>
-              <div>
-                <div className="text-xs text-muted-foreground">Active Events</div>
-                <div className="text-2xl font-bold text-foreground">24+</div>
-              </div>
-            </div>
+            <div
+              className="w-full h-full border-2 border-foreground/20 rounded-2xl"
+              style={{
+                transform: "perspective(400px) rotateX(15deg) rotateY(-20deg)",
+              }}
+            />
           </div>
 
+          {/* Coral sphere - bottom left */}
           <div
             className={cn(
-              "absolute bottom-40 left-[10%] w-56 h-36 card-glass rounded-2xl floating-delayed transition-all duration-1000 delay-300",
+              "absolute bottom-32 left-[8%] floating-delayed transition-all duration-1000 delay-200",
               loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
             )}
-            style={{
-              transform: "perspective(1000px) rotateX(-5deg) rotateY(10deg)",
-            }}
           >
-            <div className="p-4 h-full flex flex-col justify-between">
-              <div className="flex gap-2">
-                {["JD", "AK", "+5"].map((t, i) => (
-                  <div
-                    key={t}
-                    className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-foreground font-bold text-xs"
-                    style={{ marginLeft: i > 0 ? "-0.75rem" : 0 }}
-                  >
-                    {t}
-                  </div>
-                ))}
-              </div>
-              <div>
-                <div className="text-xs text-muted-foreground">Students Registered</div>
-                <div className="text-xl font-bold text-foreground">1,200+ Members</div>
-              </div>
-            </div>
+            <div
+              className="w-20 h-20 rounded-full bg-gradient-to-br from-[hsl(var(--accent))] to-[hsl(355_78%_45%)]"
+              style={{
+                boxShadow: "0 20px 40px -10px hsl(355 78% 56% / 0.3)",
+              }}
+            />
           </div>
 
+          {/* Small dotted ring - middle right */}
           <div
             className={cn(
-              "absolute top-1/2 right-[8%] w-40 h-24 card-glass rounded-2xl floating transition-all duration-1000 delay-500",
+              "absolute top-1/2 right-[6%] floating transition-all duration-1000 delay-300",
               loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
             )}
-            style={{
-              transform: "perspective(1000px) rotateX(5deg) rotateY(-10deg)",
-              animationDelay: "1s",
-            }}
+            style={{ animationDelay: "0.8s" }}
           >
-            <div className="p-4 h-full flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-[hsl(var(--sage))] flex items-center justify-center">
-                <span className="text-background text-lg font-bold">50+</span>
-              </div>
-              <div>
-                <div className="text-xs text-muted-foreground">Projects</div>
-                <div className="text-lg font-bold text-foreground">Live</div>
-              </div>
-            </div>
+            <div
+              className="w-16 h-16 rounded-full border-2 border-dashed border-muted-foreground/30"
+              style={{ transform: "rotate(45deg)" }}
+            />
           </div>
+
+          {/* Sage green pill shape - top left */}
+          <div
+            className={cn(
+              "absolute top-40 left-[15%] floating transition-all duration-1000 delay-100",
+              loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
+            )}
+            style={{ animationDelay: "0.4s" }}
+          >
+            <div
+              className="w-6 h-16 rounded-full bg-gradient-to-b from-[hsl(var(--sage))] to-[hsl(142_35%_35%)]"
+              style={{
+                transform: "rotate(-30deg)",
+                boxShadow: "0 15px 30px -8px hsl(142 35% 45% / 0.3)",
+              }}
+            />
+          </div>
+
+          {/* Sky blue triangle-ish shape - bottom right */}
+          <div
+            className={cn(
+              "absolute bottom-48 right-[18%] floating-delayed transition-all duration-1000 delay-400",
+              loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
+            )}
+          >
+            <div
+              className="w-14 h-14 bg-gradient-to-tr from-[hsl(var(--sky))] to-[hsl(199_89%_60%)] rounded-lg"
+              style={{
+                transform: "perspective(200px) rotateX(20deg) rotateY(15deg) rotate(12deg)",
+                boxShadow: "0 15px 30px -8px hsl(199 89% 48% / 0.3)",
+              }}
+            />
+          </div>
+
+          {/* Tiny accent dots scattered */}
+          <div
+            className={cn(
+              "absolute top-1/3 left-[25%] w-3 h-3 rounded-full bg-foreground/20 floating",
+              loaded ? "opacity-100" : "opacity-0"
+            )}
+            style={{ animationDelay: "1s" }}
+          />
+          <div
+            className={cn(
+              "absolute bottom-1/3 right-[25%] w-2 h-2 rounded-full bg-[hsl(var(--accent))]/40 floating-delayed",
+              loaded ? "opacity-100" : "opacity-0"
+            )}
+            style={{ animationDelay: "1.2s" }}
+          />
         </div>
 
         {/* Main Content */}
