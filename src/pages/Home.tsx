@@ -123,17 +123,9 @@ function PublicHeader() {
 const Home = () => {
   const { user, loading } = useAuth();
 
-  // While auth is resolving, show nothing (avoids flash)
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-foreground border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  // Not logged in — public landing
-  if (!user) {
+  // Show landing immediately without waiting for auth
+  // Auth check happens in background
+  if (!loading && !user) {
     return (
       <div className="min-h-screen bg-background">
         <PublicHeader />
@@ -142,6 +134,15 @@ const Home = () => {
           <PublicAboutSection />
         </main>
         <Footer />
+      </div>
+    );
+  }
+
+  // Loading state - minimal spinner
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-foreground border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
