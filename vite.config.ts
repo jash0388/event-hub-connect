@@ -14,7 +14,8 @@ export default defineConfig(({ mode }) => ({
     allowedHosts: [
       'connect-staging.preview.emergentagent.com',
       '.emergentagent.com',
-      'localhost'
+      'localhost',
+      '.vercel.run'
     ],
     proxy: {
       '/supabase-proxy': {
