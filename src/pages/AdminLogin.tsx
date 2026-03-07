@@ -128,34 +128,38 @@ const AdminLogin = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col" style={{
-      background: 'linear-gradient(to bottom, #0a0a0a 0%, #111111 50%, #0a0a0a 100%)'
-    }}>
+    <div className="min-h-screen flex flex-col" style={{ background: 'linear-gradient(to bottom, #030303 0%, #0a0a0a 50%, #030303 100%)' }}>
+      {/* Background Effects */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 left-10 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-20 right-10 w-80 h-80 bg-violet-500/5 rounded-full blur-3xl" />
+      </div>
+      
       <Header />
       <main className="flex-1 flex items-center justify-center px-4 relative z-10 pt-20 pb-10">
         <div className="w-full max-w-md">
           <Link
             to="/"
-            className="inline-flex items-center gap-2 text-white/70 hover:text-white transition-colors mb-6"
+            className="inline-flex items-center gap-2 text-zinc-500 hover:text-white transition-colors mb-6"
           >
             <ArrowLeft size={16} />
-            <span className="text-sm font-medium">Back to Home</span>
+            <span className="text-sm">Back to Home</span>
           </Link>
 
-          <div className="bg-white/90 backdrop-blur-xl rounded-3xl p-6 sm:p-8 shadow-2xl border border-white/40">
-            <div className="flex items-center gap-3 mb-6 sm:mb-8">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-cyan-50 rounded-xl flex items-center justify-center shadow-md shadow-blue-100/50">
-                <Shield className="w-6 h-6 text-blue-500" />
+          <div className="bg-zinc-900/70 backdrop-blur-xl rounded-2xl p-8 border border-zinc-800 shadow-2xl">
+            <div className="flex items-center gap-4 mb-8">
+              <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-violet-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                <Shield className="w-7 h-7 text-white" />
               </div>
               <div>
-                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Admin Login</h1>
-                <p className="text-gray-500 text-sm">Datanauts</p>
+                <h1 className="text-2xl font-bold text-white">Admin Login</h1>
+                <p className="text-zinc-500 text-sm">Datanauts Dashboard</p>
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="email" className="text-sm font-semibold text-gray-700">
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-sm font-medium text-zinc-300">
                   Email
                 </Label>
                 <Input
@@ -166,12 +170,12 @@ const AdminLogin = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   disabled={isLoading}
-                  className="h-11 sm:h-12 rounded-xl bg-gray-50/80 border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="h-12 rounded-xl bg-zinc-800/50 border-zinc-700 text-white placeholder:text-zinc-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="password" className="text-sm font-semibold text-gray-700">
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-sm font-medium text-zinc-300">
                   Password
                 </Label>
                 <Input
@@ -182,13 +186,13 @@ const AdminLogin = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   disabled={isLoading}
-                  className="h-11 sm:h-12 rounded-xl bg-gray-50/80 border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="h-12 rounded-xl bg-zinc-800/50 border-zinc-700 text-white placeholder:text-zinc-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
 
               <Button
                 type="submit"
-                className="w-full h-11 sm:h-12 rounded-xl text-sm sm:text-base font-semibold shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all mt-2"
+                className="w-full h-12 rounded-xl text-base font-semibold bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 shadow-lg shadow-blue-500/25 transition-all mt-2"
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -202,7 +206,7 @@ const AdminLogin = () => {
               </Button>
             </form>
 
-            <p className="text-center text-gray-400 text-xs mt-5 sm:mt-6">
+            <p className="text-center text-zinc-600 text-xs mt-6">
               Admin access is required to manage events.
             </p>
           </div>

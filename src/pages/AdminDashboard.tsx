@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { useAuth } from '@/hooks/useAuth';
@@ -52,7 +52,8 @@ import {
   FileText,
   Settings,
   Activity,
-  Send
+  Send,
+  ArrowLeft
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Html5QrcodeScanner } from 'html5-qrcode';
@@ -1634,43 +1635,59 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen flex flex-col" style={{ background: 'linear-gradient(to bottom, #030303 0%, #0a0a0a 50%, #030303 100%)' }}>
+      {/* Background Effects */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 left-10 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-20 right-10 w-80 h-80 bg-violet-500/5 rounded-full blur-3xl" />
+      </div>
+      
       <Header />
-      <main className="flex-1 pt-24 pb-16">
+      <main className="flex-1 pt-24 pb-16 relative z-10">
         <div className="container mx-auto px-4 max-w-7xl">
+          {/* Back to Home */}
+          <Link to="/" className="inline-flex items-center gap-2 text-zinc-500 hover:text-white transition-colors mb-6">
+            <ArrowLeft size={16} />
+            <span className="text-sm">Back to Home</span>
+          </Link>
+          
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                <LayoutDashboard className="w-6 h-6 text-primary" />
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-violet-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                <LayoutDashboard className="w-7 h-7 text-white" />
               </div>
               <div>
-                <h1 className="font-display text-2xl font-bold">Admin Dashboard</h1>
-                <p className="text-muted-foreground text-sm">{user?.email}</p>
+                <h1 className="text-2xl md:text-3xl font-bold text-white">Admin Dashboard</h1>
+                <p className="text-zinc-500 text-sm">{user?.email}</p>
               </div>
             </div>
 
-            <Button variant="outline" onClick={handleLogout}>
+            <Button 
+              variant="outline" 
+              onClick={handleLogout}
+              className="border-zinc-800 bg-zinc-900/50 text-white hover:bg-zinc-800 hover:text-white"
+            >
               <LogOut className="w-4 h-4 mr-2" />
               Logout
             </Button>
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-8 max-w-5xl">
-              <TabsTrigger value="events">Events</TabsTrigger>
-              <TabsTrigger value="projects">Projects</TabsTrigger>
-              <TabsTrigger value="internships">Internships</TabsTrigger>
-              <TabsTrigger value="polls">Polls</TabsTrigger>
-              <TabsTrigger value="social">Social</TabsTrigger>
-              <TabsTrigger value="messages">Messages</TabsTrigger>
-              <TabsTrigger value="admins">Admins</TabsTrigger>
-              <TabsTrigger value="qrscan">QR Scanner</TabsTrigger>
-              <TabsTrigger value="aicommand" className="text-primary">🤖 AI</TabsTrigger>
+            <TabsList className="flex flex-wrap gap-2 bg-zinc-900/50 border border-zinc-800 p-2 rounded-xl mb-6 w-full max-w-full overflow-x-auto">
+              <TabsTrigger value="events" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-zinc-400 rounded-lg px-4">Events</TabsTrigger>
+              <TabsTrigger value="projects" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-zinc-400 rounded-lg px-4">Projects</TabsTrigger>
+              <TabsTrigger value="internships" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-zinc-400 rounded-lg px-4">Internships</TabsTrigger>
+              <TabsTrigger value="polls" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-zinc-400 rounded-lg px-4">Polls</TabsTrigger>
+              <TabsTrigger value="social" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-zinc-400 rounded-lg px-4">Social</TabsTrigger>
+              <TabsTrigger value="messages" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-zinc-400 rounded-lg px-4">Messages</TabsTrigger>
+              <TabsTrigger value="admins" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-zinc-400 rounded-lg px-4">Admins</TabsTrigger>
+              <TabsTrigger value="qrscan" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-zinc-400 rounded-lg px-4">QR Scanner</TabsTrigger>
+              <TabsTrigger value="aicommand" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-violet-600 data-[state=active]:text-white text-zinc-400 rounded-lg px-4">AI</TabsTrigger>
             </TabsList>
 
             <TabsContent value="events" className="mt-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold">Manage Events</h2>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-semibold text-white">Manage Events</h2>
                 <Dialog open={eventDialogOpen} onOpenChange={setEventDialogOpen}>
                   <DialogTrigger asChild>
                     <Button onClick={() => handleEventDialog()}>
@@ -1754,7 +1771,7 @@ const AdminDashboard = () => {
                           onChange={handleImageFileChange}
                           disabled={uploadingImage}
                         />
-                        {uploadingImage && <p className="text-sm text-muted-foreground mt-1">Uploading...</p>}
+                        {uploadingImage && <p className="text-sm text-zinc-400 mt-1">Uploading...</p>}
                         {eventForm.image_url && !uploadingImage && (
                           <div className="mt-2">
                             <img src={eventForm.image_url} alt="Preview" className="h-20 w-auto rounded" />
@@ -1784,10 +1801,10 @@ const AdminDashboard = () => {
                           onChange={handlePhotoFilesChange}
                           disabled={uploadingPhotos}
                         />
-                        {uploadingPhotos && <p className="text-sm text-muted-foreground mt-1">Uploading photos...</p>}
+                        {uploadingPhotos && <p className="text-sm text-zinc-400 mt-1">Uploading photos...</p>}
                         {eventForm.photos && !uploadingPhotos && (
                           <>
-                            <p className="text-sm text-muted-foreground mt-1">{eventForm.photos.split(',').length} photo(s) added</p>
+                            <p className="text-sm text-zinc-400 mt-1">{eventForm.photos.split(',').length} photo(s) added</p>
                             <div className="flex flex-wrap gap-2 mt-2">
                               {eventForm.photos.split(',').filter(p => p.trim()).map((photo, idx) => (
                                 <div key={idx} className="relative">
@@ -1833,13 +1850,13 @@ const AdminDashboard = () => {
                 </Dialog>
               </div>
 
-              <div className="bg-card border border-border rounded-lg overflow-hidden">
+              <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden backdrop-blur-sm">
                 {isLoading ? (
                   <div className="p-8 text-center">
                     <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
                   </div>
                 ) : events.length === 0 ? (
-                  <div className="p-8 text-center text-muted-foreground">
+                  <div className="p-8 text-center text-zinc-400">
                     No events yet. Create one to get started!
                   </div>
                 ) : (
@@ -1870,7 +1887,7 @@ const AdminDashboard = () => {
                           <TableCell>
                             <span className={`inline-flex items-center px-2 py-1 rounded-md text-sm font-medium ${(event.attendance_count || 0) > 0
                               ? 'bg-green-500/10 text-green-500'
-                              : 'bg-muted text-muted-foreground'
+                              : 'bg-muted text-zinc-400'
                               }`}>
                               {event.attendance_count || 0} checked in
                             </span>
@@ -1992,13 +2009,13 @@ const AdminDashboard = () => {
                 </Dialog>
               </div>
 
-              <div className="bg-card border border-border rounded-lg overflow-hidden">
+              <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden backdrop-blur-sm">
                 {isLoading ? (
                   <div className="p-8 text-center">
                     <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
                   </div>
                 ) : projects.length === 0 ? (
-                  <div className="p-8 text-center text-muted-foreground">
+                  <div className="p-8 text-center text-zinc-400">
                     No projects yet. Create one to showcase your work!
                   </div>
                 ) : (
@@ -2143,13 +2160,13 @@ const AdminDashboard = () => {
                   </Dialog>
                 </div>
 
-                <div className="bg-card border border-border rounded-lg overflow-hidden">
+                <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden backdrop-blur-sm">
                   {isLoading ? (
                     <div className="p-8 text-center">
                       <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
                     </div>
                   ) : internships.length === 0 ? (
-                    <div className="p-8 text-center text-muted-foreground">
+                    <div className="p-8 text-center text-zinc-400">
                       No internships yet. Add one to publish for users.
                     </div>
                   ) : (
@@ -2281,13 +2298,13 @@ const AdminDashboard = () => {
                 </Dialog>
               </div>
 
-              <div className="bg-card border border-border rounded-lg overflow-hidden">
+              <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden backdrop-blur-sm">
                 {isLoading ? (
                   <div className="p-8 text-center">
                     <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
                   </div>
                 ) : polls.length === 0 ? (
-                  <div className="p-8 text-center text-muted-foreground">
+                  <div className="p-8 text-center text-zinc-400">
                     No polls yet. Create a poll for an event!
                   </div>
                 ) : (
@@ -2388,13 +2405,13 @@ const AdminDashboard = () => {
                 </Dialog>
               </div>
 
-              <div className="bg-card border border-border rounded-lg overflow-hidden">
+              <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden backdrop-blur-sm">
                 {isLoading ? (
                   <div className="p-8 text-center">
                     <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
                   </div>
                 ) : socialLinks.length === 0 ? (
-                  <div className="p-8 text-center text-muted-foreground">
+                  <div className="p-8 text-center text-zinc-400">
                     No social links yet. Add your social media accounts!
                   </div>
                 ) : (
@@ -2453,13 +2470,13 @@ const AdminDashboard = () => {
                 <h2 className="text-xl font-semibold">Contact Messages</h2>
               </div>
 
-              <div className="bg-card border border-border rounded-lg overflow-hidden">
+              <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden backdrop-blur-sm">
                 {isLoading ? (
                   <div className="p-8 text-center">
                     <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
                   </div>
                 ) : messages.length === 0 ? (
-                  <div className="p-8 text-center text-muted-foreground">
+                  <div className="p-8 text-center text-zinc-400">
                     No messages yet.
                   </div>
                 ) : (
@@ -2517,7 +2534,7 @@ const AdminDashboard = () => {
                         <div><strong>From:</strong> {selectedMessage.name} ({selectedMessage.email})</div>
                         <div><strong>Subject:</strong> {selectedMessage.subject}</div>
                         <div><strong>Message:</strong></div>
-                        <p className="text-sm text-muted-foreground">{selectedMessage.message}</p>
+                        <p className="text-sm text-zinc-400">{selectedMessage.message}</p>
                       </div>
                       <form onSubmit={handleReplySubmit} className="space-y-4">
                         <div>
@@ -2618,13 +2635,13 @@ const AdminDashboard = () => {
                 </Dialog>
               </div>
 
-              <div className="bg-card border border-border rounded-lg overflow-hidden">
+              <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden backdrop-blur-sm">
                 {isLoading ? (
                   <div className="p-8 text-center">
                     <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
                   </div>
                 ) : adminUsers.length === 0 ? (
-                  <div className="p-8 text-center text-muted-foreground">
+                  <div className="p-8 text-center text-zinc-400">
                     No admin users yet. Create one to get started!
                   </div>
                 ) : (
@@ -2696,7 +2713,7 @@ const AdminDashboard = () => {
                   </div>
                   <div>
                     <h2 className="text-xl font-semibold">AI Command Center</h2>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-zinc-400">
                       Type commands to manage your dashboard
                     </p>
                   </div>
@@ -2799,17 +2816,17 @@ const AdminDashboard = () => {
                   <QrCode className="w-6 h-6" />
                   <h2 className="text-xl font-semibold">QR Code Scanner</h2>
                 </div>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-zinc-400">
                   Scan or enter a QR code to verify event registration
                 </p>
 
                 {/* Camera Scanner */}
                 {!cameraScannerReady ? (
-                  <div className="bg-card border border-border rounded-xl p-6">
+                  <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6 backdrop-blur-sm">
                     <div className="text-center space-y-4">
-                      <Camera className="w-12 h-12 mx-auto text-muted-foreground" />
+                      <Camera className="w-12 h-12 mx-auto text-zinc-400" />
                       <h3 className="font-semibold">Use Camera to Scan</h3>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-sm text-zinc-400">
                         Click below to activate your camera and scan QR codes
                       </p>
                       <Button
@@ -2822,7 +2839,7 @@ const AdminDashboard = () => {
                     </div>
                   </div>
                 ) : (
-                  <div className="bg-card border border-border rounded-xl p-6 space-y-4">
+                  <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6 backdrop-blur-sm space-y-4">
                     <div className="flex justify-between items-center">
                       <h3 className="font-semibold">Camera Scanner Active</h3>
                       <Button
@@ -2838,7 +2855,7 @@ const AdminDashboard = () => {
                 )}
 
                 {/* Manual QR Code Entry */}
-                <div className="bg-card border border-border rounded-xl p-6 space-y-4">
+                <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6 backdrop-blur-sm space-y-4">
                   <Label htmlFor="qr-input">Enter QR Code manually</Label>
                   <div className="flex gap-2">
                     <Input
@@ -2887,40 +2904,40 @@ const AdminDashboard = () => {
 
                     <div className="grid gap-4 md:grid-cols-2">
                       <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">Event</p>
+                        <p className="text-sm text-zinc-400">Event</p>
                         <p className="font-semibold">{scannedQRResult.event?.title}</p>
                       </div>
                       <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">Date</p>
+                        <p className="text-sm text-zinc-400">Date</p>
                         <p className="font-semibold">
                           {scannedQRResult.event?.date ? new Date(scannedQRResult.event.date).toLocaleDateString() : 'N/A'}
                         </p>
                       </div>
                       <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">Location</p>
+                        <p className="text-sm text-zinc-400">Location</p>
                         <p className="font-semibold">{scannedQRResult.event?.location || 'TBA'}</p>
                       </div>
                       <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">Full Name</p>
+                        <p className="text-sm text-zinc-400">Full Name</p>
                         <p className="font-semibold">
                           {(scannedQRResult.attendee as any)?.profiles?.full_name || 'Unknown'}
                         </p>
                       </div>
                       <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">Roll Number</p>
+                        <p className="text-sm text-zinc-400">Roll Number</p>
                         <p className="font-semibold">
                           {(scannedQRResult.attendee as any)?.profiles?.email || 'N/A'}
                         </p>
                       </div>
                       <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">Year</p>
+                        <p className="text-sm text-zinc-400">Year</p>
                         <p className="font-semibold">
                           {(scannedQRResult.attendee as any)?.profiles?.college || 'Not specified'}
                         </p>
                       </div>
                     </div>
 
-                    <p className="mt-4 text-xs text-muted-foreground">
+                    <p className="mt-4 text-xs text-zinc-400">
                       First scanned at: {scannedQRResult.firstScannedAt ? new Date(scannedQRResult.firstScannedAt).toLocaleString() : 'N/A'}
                     </p>
                   </div>
@@ -2935,40 +2952,40 @@ const AdminDashboard = () => {
 
                     <div className="grid gap-4 md:grid-cols-2">
                       <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">Event</p>
+                        <p className="text-sm text-zinc-400">Event</p>
                         <p className="font-semibold">{scannedQRResult.event?.title}</p>
                       </div>
                       <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">Date</p>
+                        <p className="text-sm text-zinc-400">Date</p>
                         <p className="font-semibold">
                           {scannedQRResult.event?.date ? new Date(scannedQRResult.event.date).toLocaleDateString() : 'N/A'}
                         </p>
                       </div>
                       <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">Location</p>
+                        <p className="text-sm text-zinc-400">Location</p>
                         <p className="font-semibold">{scannedQRResult.event?.location || 'TBA'}</p>
                       </div>
                       <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">Full Name</p>
+                        <p className="text-sm text-zinc-400">Full Name</p>
                         <p className="font-semibold">
                           {(scannedQRResult.attendee as any)?.profiles?.full_name || 'Unknown'}
                         </p>
                       </div>
                       <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">Roll Number</p>
+                        <p className="text-sm text-zinc-400">Roll Number</p>
                         <p className="font-semibold">
                           {(scannedQRResult.attendee as any)?.profiles?.email || 'N/A'}
                         </p>
                       </div>
                       <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">Year</p>
+                        <p className="text-sm text-zinc-400">Year</p>
                         <p className="font-semibold">
                           {(scannedQRResult.attendee as any)?.profiles?.college || 'Not specified'}
                         </p>
                       </div>
                     </div>
 
-                    <p className="mt-4 text-xs text-muted-foreground">
+                    <p className="mt-4 text-xs text-zinc-400">
                       Verified at: {new Date(scannedQRResult.verifiedAt).toLocaleString()}
                     </p>
                   </div>
