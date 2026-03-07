@@ -1,5 +1,6 @@
 "use client";
 
+// Landing Page Component
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
