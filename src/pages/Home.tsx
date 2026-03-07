@@ -138,11 +138,90 @@ const Home = () => {
     );
   }
 
-  // Loading state - minimal spinner
+  // Branded loading splash — no white blank screen
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="w-6 h-6 border-2 border-foreground border-t-transparent rounded-full animate-spin" />
+      <div
+        className="min-h-screen flex flex-col items-center justify-center"
+        style={{ background: "hsl(20 14% 6%)" }}
+      >
+        {/* Outer glow ring */}
+        <div className="relative flex items-center justify-center mb-8">
+          <div
+            className="absolute w-32 h-32 rounded-full animate-ping"
+            style={{
+              background: "transparent",
+              border: "1px solid rgba(212,175,55,0.3)",
+              animationDuration: "1.8s",
+            }}
+          />
+          <div
+            className="absolute w-24 h-24 rounded-full"
+            style={{
+              background:
+                "radial-gradient(circle, rgba(212,175,55,0.15) 0%, transparent 70%)",
+            }}
+          />
+          {/* Logo mark — stylised "DN" */}
+          <div
+            className="relative w-20 h-20 rounded-2xl flex items-center justify-center"
+            style={{
+              background: "linear-gradient(135deg, #D4AF37, #B8860B)",
+              boxShadow:
+                "0 0 40px rgba(212,175,55,0.4), 0 0 80px rgba(212,175,55,0.15)",
+            }}
+          >
+            <span
+              className="text-2xl font-bold select-none"
+              style={{ color: "hsl(20 14% 6%)", letterSpacing: "-0.05em" }}
+            >
+              DN
+            </span>
+          </div>
+        </div>
+
+        {/* Brand name */}
+        <div className="mb-8 text-center">
+          <span
+            className="text-2xl font-bold tracking-tight"
+            style={{
+              background: "linear-gradient(135deg, #D4AF37, #F4E4BC, #B8860B)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+            }}
+          >
+            DataNauts
+          </span>
+          <p
+            className="text-xs mt-1 tracking-widest uppercase"
+            style={{ color: "rgba(212,175,55,0.5)" }}
+          >
+            Sphoorthy Engineering College
+          </p>
+        </div>
+
+        {/* Progress bar */}
+        <div
+          className="w-40 h-0.5 rounded-full overflow-hidden"
+          style={{ background: "rgba(212,175,55,0.15)" }}
+        >
+          <div
+            className="h-full rounded-full"
+            style={{
+              background: "linear-gradient(90deg, #D4AF37, #F4E4BC)",
+              animation: "loading-bar 1.4s ease-in-out infinite",
+            }}
+          />
+        </div>
+
+        <style>{`
+          @keyframes loading-bar {
+            0%   { width: 0%;   margin-left: 0%; }
+            50%  { width: 70%;  margin-left: 15%; }
+            100% { width: 0%;   margin-left: 100%; }
+          }
+        `}</style>
       </div>
     );
   }
