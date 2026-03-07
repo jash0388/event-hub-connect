@@ -96,7 +96,7 @@
   body {
     @apply bg-background text-foreground font-sans;
     font-family: 'Inter', sans-serif;
-    background: linear-gradient(to bottom, #0a0a0a, #111111, #0a0a0a);
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #f1f5f9 100%);
     min-height: 100vh;
   }
 
