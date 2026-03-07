@@ -1636,20 +1636,20 @@ const AdminDashboard = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
-      <main className="flex-1 pt-24 pb-16">
-        <div className="container mx-auto px-4 max-w-7xl">
+      <main className="flex-1 pt-28 pb-16">
+        <div className="container mx-auto px-6 max-w-7xl">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                <LayoutDashboard className="w-6 h-6 text-primary" />
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-foreground rounded-2xl flex items-center justify-center">
+                <LayoutDashboard className="w-7 h-7 text-background" />
               </div>
               <div>
-                <h1 className="font-display text-2xl font-bold">Admin Dashboard</h1>
+                <h1 className="text-2xl font-bold text-foreground">Admin Dashboard</h1>
                 <p className="text-muted-foreground text-sm">{user?.email}</p>
               </div>
             </div>
 
-            <Button variant="outline" onClick={handleLogout}>
+            <Button variant="outline" onClick={handleLogout} className="rounded-xl border-border hover:bg-secondary">
               <LogOut className="w-4 h-4 mr-2" />
               Logout
             </Button>

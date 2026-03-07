@@ -172,10 +172,10 @@ const Profile = () => {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-white flex flex-col">
+            <div className="min-h-screen bg-background flex flex-col">
                 <Header />
                 <main className="flex-1 flex items-center justify-center">
-                    <Loader2 className="w-10 h-10 animate-spin text-primary" />
+                    <Loader2 className="w-10 h-10 animate-spin text-foreground" />
                 </main>
                 <Footer />
             </div>
@@ -184,30 +184,22 @@ const Profile = () => {
 
     if (!user) {
         return (
-            <div className="min-h-screen flex flex-col" style={{
-                background: 'url("https://images.unsplash.com/photo-1432251407527-504a6b4174a2?q=80&w=1480&auto=format&fit=crop") center center',
-                backgroundAttachment: 'fixed',
-                backgroundSize: 'cover'
-            }}>
-                <div className="absolute inset-0" style={{
-                    background: 'linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.3) 100%)',
-                    zIndex: 1
-                }} />
+            <div className="min-h-screen flex flex-col bg-background">
                 <Header />
-                <main className="flex-1 flex items-center justify-center px-4 relative z-10">
+                <main className="flex-1 flex items-center justify-center px-6 pt-28 pb-16">
                     <div className="w-full max-w-sm">
-                        <div className="bg-white/90 backdrop-blur-xl rounded-3xl p-8 sm:p-10 text-center shadow-2xl border border-white/40">
-                            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-100 to-cyan-50 flex items-center justify-center mx-auto mb-6 shadow-lg shadow-blue-100/50">
-                                <User className="w-10 h-10 text-blue-500" />
+                        <div className="bg-card rounded-3xl p-8 text-center border border-border card-3d animate-fade-in-up">
+                            <div className="w-20 h-20 rounded-full bg-secondary flex items-center justify-center mx-auto mb-6">
+                                <User className="w-10 h-10 text-muted-foreground" />
                             </div>
-                            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Login Required</h1>
-                            <p className="text-gray-500 text-sm sm:text-base mb-8 leading-relaxed">Please login to view your profile and access your event tickets.</p>
+                            <h1 className="text-2xl font-bold text-foreground mb-2">Login Required</h1>
+                            <p className="text-muted-foreground text-sm mb-8 leading-relaxed">Please login to view your profile and access your event tickets.</p>
                             <Link to="/login">
-                                <Button className="w-full h-12 rounded-xl text-base font-semibold shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all">
+                                <Button className="w-full h-12 rounded-xl font-medium bg-foreground text-background hover:bg-foreground/90">
                                     Go to Login
                                 </Button>
                             </Link>
-                            <p className="text-xs text-gray-400 mt-4">New student? <Link to="/login" className="text-blue-500 font-medium hover:underline">Create an account</Link></p>
+                            <p className="text-xs text-muted-foreground mt-4">New student? <Link to="/login" className="text-foreground font-medium hover:text-[hsl(var(--accent))]">Create an account</Link></p>
                         </div>
                     </div>
                 </main>
@@ -217,10 +209,10 @@ const Profile = () => {
     }
 
     return (
-        <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 via-white to-blue-50">
+        <div className="min-h-screen flex flex-col bg-background">
             <Header />
-            <main className="flex-1 pt-20 sm:pt-24 pb-16 sm:pb-20">
-                <div className="container mx-auto px-3 sm:px-4 max-w-4xl">
+            <main className="flex-1 pt-28 pb-16">
+                <div className="container mx-auto px-6 max-w-4xl">
                     {showProfileComplete ? (
                         <div className="space-y-10">
                             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">

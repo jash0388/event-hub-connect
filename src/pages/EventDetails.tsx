@@ -235,10 +235,10 @@ export default function EventDetails() {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-white flex flex-col">
+            <div className="min-h-screen bg-background flex flex-col">
                 <Header />
                 <main className="flex-1 flex items-center justify-center">
-                    <Loader2 className="w-10 h-10 animate-spin text-primary" />
+                    <Loader2 className="w-10 h-10 animate-spin text-foreground" />
                 </main>
                 <Footer />
             </div>
@@ -247,12 +247,12 @@ export default function EventDetails() {
 
     if (!event) {
         return (
-            <div className="min-h-screen bg-white flex flex-col">
+            <div className="min-h-screen bg-background flex flex-col">
                 <Header />
-                <main className="flex-1 container mx-auto px-4 py-20 text-center">
-                    <h1 className="text-3xl font-bold mb-6">Event Not Found</h1>
+                <main className="flex-1 container mx-auto px-6 pt-28 text-center">
+                    <h1 className="text-3xl font-bold text-foreground mb-6">Event Not Found</h1>
                     <Link to="/events">
-                        <Button className="rounded-xl px-8 h-12">Back to Events</Button>
+                        <Button className="rounded-xl px-8 h-12 bg-foreground text-background hover:bg-foreground/90">Back to Events</Button>
                     </Link>
                 </main>
                 <Footer />
@@ -267,18 +267,18 @@ export default function EventDetails() {
     const isEventEnded = isBefore(eventStartDate, today);
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col">
+        <div className="min-h-screen bg-background flex flex-col">
             <Header />
-            <main className="flex-1 pt-24 pb-20">
-                <div className="container mx-auto px-4 max-w-5xl">
-                    <Link to="/events" className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-primary mb-8 transition-colors group">
+            <main className="flex-1 pt-28 pb-20">
+                <div className="container mx-auto px-6 max-w-5xl">
+                    <Link to="/events" className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-foreground mb-8 transition-colors group">
                         <ArrowLeft className="w-4 h-4 mr-2 transition-transform group-hover:-translate-x-1" />
                         Back to all events
                     </Link>
 
-                    <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
+                    <div className="bg-card rounded-3xl border border-border overflow-hidden animate-fade-in-up">
                         {/* Hero Section */}
-                        <div className="relative aspect-[21/9] bg-gray-100">
+                        <div className="relative aspect-[21/9] bg-secondary">
                             {event.image || event.image_url ? (
                                 <img
                                     src={event.image || event.image_url || ''}
@@ -286,8 +286,8 @@ export default function EventDetails() {
                                     className="object-cover w-full h-full"
                                 />
                             ) : (
-                                <div className="w-full h-full bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
-                                    <Calendar className="w-16 h-16 text-blue-200" />
+                                <div className="w-full h-full bg-secondary flex items-center justify-center">
+                                    <Calendar className="w-16 h-16 text-muted-foreground/30" />
                                 </div>
                             )}
                         </div>
@@ -297,47 +297,47 @@ export default function EventDetails() {
                                 {/* Left Column: Info */}
                                 <div className="flex-1 space-y-8">
                                     <div className="space-y-4">
-                                        <span className="inline-block px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
+                                        <span className="inline-block px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider bg-foreground text-background">
                                             {event.category || 'Event'}
                                         </span>
-                                        <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 leading-tight">
+                                        <h1 className="text-4xl md:text-5xl font-bold text-foreground leading-tight">
                                             {event.title}
                                         </h1>
                                     </div>
 
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-6 rounded-3xl bg-gray-50 border border-gray-100">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-6 rounded-2xl bg-secondary border border-border">
                                         <div className="flex items-center gap-4">
-                                            <div className="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center text-primary">
+                                            <div className="w-12 h-12 rounded-xl bg-card flex items-center justify-center text-foreground">
                                                 <Calendar className="w-6 h-6" />
                                             </div>
                                             <div>
-                                                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Date</p>
-                                                <p className="font-bold text-gray-900">{format(new Date(event.date), "MMMM d, yyyy")}</p>
+                                                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Date</p>
+                                                <p className="font-semibold text-foreground">{format(new Date(event.date), "MMMM d, yyyy")}</p>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-4">
-                                            <div className="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center text-primary">
+                                            <div className="w-12 h-12 rounded-xl bg-card flex items-center justify-center text-foreground">
                                                 <Clock className="w-6 h-6" />
                                             </div>
                                             <div>
-                                                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Time</p>
-                                                <p className="font-bold text-gray-900">{event.time || "TBA"}</p>
+                                                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Time</p>
+                                                <p className="font-semibold text-foreground">{event.time || "TBA"}</p>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-4 sm:col-span-2">
-                                            <div className="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center text-primary">
+                                            <div className="w-12 h-12 rounded-xl bg-card flex items-center justify-center text-foreground">
                                                 <MapPin className="w-6 h-6" />
                                             </div>
                                             <div>
-                                                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Location</p>
-                                                <p className="font-bold text-gray-900">{event.location || "To be announced"}</p>
+                                                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Location</p>
+                                                <p className="font-semibold text-foreground">{event.location || "To be announced"}</p>
                                             </div>
                                         </div>
                                     </div>
 
                                     <div className="space-y-4">
-                                        <h2 className="text-2xl font-bold text-gray-900">About this event</h2>
-                                        <div className="prose prose-gray max-w-none text-gray-600 leading-relaxed whitespace-pre-wrap">
+                                        <h2 className="text-2xl font-bold text-foreground">About this event</h2>
+                                        <div className="prose prose-gray max-w-none text-muted-foreground leading-relaxed whitespace-pre-wrap">
                                             {event.description || "No description provided for this event."}
                                         </div>
                                     </div>
@@ -345,20 +345,22 @@ export default function EventDetails() {
 
                                 {/* Right Column: Registration Card */}
                                 <div className="lg:w-80 shrink-0">
-                                    <div className="bg-gray-50 border border-gray-100 rounded-[2rem] p-8 sticky top-28 space-y-6">
-                                        <div className="text-center pb-6 border-b border-gray-200">
-                                            <p className="text-3xl font-extrabold text-gray-900">Free</p>
-                                            <p className="text-sm text-gray-500 font-medium mt-1">Unlimited seats available</p>
+                                    <div className="bg-secondary border border-border rounded-2xl p-8 sticky top-28 space-y-6">
+                                        <div className="text-center pb-6 border-b border-border">
+                                            <p className="text-3xl font-bold text-foreground">Free</p>
+                                            <p className="text-sm text-muted-foreground font-medium mt-1">Unlimited seats available</p>
                                         </div>
 
                                         <div className="space-y-4">
                                             <Button
                                                 size="lg"
                                                 className={cn(
-                                                    "w-full h-14 rounded-2xl text-lg font-bold shadow-lg shadow-primary/20",
+                                                    "w-full h-14 rounded-xl text-lg font-medium transition-all",
                                                     isEventEnded
-                                                        ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                                                        : userRsvp === 'going' ? "bg-green-600 hover:bg-green-700" : ""
+                                                        ? "bg-secondary text-muted-foreground cursor-not-allowed"
+                                                        : userRsvp === 'going' 
+                                                            ? "bg-[hsl(var(--sage))] text-background hover:bg-[hsl(var(--sage))]/90" 
+                                                            : "bg-foreground text-background hover:bg-foreground/90"
                                                 )}
                                                 onClick={handleRsvp}
                                                 disabled={isRsvping || isEventEnded}
@@ -366,7 +368,7 @@ export default function EventDetails() {
                                                 {isRsvping ? (
                                                     <Loader2 className="w-5 h-5 animate-spin" />
                                                 ) : isEventEnded ? (
-                                                    "Ended"
+                                                    "Event Ended"
                                                 ) : userRsvp === 'going' ? (
                                                     <><Check className="w-5 h-5 mr-2" /> Registered</>
                                                 ) : (
@@ -374,16 +376,16 @@ export default function EventDetails() {
                                                 )}
                                             </Button>
 
-                                            <div className="flex items-center justify-center gap-2 text-sm text-gray-500 font-medium">
+                                            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground font-medium">
                                                 <Users className="w-4 h-4" />
                                                 <span>{attendeeCount} students attending</span>
                                             </div>
                                         </div>
 
-                                        <div className="pt-6 border-t border-gray-200 flex flex-col gap-3">
+                                        <div className="pt-6 border-t border-border flex flex-col gap-3">
                                             <Button
                                                 variant="outline"
-                                                className="w-full h-12 rounded-xl gap-2 font-bold text-gray-700"
+                                                className="w-full h-12 rounded-xl gap-2 font-medium border-border hover:bg-card"
                                                 onClick={async () => {
                                                     const shareUrl = window.location.href;
                                                     try {
