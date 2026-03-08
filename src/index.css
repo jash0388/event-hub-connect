@@ -1,0 +1,302 @@
+/* Professional Light Theme - DataNauts Event Hub */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Clean, Light Professional Theme */
+    --background: 40 33% 98%;
+    --foreground: 20 14% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 20 14% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 20 14% 10%;
+
+    --primary: 20 14% 10%;
+    --primary-foreground: 40 33% 98%;
+
+    --secondary: 40 20% 94%;
+    --secondary-foreground: 20 14% 10%;
+
+    --muted: 40 20% 94%;
+    --muted-foreground: 20 10% 45%;
+
+    --accent: 221 83% 53%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 221 83% 45%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 40 15% 88%;
+    --input: 40 15% 88%;
+    --ring: 221 83% 53%;
+
+    --radius: 1rem;
+
+    /* Accent Colors */
+    --luxury-blue: 221 83% 53%;
+    --sage: 142 35% 45%;
+    --sky: 199 89% 48%;
+
+    --sidebar-background: 40 33% 98%;
+    --sidebar-foreground: 20 14% 10%;
+    --sidebar-primary: 20 14% 10%;
+    --sidebar-primary-foreground: 40 33% 98%;
+    --sidebar-accent: 40 20% 94%;
+    --sidebar-accent-foreground: 20 14% 10%;
+    --sidebar-border: 40 15% 88%;
+    --sidebar-ring: 20 14% 10%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: 'Space Grotesk', sans-serif;
+    @apply font-bold tracking-tight;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, #1e40af 0%, #4f46e5 30%, #a855f7 60%, #3b82f6 100%);
+    background-size: 200% auto;
+    animation: text-shimmer 4s linear infinite;
+    will-change: background-position;
+  }
+
+  .card-glass {
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow:
+      0 4px 6px -1px rgba(0, 0, 0, 0.05),
+      0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  }
+
+  .card-3d {
+    transform-style: preserve-3d;
+    transition: transform 0.4s ease, box-shadow 0.4s ease;
+  }
+
+  .card-3d:hover {
+    transform: perspective(1000px) rotateX(2deg) rotateY(-2deg) translateY(-8px);
+    box-shadow:
+      0 25px 50px -12px rgba(0, 0, 0, 0.15),
+      0 0 0 1px rgba(0, 0, 0, 0.02);
+  }
+
+  .floating {
+    animation: float 6s ease-in-out infinite;
+    will-change: transform;
+  }
+
+  .floating-delayed {
+    animation: float 6s ease-in-out infinite;
+    animation-delay: -3s;
+  }
+
+  @keyframes float {
+
+    0%,
+    100% {
+      transform: translateY(0) rotate(0deg);
+    }
+
+    50% {
+      transform: translateY(-20px) rotate(2deg);
+    }
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(40px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fade-in-up {
+    animation: fadeInUp 0.8s ease-out forwards;
+  }
+
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateX(-30px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  .animate-slide-in {
+    animation: slideIn 0.6s ease-out forwards;
+  }
+
+  @keyframes scaleIn {
+    from {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.5s ease-out forwards;
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  @keyframes text-shimmer {
+
+    /* Renamed from shimmer-text */
+    0% {
+      background-position: 200% center;
+    }
+
+    100% {
+      background-position: -200% center;
+    }
+  }
+
+  .shimmer {
+    background: radial-gradient(circle, hsl(221 83% 53% / 0.15) 0%, transparent 70%),
+      linear-gradient(90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.4) 50%,
+        transparent 100%);
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--background));
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.2);
+    border-radius: 5px;
+    border: 2px solid hsl(var(--background));
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.4);
+  }
+
+  /* 3D Shape Styles */
+  .shape-3d {
+    transform-style: preserve-3d;
+    perspective: 1000px;
+  }
+
+  .blob {
+    border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+    animation: blob-morph 12s ease-in-out infinite;
+    will-change: border-radius;
+  }
+
+  @keyframes blob-morph {
+
+    0%,
+    100% {
+      border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+    }
+
+    25% {
+      border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%;
+    }
+
+    50% {
+      border-radius: 50% 60% 30% 60% / 30% 60% 70% 40%;
+    }
+
+    75% {
+      border-radius: 60% 30% 70% 40% / 60% 40% 30% 70%;
+    }
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* QR Scanner Visibility Fixes */
+#qr-reader {
+  border: none !important;
+  width: 100% !important;
+  background: #000 !important;
+}
+
+#qr-reader video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  border-radius: 1rem;
+}
+
+/* Force container to match video aspect ratio */
+#qr-reader__scan_region {
+  min-height: 300px;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+#qr-reader__dashboard_section_csr button {
+  @apply bg-blue-600 text-white px-4 py-2 rounded-lg font-bold !important;
+}
+
+#qr-reader__status_span {
+  display: none !important;
+}
+
+#qr-reader__camera_selection {
+  @apply bg-white border border-slate-200 rounded px-2 py-1 text-sm mt-2 mb-2 !important;
+  max-width: 250px;
+}

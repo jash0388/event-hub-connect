@@ -1,0 +1,49 @@
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react-swc";
+import path from "path";
+
+// https://vitejs.dev/config/
+export default defineConfig(({ mode }) => ({
+  server: {
+    host: "0.0.0.0",
+    port: 3000,
+    hmr: {
+      overlay: false,
+    },
+    strictPort: true,
+    allowedHosts: [
+      'connect-staging.preview.emergentagent.com',
+      '.emergentagent.com',
+      'localhost',
+      '.vercel.run'
+    ],
+    proxy: {
+      '/supabase-proxy': {
+        target: 'https://cqjjbvccldipkqqtqzqc.supabase.co',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/supabase-proxy/, ''),
+      }
+    }
+  },
+  plugins: [react()],
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+    },
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Split vendor chunks for better caching
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-supabase': ['@supabase/supabase-js'],
+          'vendor-ui': ['@tanstack/react-query', 'framer-motion'],
+        },
+      },
+    },
+  },
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'react-router-dom', '@supabase/supabase-js'],
+  },
+}));
