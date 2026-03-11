@@ -30,6 +30,13 @@ const features = [
     color: "bg-foreground",
     link: "/internships",
   },
+  {
+    icon: Code2,
+    title: "Code Arcade",
+    description: "Relax and level up with classic retro games redesigned for the modern developer.",
+    color: "bg-[#8B5CF6]",
+    link: "/arcade",
+  },
 ];
 
 export function FeaturesSection() {

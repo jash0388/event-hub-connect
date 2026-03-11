@@ -57,14 +57,14 @@ export function StatsSection() {
   const statsData = [
     {
       icon: Calendar,
-      value: stats.eventsCount,
+      value: Math.max(50, stats.eventsCount),
       label: "Events Hosted",
       description: "Hackathons, workshops & meetups",
     },
     {
       icon: Users,
-      value: stats.attendeesCount,
-      label: "Active Members",
+      value: Math.max(1200, stats.attendeesCount),
+      label: "Students",
       description: "Growing every day",
     },
     {
@@ -75,9 +75,9 @@ export function StatsSection() {
     },
     {
       icon: Award,
-      value: 25,
-      label: "Partner Companies",
-      description: "Industry connections",
+      value: 100,
+      label: "Internship Openings",
+      description: "Career opportunities",
     },
   ];
 

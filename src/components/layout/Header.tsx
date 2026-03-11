@@ -11,6 +11,7 @@ const navItems = [
   { path: "/learn", label: "Learn" },
   { path: "/internships", label: "Internships" },
   { path: "/compilers", label: "Compilers" },
+  { path: "/arcade", label: "Arcade" },
   { path: "/profile", label: "My Events" },
   { path: "/about", label: "About" },
   { path: "/contact", label: "Contact" },
@@ -69,13 +70,18 @@ export function Header() {
                   key={item.path}
                   to={item.path}
                   className={cn(
-                    "relative px-4 py-2 text-sm font-medium transition-all duration-300 rounded-full",
+                    "relative px-4 py-2 text-sm font-medium transition-all duration-300 rounded-full flex items-center gap-1.5",
                     location.pathname === item.path
                       ? "text-foreground bg-secondary"
                       : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
                   )}
                 >
                   {item.label}
+                  {item.path === "/arcade" && (
+                    <span className="px-1.5 py-0.5 rounded-full bg-neon-green/20 text-[10px] font-bold text-green-600 animate-pulse">
+                      NEW
+                    </span>
+                  )}
                 </Link>
               ))}
             </nav>
@@ -156,7 +162,14 @@ export function Header() {
               )}
               style={{ animationDelay: `${index * 50}ms` }}
             >
-              {item.label}
+              <div className="flex items-center gap-2">
+                {item.label}
+                {item.path === "/arcade" && (
+                  <span className="px-1.5 py-0.5 rounded-full bg-neon-green/20 text-[10px] font-bold text-green-600 animate-pulse">
+                    NEW
+                  </span>
+                )}
+              </div>
               <ChevronRight className="w-4 h-4 opacity-50" />
             </Link>
           ))}

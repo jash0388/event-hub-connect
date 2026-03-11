@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Mail, Lock, User, ArrowRight, Eye, EyeOff, ArrowLeft } from "lucide-react";
+import { Loader2, Mail, Lock, User, ArrowRight, Eye, EyeOff, ArrowLeft, GraduationCap, Building2, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function UserAuth() {
@@ -12,6 +12,9 @@ export default function UserAuth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [college, setCollege] = useState("");
+  const [year, setYear] = useState("");
+  const [branch, setBranch] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
@@ -59,6 +62,9 @@ export default function UserAuth() {
           options: {
             data: {
               full_name: fullName,
+              college,
+              year,
+              branch,
             },
           },
         });
@@ -70,7 +76,10 @@ export default function UserAuth() {
             id: data.user.id,
             email: email,
             full_name: fullName,
-          });
+            college: college,
+            year: year,
+            branch: branch
+          } as any);
         }
 
         toast({ title: "Account created!", description: "Please check your email to verify" });
@@ -140,23 +149,79 @@ export default function UserAuth() {
 
             <form onSubmit={handleSubmit} className="space-y-5">
               {!isLogin && (
-                <div className="space-y-2">
-                  <Label htmlFor="fullName" className="text-foreground font-medium">
-                    Full Name
-                  </Label>
-                  <div className="relative">
-                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      id="fullName"
-                      type="text"
-                      placeholder="Your name"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      className="pl-11 h-12 rounded-xl bg-secondary border-none focus-visible:ring-2 focus-visible:ring-foreground"
-                      required={!isLogin}
-                    />
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="fullName" className="text-foreground font-medium">
+                      Full Name
+                    </Label>
+                    <div className="relative">
+                      <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="fullName"
+                        type="text"
+                        placeholder="Your name"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        className="pl-11 h-12 rounded-xl bg-secondary border-none focus-visible:ring-2 focus-visible:ring-foreground"
+                        required={!isLogin}
+                      />
+                    </div>
                   </div>
-                </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="college" className="text-foreground font-medium">
+                      College / University
+                    </Label>
+                    <div className="relative">
+                      <GraduationCap className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="college"
+                        type="text"
+                        placeholder="Your college"
+                        value={college}
+                        onChange={(e) => setCollege(e.target.value)}
+                        className="pl-11 h-12 rounded-xl bg-secondary border-none focus-visible:ring-2 focus-visible:ring-foreground"
+                        required={!isLogin}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="branch" className="text-foreground font-medium">
+                      Branch
+                    </Label>
+                    <div className="relative">
+                      <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="branch"
+                        type="text"
+                        placeholder="e.g. Computer Science"
+                        value={branch}
+                        onChange={(e) => setBranch(e.target.value)}
+                        className="pl-11 h-12 rounded-xl bg-secondary border-none focus-visible:ring-2 focus-visible:ring-foreground"
+                        required={!isLogin}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="year" className="text-foreground font-medium">
+                      Year of Study
+                    </Label>
+                    <div className="relative">
+                      <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="year"
+                        type="text"
+                        placeholder="e.g. 2nd Year"
+                        value={year}
+                        onChange={(e) => setYear(e.target.value)}
+                        className="pl-11 h-12 rounded-xl bg-secondary border-none focus-visible:ring-2 focus-visible:ring-foreground"
+                        required={!isLogin}
+                      />
+                    </div>
+                  </div>
+                </>
               )}
 
               <div className="space-y-2">
@@ -245,3 +310,4 @@ export default function UserAuth() {
     </div>
   );
 }
+

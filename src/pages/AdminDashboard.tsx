@@ -56,7 +56,8 @@ import {
   Calendar,
   FileText,
   Settings,
-  Activity
+  Activity,
+  Download
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Html5Qrcode } from 'html5-qrcode';
@@ -152,6 +153,7 @@ const AdminDashboard = () => {
   const [messages, setMessages] = useState<ContactMessage[]>([]);
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [allUsers, setAllUsers] = useState<any[]>([]);
+  const [eventRegistrations, setEventRegistrations] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('events');
@@ -374,7 +376,8 @@ const AdminDashboard = () => {
       fetchSocialLinks(),
       fetchMessages(),
       fetchAdminUsers(),
-      fetchUsers()
+      fetchUsers(),
+      fetchRegistrations()
     ]);
     setIsLoading(false);
   };
@@ -534,6 +537,20 @@ const AdminDashboard = () => {
       setAllUsers(data || []);
     } catch (error: any) {
       console.error('Error fetching users:', error);
+    }
+  };
+
+  const fetchRegistrations = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('event_registrations')
+        .select('*, events(title)')
+        .order('scanned_at', { ascending: false, nullsFirst: false });
+
+      if (error) throw error;
+      setEventRegistrations(data || []);
+    } catch (error: any) {
+      console.error('Error fetching registrations:', error);
     }
   };
 
@@ -1741,25 +1758,28 @@ const AdminDashboard = () => {
               </div>
             </div>
 
-            <Button variant="outline" onClick={handleLogout} className="rounded-xl border-border hover:bg-secondary">
+            <Button variant="outline" onClick={handleLogout} className="rounded-xl border-border px-6 hover:bg-secondary h-12">
               <LogOut className="w-4 h-4 mr-2" />
               Logout
             </Button>
           </div>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 lg:grid-cols-10 gap-2 bg-secondary/50 p-1 rounded-2xl mb-8">
-              <TabsTrigger value="events" className="rounded-xl data-[state=active]:bg-background data-[state=active]:shadow-sm">Events</TabsTrigger>
-              <TabsTrigger value="projects" className="rounded-xl data-[state=active]:bg-background data-[state=active]:shadow-sm">Projects</TabsTrigger>
-              <TabsTrigger value="internships" className="rounded-xl data-[state=active]:bg-background data-[state=active]:shadow-sm">Internships</TabsTrigger>
-              <TabsTrigger value="polls" className="rounded-xl data-[state=active]:bg-background data-[state=active]:shadow-sm">Polls</TabsTrigger>
-              <TabsTrigger value="social" className="rounded-xl data-[state=active]:bg-background data-[state=active]:shadow-sm">Social</TabsTrigger>
-              <TabsTrigger value="messages" className="rounded-xl data-[state=active]:bg-background data-[state=active]:shadow-sm">Messages</TabsTrigger>
-              <TabsTrigger value="users" className="rounded-xl data-[state=active]:bg-background data-[state=active]:shadow-sm">Users</TabsTrigger>
-              <TabsTrigger value="admins" className="rounded-xl data-[state=active]:bg-background data-[state=active]:shadow-sm">Admins</TabsTrigger>
-              <TabsTrigger value="qrscan" className="rounded-xl data-[state=active]:bg-background data-[state=active]:shadow-sm">QR Scan</TabsTrigger>
-              <TabsTrigger value="aicommand" className="rounded-xl border border-blue-200 bg-gradient-to-r from-blue-700 via-indigo-600 to-sky-500 bg-clip-text text-transparent font-extrabold data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white transition-all duration-300 hover:scale-105">Robot Font AI</TabsTrigger>
-            </TabsList>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-8">
+            <div className="overflow-x-auto pb-4 mb-4 -mx-6 px-6 no-scrollbar">
+              <TabsList className="inline-flex w-max min-w-full md:grid md:w-full md:grid-cols-6 lg:grid-cols-11 gap-2 bg-secondary/30 p-1.5 rounded-2xl">
+                <TabsTrigger value="events" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md">Events</TabsTrigger>
+                <TabsTrigger value="projects" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md">Projects</TabsTrigger>
+                <TabsTrigger value="internships" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md">Internships</TabsTrigger>
+                <TabsTrigger value="polls" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md">Polls</TabsTrigger>
+                <TabsTrigger value="social" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md">Social</TabsTrigger>
+                <TabsTrigger value="messages" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md">Messages</TabsTrigger>
+                <TabsTrigger value="users" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md">Users</TabsTrigger>
+                <TabsTrigger value="admins" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md">Admins</TabsTrigger>
+                <TabsTrigger value="qrscan" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md">QR Scan</TabsTrigger>
+                <TabsTrigger value="attendance" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md">Attendance</TabsTrigger>
+                <TabsTrigger value="aicommand" className="rounded-xl px-4 py-2 text-sm font-bold bg-blue-600/5 text-blue-700 data-[state=active]:bg-blue-600 data-[state=active]:text-white hover:bg-blue-600/10 transition-all border border-blue-100/50">Robot AI</TabsTrigger>
+              </TabsList>
+            </div>
 
             {/* Events Tab */}
             <TabsContent value="events" className="mt-0">
@@ -1770,7 +1790,7 @@ const AdminDashboard = () => {
                 </Button>
               </div>
               {/* Event Table Implementation ... */}
-              <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+              <div className="bg-card border border-border rounded-2xl overflow-x-auto shadow-sm">
                 <Table>
                   <TableHeader className="bg-secondary/20">
                     <TableRow>
@@ -1805,7 +1825,7 @@ const AdminDashboard = () => {
                   <Plus className="w-4 h-4 mr-2" /> Add Project
                 </Button>
               </div>
-              <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+              <div className="bg-card border border-border rounded-2xl overflow-x-auto shadow-sm">
                 <Table>
                   <TableHeader className="bg-secondary/20">
                     <TableRow>
@@ -1843,7 +1863,7 @@ const AdminDashboard = () => {
                   <Plus className="w-4 h-4 mr-2" /> Post Internship
                 </Button>
               </div>
-              <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+              <div className="bg-card border border-border rounded-2xl overflow-x-auto shadow-sm">
                 <Table>
                   <TableHeader className="bg-secondary/20">
                     <TableRow><TableHead className="font-bold">Organization</TableHead><TableHead className="font-bold">Opportunity</TableHead><TableHead className="text-right font-bold">Actions</TableHead></TableRow>
@@ -1871,7 +1891,7 @@ const AdminDashboard = () => {
                   <Plus className="w-4 h-4 mr-2" /> Create Poll
                 </Button>
               </div>
-              <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+              <div className="bg-card border border-border rounded-2xl overflow-x-auto shadow-sm">
                 <Table>
                   <TableHeader className="bg-secondary/20">
                     <TableRow><TableHead className="font-bold">Active Inquiry Question</TableHead><TableHead className="font-bold">Created Date</TableHead><TableHead className="text-right font-bold">Actions</TableHead></TableRow>
@@ -1898,7 +1918,7 @@ const AdminDashboard = () => {
                   <Plus className="w-4 h-4 mr-2" /> Add Link
                 </Button>
               </div>
-              <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+              <div className="bg-card border border-border rounded-2xl overflow-x-auto shadow-sm">
                 <Table>
                   <TableHeader className="bg-secondary/20">
                     <TableRow>
@@ -1927,7 +1947,7 @@ const AdminDashboard = () => {
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold">Inquiry Inbox</h2>
               </div>
-              <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+              <div className="bg-card border border-border rounded-2xl overflow-x-auto shadow-sm">
                 <Table>
                   <TableHeader className="bg-secondary/20">
                     <TableRow>
@@ -1965,7 +1985,7 @@ const AdminDashboard = () => {
                   <p className="text-sm text-muted-foreground">{allUsers.length} total members registrered</p>
                 </div>
               </div>
-              <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+              <div className="bg-card border border-border rounded-2xl overflow-x-auto shadow-sm">
                 <Table>
                   <TableHeader className="bg-secondary/20">
                     <TableRow>
@@ -2007,7 +2027,7 @@ const AdminDashboard = () => {
                   </Button>
                 )}
               </div>
-              <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+              <div className="bg-card border border-border rounded-2xl overflow-x-auto shadow-sm">
                 <Table>
                   <TableHeader className="bg-secondary/20">
                     <TableRow><TableHead>Admin Email</TableHead><TableHead>Role</TableHead><TableHead className="text-right">Actions</TableHead></TableRow>
@@ -2021,6 +2041,74 @@ const AdminDashboard = () => {
                           <Button variant="ghost" size="sm" className="text-blue-600 rounded-xl" onClick={() => handleRemoveAdmin(a)}>
                             <ShieldOff className="w-4 h-4 mr-2" /> Revoke
                           </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="attendance" className="mt-0">
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold text-gradient">Live Attendance Log</h2>
+                  <p className="text-sm text-muted-foreground">{eventRegistrations.filter(r => r.scanned_at).length} students checked in so far</p>
+                </div>
+                <Button variant="outline" className="rounded-xl" onClick={() => {
+                  const headers = ["Name", "Roll Number", "Year", "Event", "Registered At", "Scanned At"];
+                  const rows = eventRegistrations.map(r => [
+                    r.full_name,
+                    r.roll_number,
+                    r.year,
+                    r.events?.title || 'Unknown',
+                    format(new Date(r.created_at), 'yyyy-MM-dd HH:mm'),
+                    r.scanned_at ? format(new Date(r.scanned_at), 'yyyy-MM-dd HH:mm') : 'Not Scanned'
+                  ]);
+                  const csvContent = [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
+                  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                  const url = URL.createObjectURL(blob);
+                  const link = document.createElement("a");
+                  link.setAttribute("href", url);
+                  link.setAttribute("download", `attendance_${new Date().toISOString().split('T')[0]}.csv`);
+                  link.style.visibility = 'hidden';
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                }}>
+                  <Download className="w-4 h-4 mr-2" /> Export CSV
+                </Button>
+              </div>
+              <div className="bg-card border border-border rounded-2xl overflow-x-auto shadow-sm">
+                <Table>
+                  <TableHeader className="bg-secondary/20">
+                    <TableRow>
+                      <TableHead className="font-bold">Student Name</TableHead>
+                      <TableHead className="font-bold">Roll Number</TableHead>
+                      <TableHead className="font-bold">Event</TableHead>
+                      <TableHead className="font-bold">Status</TableHead>
+                      <TableHead className="font-bold text-right">Scan Time</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {eventRegistrations.map((reg) => (
+                      <TableRow key={reg.id} className="hover:bg-secondary/5">
+                        <TableCell className="font-medium">{reg.full_name}</TableCell>
+                        <TableCell className="font-mono text-xs">{reg.roll_number}</TableCell>
+                        <TableCell className="text-blue-600 font-medium">{reg.events?.title}</TableCell>
+                        <TableCell>
+                          {reg.scanned_at ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              <CheckCircle className="w-3 h-3 mr-1" /> Scanned
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-secondary text-muted-foreground font-mono">
+                              Waiting...
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right text-xs text-muted-foreground">
+                          {reg.scanned_at ? format(new Date(reg.scanned_at), 'pp') : '—'}
                         </TableCell>
                       </TableRow>
                     ))}

@@ -163,7 +163,7 @@ export function LandingHero() {
             {[
               { value: "50+", label: "Events Hosted" },
               { value: "1.2K", label: "Students" },
-              { value: "25+", label: "Partners" },
+              { value: "100+", label: "Internships" },
             ].map((stat, index) => (
               <div key={index} className="text-center">
                 <div className="text-3xl md:text-4xl font-bold text-foreground">

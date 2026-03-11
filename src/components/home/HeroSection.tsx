@@ -7,10 +7,10 @@ import { supabase } from "@/integrations/supabase/client";
 export function HeroSection() {
   const [loaded, setLoaded] = useState(false);
   const [stats, setStats] = useState({
-    events: 0,
+    events: 50,
     projects: 0,
-    students: 0,
-    partners: 25, // Still hardcoded if no partners table, but others are real
+    students: 1200,
+    internships: 100,
   });
 
   useEffect(() => {
@@ -28,12 +28,13 @@ export function HeroSection() {
           supabase.from('profiles').select('*', { count: 'exact', head: true })
         ]);
 
-        setStats({
-          events: eventCount || 0,
+        setStats(prev => ({
+          ...prev,
+          events: Math.max(50, eventCount || 0),
           projects: projectCount || 0,
-          students: profileCount || 0,
-          partners: 25
-        });
+          students: Math.max(1200, profileCount || 0),
+          internships: 100
+        }));
       } catch (error) {
         console.error("Error fetching hero stats:", error);
       }
@@ -221,9 +222,9 @@ export function HeroSection() {
             }`}
         >
           {[
-            { value: stats.events + "+", label: "Events", icon: GraduationCap },
-            { value: (stats.students > 1000 ? (stats.students / 1000).toFixed(1) + 'k' : stats.students) + "+", label: "Students", icon: Users },
-            { value: stats.partners + "+", label: "Partners", icon: Sparkles },
+            { value: stats.events + "+", label: "Events Hosted", icon: GraduationCap },
+            { value: (stats.students >= 1000 ? (stats.students / 1000).toFixed(1) + 'K' : stats.students) + "+", label: "Students", icon: Users },
+            { value: stats.internships + "+", label: "Internships", icon: Sparkles },
           ].map((stat, index) => (
             <div key={index} className="flex flex-col items-center group min-w-[80px]">
               <div className="bg-slate-50 p-2 md:p-3 rounded-xl md:rounded-2xl mb-3 md:mb-4 group-hover:bg-blue-500 group-hover:text-white transition-all duration-500">

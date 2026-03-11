@@ -17,6 +17,8 @@ export default {
         sans: ["Inter", "sans-serif"],
         display: ["Space Grotesk", "sans-serif"],
         mono: ["JetBrains Mono", "monospace"],
+        heading: ["'Instrument Serif'", "serif"],
+        body: ["'Barlow'", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
