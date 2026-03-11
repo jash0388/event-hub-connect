@@ -385,7 +385,7 @@ function CodeEditor({
                 };
 
                 // Remove DOM-specific code, alert, document references for safe eval
-                let safeCode = code
+                const safeCode = code
                     .replace(/document\.\w+/g, '""')
                     .replace(/alert\([^)]*\)/g, 'console.log("Alert shown")')
                     .replace(/window\.\w+/g, '""');

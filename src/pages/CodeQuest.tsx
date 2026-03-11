@@ -1160,7 +1160,7 @@ function HeroGame({ addXP, incrementStreak, resetStreak, markComplete, unlockAch
         setMessage("Executing code...");
 
         const commands = userCode.split("\n").map(line => line.trim()).filter(line => line.length > 0);
-        let currentPos = { ...level.startPos };
+        const currentPos = { ...level.startPos };
         let hasCollected = false;
 
         for (const cmd of commands) {

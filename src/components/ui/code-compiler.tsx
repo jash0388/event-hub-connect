@@ -341,7 +341,7 @@ console.log(greet("Student"));`;
                                 const mathExpr = expr.replace(/([a-zA-Z_][a-zA-Z0-9_]*)/g, (match) => {
                                     return variables[match] !== undefined ? String(variables[match]) : match;
                                 });
-                                // eslint-disable-next-line no-eval
+                                 
                                 const result = eval(mathExpr);
                                 pythonOutput.push(String(result));
                             } catch {
