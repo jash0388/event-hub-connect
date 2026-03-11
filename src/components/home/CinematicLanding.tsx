@@ -250,10 +250,10 @@ function HeroSection() {
     }, []);
 
     return (
-        <section ref={ref} id="home" className="relative h-screen overflow-hidden">
+        <section ref={ref} id="home" className="relative h-[100dvh] overflow-hidden">
             {/* Parallax video */}
-            <motion.div className="absolute inset-0" style={{ y, scale }}>
-                <motion.div style={{ opacity }}>
+            <motion.div className="absolute inset-0 w-full h-full" style={{ y, scale }}>
+                <motion.div style={{ opacity }} className="w-full h-full">
                     <video
                         autoPlay
                         loop
@@ -844,7 +844,7 @@ function Footer() {
 ────────────────────────────────────────────── */
 export default function CinematicLanding() {
     return (
-        <div className="bg-[#02040A] text-white min-h-screen font-body selection:bg-white/30 selection:text-white overflow-x-hidden">
+        <div className="bg-[#02040A] text-white min-h-[100dvh] font-body selection:bg-white/30 selection:text-white overflow-x-hidden">
             <style dangerouslySetInnerHTML={{ __html: globalStyles }} />
             <Navbar />
             <main>
