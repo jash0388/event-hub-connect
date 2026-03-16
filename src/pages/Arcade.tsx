@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
-import { CyberCard } from "@/components/ui/CyberCard";
 import { Button } from "@/components/ui/button";
+import { Card as CyberCard } from "@/components/ui/card";
 import {
     Gamepad2,
     Trophy,
@@ -186,9 +186,7 @@ const Arcade = () => {
                         {/* Game Area */}
                         <div className="lg:col-span-8 flex flex-col gap-6">
                             <CyberCard
-                                variant="terminal"
                                 className="aspect-square w-full max-w-[600px] mx-auto overflow-hidden bg-black/80 border-2 border-white/10 relative p-0"
-                                scanlines
                             >
                                 {/* CRT Screen Overlay */}
                                 <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/5 to-transparent opacity-20 z-10" />
@@ -315,7 +313,7 @@ const Arcade = () => {
                                 </div>
                             </div>
 
-                            <CyberCard padding="lg" variant="glowing" className="bg-white/5">
+                            <CyberCard className="bg-white/5 p-6">
                                 <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
                                     <Sparkles className="w-5 h-5 text-neon-magenta" /> How to Play
                                 </h3>
@@ -339,7 +337,7 @@ const Arcade = () => {
                                 </ul>
                             </CyberCard>
 
-                            <CyberCard padding="lg" variant="terminal" className="bg-black">
+                            <CyberCard className="bg-black p-6">
                                 <h3 className="text-sm font-bold mb-4 uppercase tracking-widest text-gray-500 flex items-center justify-between">
                                     Global Leaderboard
                                     <Flame className="w-4 h-4 text-neon-red" />

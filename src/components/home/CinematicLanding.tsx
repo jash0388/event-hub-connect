@@ -191,11 +191,6 @@ function Navbar() {
                             className="font-body text-sm whitespace-nowrap text-white/70 hover:text-white px-4 py-2 rounded-full hover:bg-white/5 transition-all duration-300 relative"
                         >
                             {link}
-                            {link === "Arcade" && (
-                                <span className="absolute -top-1 -right-2 px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-[8px] font-bold text-emerald-400 animate-pulse">
-                                    NEW
-                                </span>
-                            )}
                         </Link>
                     ))}
                 </div>
