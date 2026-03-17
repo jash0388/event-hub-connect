@@ -43,9 +43,11 @@ const AdminLogin = () => {
     setIsLoading(true);
 
     try {
-      const { error } = await signIn(email, password);
+      console.log("[AdminLogin] Attempting sign in for:", email);
+      const { data, error } = await signIn(email, password);
 
       if (error) {
+        console.error("[AdminLogin] Sign in error:", error);
         toast({
           title: "Login Failed",
           description: error.message,
@@ -55,56 +57,64 @@ const AdminLogin = () => {
         return;
       }
 
+      console.log("[AdminLogin] Sign in successful, verifying admin access...");
       toast({
         title: "Login Successful",
         description: "Verifying admin access...",
       });
 
-      setTimeout(async () => {
-        const { data: { user: currentUser } } = await supabase.auth.getUser();
+      // Fetch user and role directly without setTimeout
+      const { data: { user: currentUser }, error: userError } = await supabase.auth.getUser();
 
-        if (!currentUser) {
-          toast({
-            title: "Error",
-            description: "Authentication failed. Please try again.",
-            variant: "destructive",
-          });
-          setIsLoading(false);
-          return;
-        }
+      if (userError || !currentUser) {
+        console.error("[AdminLogin] User fetch error:", userError);
+        toast({
+          title: "Error",
+          description: "Authentication failed. Please try again.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
 
-        const { data: roleData, error: roleError } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', currentUser.id);
+      console.log("[AdminLogin] Current user:", currentUser.id);
 
-        if (roleError) {
-          toast({
-            title: "Error",
-            description: "Unable to verify your permissions. Please try again.",
-            variant: "destructive",
-          });
-          setIsLoading(false);
-          return;
-        }
+      const { data: roleData, error: roleError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', currentUser.id);
 
-        const hasAdminRole = roleData?.some(({ role }) => role === 'admin');
+      if (roleError) {
+        console.error("[AdminLogin] Role fetch error:", roleError);
+        toast({
+          title: "Error",
+          description: "Unable to verify your permissions. Please try again.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
 
-        if (hasAdminRole) {
-          navigate(from, { replace: true });
-        } else {
-          toast({
-            title: "Access Denied",
-            description: "You don't have admin permissions.",
-            variant: "destructive",
-          });
-          setIsLoading(false);
-        }
-      }, 1000);
-    } catch (error) {
+      console.log("[AdminLogin] Role data:", roleData);
+      const hasAdminRole = roleData?.some(({ role }) => role === 'admin');
+
+      if (hasAdminRole) {
+        console.log("[AdminLogin] Admin access granted, navigating to:", from);
+        navigate(from, { replace: true });
+      } else {
+        console.warn("[AdminLogin] Admin access denied for user:", currentUser.id);
+        toast({
+          title: "Access Denied",
+          description: "You don't have admin permissions.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+      }
+    } catch (error: any) {
+      console.error("[AdminLogin] Unexpected error:", error);
       toast({
         title: "Error",
-        description: "An unexpected error occurred. Please try again.",
+        description: "An unexpected error occurred: " + (error.message || "Please try again."),
         variant: "destructive",
       });
       setIsLoading(false);

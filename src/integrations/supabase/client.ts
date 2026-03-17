@@ -3,7 +3,7 @@ import type { Database } from './types';
 
 // Use environment variables for URL and keys.
 export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
-export const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+export const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
 export const SERVICE_KEY = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY || '';
 export const PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
 export const SECRET_KEY = import.meta.env.VITE_SUPABASE_SECRET_KEY || '';
@@ -30,9 +30,26 @@ export const supabase = (() => {
       auth: {
         getSession: () => Promise.resolve({ data: { session: null }, error: null }),
         getUser: () => Promise.resolve({ data: { user: null }, error: null }),
+        signInWithPassword: () => Promise.resolve({ data: { user: null, session: null }, error: new Error("Supabase is not configured. Check your .env file.") }),
         onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => { } } } }),
+        signOut: () => Promise.resolve({ error: null }),
       },
-      from: () => ({ select: () => ({ eq: () => Promise.resolve({ data: null, error: null }) }) }),
+      from: () => ({ 
+        select: () => ({ 
+          eq: () => ({
+            single: () => Promise.resolve({ data: null, error: null }),
+            maybeSingle: () => Promise.resolve({ data: null, error: null }),
+            order: () => Promise.resolve({ data: [], error: null }),
+          }),
+          order: () => Promise.resolve({ data: [], error: null }),
+        }),
+        insert: () => Promise.resolve({ data: null, error: null }),
+        update: () => ({ eq: () => Promise.resolve({ data: null, error: null }) }),
+        delete: () => ({ eq: () => Promise.resolve({ data: null, error: null }) }),
+      } as any),
+      channel: () => ({
+        on: () => ({ subscribe: () => ({ unsubscribe: () => {} }) }),
+      } as any),
     } as any;
   }
 

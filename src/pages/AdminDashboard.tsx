@@ -8,6 +8,7 @@ import { supabase, supabaseAdmin } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -136,6 +137,31 @@ interface ContactMessage {
   created_at: string;
 }
 
+interface CodingTask {
+  id: string;
+  title: string;
+  description: string;
+  points: number;
+  created_at: string;
+}
+
+interface TaskSubmission {
+  id: string;
+  task_id: string;
+  user_id: string;
+  answer: string;
+  status: 'pending' | 'approved' | 'denied';
+  points_awarded: number;
+  submitted_at: string;
+  profiles: {
+    full_name: string;
+    email: string;
+  };
+  coding_tasks: {
+    title: string;
+  };
+}
+
 interface AdminUser {
   id: string;
   email: string;
@@ -151,6 +177,8 @@ const AdminDashboard = () => {
   const [polls, setPolls] = useState<Poll[]>([]);
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
   const [messages, setMessages] = useState<ContactMessage[]>([]);
+  const [codingTasks, setCodingTasks] = useState<CodingTask[]>([]);
+  const [taskSubmissions, setTaskSubmissions] = useState<TaskSubmission[]>([]);
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [eventRegistrations, setEventRegistrations] = useState<any[]>([]);
@@ -165,6 +193,8 @@ const AdminDashboard = () => {
   const [isSyncingInternships, setIsSyncingInternships] = useState(false);
   const [socialDialogOpen, setSocialDialogOpen] = useState(false);
   const [replyDialogOpen, setReplyDialogOpen] = useState(false);
+  const [taskDialogOpen, setTaskDialogOpen] = useState(false);
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const [adminDialogOpen, setAdminDialogOpen] = useState(false);
   const [scannedQRResult, setScannedQRResult] = useState<any>(null);
   const [qrScanError, setQrScanError] = useState<string>('');
@@ -219,6 +249,8 @@ const AdminDashboard = () => {
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [editingInternship, setEditingInternship] = useState<Internship | null>(null);
+  const [editingTask, setEditingTask] = useState<CodingTask | null>(null);
+  const [selectedSubmission, setSelectedSubmission] = useState<TaskSubmission | null>(null);
   const [editingSocial, setEditingSocial] = useState<SocialLink | null>(null);
   const [selectedMessage, setSelectedMessage] = useState<ContactMessage | null>(null);
   const [replyText, setReplyText] = useState('');
@@ -345,6 +377,12 @@ const AdminDashboard = () => {
     is_active: true,
   });
 
+  const [taskForm, setEventTaskForm] = useState({
+    title: '',
+    description: '',
+    points: 10,
+  });
+
   const [adminForm, setAdminForm] = useState({
     email: '',
     password: '',
@@ -375,6 +413,8 @@ const AdminDashboard = () => {
       fetchPolls(),
       fetchSocialLinks(),
       fetchMessages(),
+      fetchCodingTasks(),
+      fetchTaskSubmissions(),
       fetchAdminUsers(),
       fetchUsers(),
       fetchRegistrations()
@@ -489,6 +529,81 @@ const AdminDashboard = () => {
       setMessages(data || []);
     } catch (error: any) {
       console.error('Error fetching messages:', error);
+    }
+  };
+
+  const fetchCodingTasks = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('coding_tasks' as any)
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        if (error.code === 'PGRST204' || error.message.includes('not found')) {
+           console.warn('Coding tasks table missing. You need to run the SQL migration.');
+           setCodingTasks([]);
+           return;
+        }
+        throw error;
+      }
+      setCodingTasks(data || []);
+    } catch (error: any) {
+      console.error('Error fetching tasks:', error);
+    }
+  };
+
+  const fetchTaskSubmissions = async () => {
+    try {
+      console.log("[Admin] Fetching task submissions...");
+      
+      // 1. Fetch submissions first (no joins to avoid schema cache issues)
+      const { data: submissions, error: subError } = await supabase
+        .from('task_submissions' as any)
+        .select('*')
+        .order('submitted_at', { ascending: false });
+
+      if (subError) {
+        console.error("[Admin] Error fetching submissions:", subError);
+        setTaskSubmissions([]);
+        return;
+      }
+
+      if (!submissions || submissions.length === 0) {
+        console.log("[Admin] No submissions found.");
+        setTaskSubmissions([]);
+        return;
+      }
+
+      // 2. Fetch all tasks to map titles
+      const { data: tasks } = await supabase
+        .from('coding_tasks' as any)
+        .select('id, title');
+
+      // 3. Fetch all profiles to map names
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name, email');
+
+      // 4. Map everything together manually
+      const mappedSubmissions = submissions.map((sub: any) => {
+        const task = tasks?.find(t => t.id === sub.task_id);
+        const profile = profiles?.find(p => p.id === sub.user_id);
+        
+        return {
+          ...sub,
+          coding_tasks: { title: task?.title || 'Unknown Task' },
+          profiles: { 
+            full_name: profile?.full_name || 'Anonymous',
+            email: profile?.email || 'No Email'
+          }
+        };
+      });
+
+      console.log("[Admin] Successfully mapped submissions:", mappedSubmissions.length);
+      setTaskSubmissions(mappedSubmissions);
+    } catch (error: any) {
+      console.error('Error fetching submissions:', error);
     }
   };
 
@@ -701,6 +816,113 @@ const AdminDashboard = () => {
         description: error.message,
         variant: "destructive",
       });
+    }
+  };
+
+  const handleTaskDialog = (task?: CodingTask) => {
+    if (task) {
+      setEditingTask(task);
+      setEventTaskForm({
+        title: task.title,
+        description: task.description,
+        points: task.points,
+      });
+    } else {
+      setEditingTask(null);
+      setEventTaskForm({
+        title: '',
+        description: '',
+        points: 10,
+      });
+    }
+    setTaskDialogOpen(true);
+  };
+
+  const handleReviewDialog = (submission: TaskSubmission) => {
+    setSelectedSubmission(submission);
+    setReviewDialogOpen(true);
+  };
+
+  const saveTask = async () => {
+    if (!taskForm.title || !taskForm.description) {
+      toast({ title: 'Validation Error', description: 'Please fill in all required fields', variant: 'destructive' });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      if (editingTask) {
+        const { error } = await supabase
+          .from('coding_tasks' as any)
+          .update({
+            title: taskForm.title,
+            description: taskForm.description,
+            points: taskForm.points,
+          })
+          .eq('id', editingTask.id);
+
+        if (error) throw error;
+        toast({ title: 'Task Updated', description: 'The task has been updated successfully' });
+      } else {
+        const { error } = await supabase
+          .from('coding_tasks' as any)
+          .insert({
+            title: taskForm.title,
+            description: taskForm.description,
+            points: taskForm.points,
+            // Removed created_by as it might be missing in the schema
+          });
+
+        if (error) throw error;
+        toast({ title: 'Task Created', description: 'A new task has been created successfully' });
+      }
+
+      setTaskDialogOpen(false);
+      fetchCodingTasks();
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const deleteTask = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this task?')) return;
+
+    try {
+      const { error } = await supabase.from('coding_tasks' as any).delete().eq('id', id);
+      if (error) throw error;
+      toast({ title: 'Task Deleted', description: 'Task removed successfully' });
+      fetchCodingTasks();
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    }
+  };
+
+  const reviewSubmission = async (status: 'approved' | 'denied') => {
+    if (!selectedSubmission) return;
+
+    setIsSaving(true);
+    try {
+      const points = status === 'approved' ? codingTasks.find(t => t.id === selectedSubmission.task_id)?.points || 0 : 0;
+      
+      const { error } = await supabase
+        .from('task_submissions' as any)
+        .update({
+          status,
+          points_awarded: points,
+          // Removed reviewed_by/reviewed_at if they don't exist
+        })
+        .eq('id', selectedSubmission.id);
+
+      if (error) throw error;
+      toast({ title: 'Submission Reviewed', description: `Task has been ${status}` });
+      setReviewDialogOpen(false);
+      fetchTaskSubmissions();
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -1772,6 +1994,7 @@ const AdminDashboard = () => {
                 <TabsTrigger value="internships" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md">Internships</TabsTrigger>
                 <TabsTrigger value="polls" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md">Polls</TabsTrigger>
                 <TabsTrigger value="social" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md">Social</TabsTrigger>
+                <TabsTrigger value="tasks" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md text-blue-600">Tasks</TabsTrigger>
                 <TabsTrigger value="messages" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md">Messages</TabsTrigger>
                 <TabsTrigger value="users" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md">Users</TabsTrigger>
                 <TabsTrigger value="admins" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md">Admins</TabsTrigger>
@@ -1940,6 +2163,100 @@ const AdminDashboard = () => {
                     ))}
                   </TableBody>
                 </Table>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="tasks" className="mt-0 space-y-8">
+              <div>
+                <div className="flex justify-between items-center mb-6">
+                  <div>
+                    <h2 className="text-2xl font-bold">Coding Tasks</h2>
+                    <p className="text-sm text-muted-foreground">Manage the technical challenges assigned to students.</p>
+                  </div>
+                  <Button onClick={() => handleTaskDialog()} className="rounded-xl bg-blue-600 hover:bg-blue-700">
+                    <Plus className="w-4 h-4 mr-2" /> Create Task
+                  </Button>
+                </div>
+                <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+                  <Table>
+                    <TableHeader className="bg-secondary/20">
+                      <TableRow>
+                        <TableHead className="font-bold">Title</TableHead>
+                        <TableHead className="font-bold">Points</TableHead>
+                        <TableHead className="font-bold text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {codingTasks.length === 0 ? (
+                        <TableRow><TableCell colSpan={3} className="text-center py-10 text-muted-foreground">No tasks created yet.</TableCell></TableRow>
+                      ) : codingTasks.map((task) => (
+                        <TableRow key={task.id}>
+                          <TableCell className="font-medium">{task.title}</TableCell>
+                          <TableCell><Badge variant="secondary" className="bg-blue-100 text-blue-700">{task.points} XP</Badge></TableCell>
+                          <TableCell className="text-right">
+                            <Button variant="ghost" size="sm" onClick={() => handleTaskDialog(task)} className="rounded-xl mr-1"><Edit className="w-4 h-4" /></Button>
+                            <Button variant="ghost" size="sm" onClick={() => deleteTask(task.id)} className="text-destructive rounded-xl"><Trash2 className="w-4 h-4" /></Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+
+              <div>
+                <div className="mb-6">
+                  <h2 className="text-2xl font-bold">Submissions</h2>
+                  <p className="text-sm text-muted-foreground">Review student responses and award points.</p>
+                </div>
+                <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+                  <Table>
+                    <TableHeader className="bg-secondary/20">
+                      <TableRow>
+                        <TableHead className="font-bold">Student</TableHead>
+                        <TableHead className="font-bold">Task</TableHead>
+                        <TableHead className="font-bold">Status</TableHead>
+                        <TableHead className="font-bold text-right">Review</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {taskSubmissions.length === 0 ? (
+                        <TableRow><TableCell colSpan={4} className="text-center py-10 text-muted-foreground">No submissions found.</TableCell></TableRow>
+                      ) : taskSubmissions.map((sub) => (
+                        <TableRow key={sub.id}>
+                          <TableCell>
+                            <div className="font-medium">
+                              {(sub.profiles as any)?.full_name || 'Student (No Profile)'}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {(sub.profiles as any)?.email || sub.user_id}
+                            </div>
+                          </TableCell>
+                          <TableCell className="font-medium">{(sub.coding_tasks as any)?.title || 'Deleted Task'}</TableCell>
+                          <TableCell>
+                            <Badge className={
+                              sub.status === 'approved' ? 'bg-green-100 text-green-700' :
+                              sub.status === 'denied' ? 'bg-red-100 text-red-700' :
+                              'bg-amber-100 text-amber-700'
+                            }>
+                              {sub.status.toUpperCase()}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => handleReviewDialog(sub)} 
+                              className="rounded-xl border-blue-200 text-blue-600 hover:bg-blue-50"
+                            >
+                              View & Review
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               </div>
             </TabsContent>
 
@@ -2443,6 +2760,88 @@ const AdminDashboard = () => {
                     <div className="flex justify-end gap-3 pt-2">
                       <Button variant="outline" onClick={() => setReplyDialogOpen(false)} className="rounded-xl">Close</Button>
                       <Button onClick={handleReplySubmit} disabled={isSaving} className="rounded-xl bg-blue-600 hover:bg-blue-500">Send Response</Button>
+                    </div>
+                  </div>
+                )}
+              </DialogContent>
+            </Dialog>
+
+            {/* Task Management Dialog */}
+            <Dialog open={taskDialogOpen} onOpenChange={setTaskDialogOpen}>
+              <DialogContent className="sm:max-w-lg rounded-2xl">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-bold">{editingTask ? 'Modify Challenge' : 'Initialize New Challenge'}</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 mt-4">
+                  <div className="space-y-2">
+                    <Label>Task Title</Label>
+                    <Input value={taskForm.title} onChange={e => setEventTaskForm({ ...taskForm, title: e.target.value })} required className="rounded-xl h-12" placeholder="e.g., Implement Linked List" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Points (XP)</Label>
+                    <Input type="number" value={taskForm.points} onChange={e => setEventTaskForm({ ...taskForm, points: parseInt(e.target.value) })} required className="rounded-xl h-12" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Detailed Description</Label>
+                    <Textarea value={taskForm.description} onChange={e => setEventTaskForm({ ...taskForm, description: e.target.value })} className="rounded-xl min-h-[150px]" placeholder="Explain the requirements..." />
+                  </div>
+                  <div className="flex justify-end gap-3 pt-4">
+                    <Button variant="outline" onClick={() => setTaskDialogOpen(false)} className="rounded-xl h-12 px-8">Cancel</Button>
+                    <Button onClick={saveTask} disabled={isSaving} className="rounded-xl h-12 px-8 bg-blue-600 hover:bg-blue-700">
+                      {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : (editingTask ? 'Synchronize' : 'Broadcast')}
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            {/* Submission Review Dialog */}
+            <Dialog open={reviewDialogOpen} onOpenChange={setReviewDialogOpen}>
+              <DialogContent className="sm:max-w-2xl rounded-2xl">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-bold text-blue-700">Review Protocol</DialogTitle>
+                </DialogHeader>
+                {selectedSubmission && (
+                  <div className="space-y-6 mt-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="p-4 bg-secondary/20 rounded-xl border border-border">
+                        <p className="text-[10px] font-black uppercase text-muted-foreground mb-1">Student Node</p>
+                        <p className="font-bold">{(selectedSubmission.profiles as any)?.full_name}</p>
+                        <p className="text-xs text-muted-foreground">{(selectedSubmission.profiles as any)?.email}</p>
+                      </div>
+                      <div className="p-4 bg-secondary/20 rounded-xl border border-border">
+                        <p className="text-[10px] font-black uppercase text-muted-foreground mb-1">Target Challenge</p>
+                        <p className="font-bold">{(selectedSubmission.coding_tasks as any)?.title}</p>
+                        <p className="text-xs text-muted-foreground">Submitted: {new Date(selectedSubmission.submitted_at).toLocaleString()}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Student's Solution</Label>
+                      <div className="p-6 bg-slate-950 text-emerald-400 font-mono text-sm rounded-2xl border border-white/5 overflow-auto max-h-[300px] whitespace-pre-wrap">
+                        {selectedSubmission.answer}
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between items-center pt-4 border-t border-border">
+                      <p className="text-xs text-muted-foreground italic">Decision finalizes the score synchronization for this node.</p>
+                      <div className="flex gap-3">
+                        <Button 
+                          variant="outline" 
+                          onClick={() => reviewSubmission('denied')} 
+                          disabled={isSaving}
+                          className="rounded-xl border-red-200 text-red-600 hover:bg-red-50 h-12 px-6"
+                        >
+                          <XCircle className="w-4 h-4 mr-2" /> Deny Access
+                        </Button>
+                        <Button 
+                          onClick={() => reviewSubmission('approved')} 
+                          disabled={isSaving}
+                          className="rounded-xl bg-green-600 hover:bg-green-700 text-white h-12 px-6"
+                        >
+                          <CheckCircle className="w-4 h-4 mr-2" /> Approve & Sync
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 )}

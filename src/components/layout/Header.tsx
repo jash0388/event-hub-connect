@@ -8,11 +8,9 @@ import { useAuth } from "@/hooks/useAuth";
 const navItems = [
   { path: "/", label: "Home" },
   { path: "/events", label: "Events" },
+  { path: "/projects", label: "Projects" },
   { path: "/learn", label: "Learn" },
-  { path: "/internships", label: "Internships" },
-  { path: "/compilers", label: "Compilers" },
-  { path: "/arcade", label: "Arcade" },
-  { path: "/profile", label: "My Events" },
+  { path: "/tasks", label: "Tasks" },
   { path: "/about", label: "About" },
   { path: "/contact", label: "Contact" },
 ];
@@ -77,11 +75,6 @@ export function Header() {
                   )}
                 >
                   {item.label}
-                  {item.path === "/arcade" && (
-                    <span className="px-1.5 py-0.5 rounded-full bg-neon-green/20 text-[10px] font-bold text-green-600 animate-pulse">
-                      NEW
-                    </span>
-                  )}
                 </Link>
               ))}
             </nav>
@@ -164,11 +157,6 @@ export function Header() {
             >
               <div className="flex items-center gap-2">
                 {item.label}
-                {item.path === "/arcade" && (
-                  <span className="px-1.5 py-0.5 rounded-full bg-neon-green/20 text-[10px] font-bold text-green-600 animate-pulse">
-                    NEW
-                  </span>
-                )}
               </div>
               <ChevronRight className="w-4 h-4 opacity-50" />
             </Link>

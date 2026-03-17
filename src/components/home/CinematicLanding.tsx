@@ -166,7 +166,7 @@ function Navbar() {
 
     // Different links based on auth state
     const links = user
-        ? ["Events", "Projects", "Learn", "Internships", "Compilers", "Arcade"]
+        ? ["Events", "Projects", "Learn", "Tasks"]
         : ["Home", "Events", "Projects", "Learn", "Contact"];
 
     return (
@@ -235,17 +235,18 @@ function HeroSection() {
     const scale = useTransform(scrollYProgress, [0, 0.5], [1, 1.15]);
 
     useEffect(() => {
+        // Preload video but with low priority
         const preloadLink = document.createElement("link");
         preloadLink.rel = "preload";
         preloadLink.as = "video";
         preloadLink.href =
             "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260306_115329_5e00c9c5-4d69-49b7-94c3-9c31c60bb644.mp4";
         document.head.appendChild(preloadLink);
-        return () => { document.head.removeChild(preloadLink); };
+        return () => { if (document.head.contains(preloadLink)) document.head.removeChild(preloadLink); };
     }, []);
 
     return (
-        <section ref={ref} id="home" className="relative h-[100dvh] overflow-hidden">
+        <section ref={ref} id="home" className="relative h-[100dvh] overflow-hidden bg-slate-950">
             {/* Parallax video */}
             <motion.div className="absolute inset-0 w-full h-full" style={{ y, scale }}>
                 <motion.div style={{ opacity }} className="w-full h-full">

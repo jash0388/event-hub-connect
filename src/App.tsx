@@ -26,6 +26,7 @@ const LearnHub = lazy(() => import("./pages/LearnHub"));
 const Tutorial = lazy(() => import("./pages/Tutorial"));
 const CodeQuest = lazy(() => import("./pages/CodeQuest"));
 const Arcade = lazy(() => import("./pages/Arcade"));
+const Tasks = lazy(() => import("./pages/Tasks"));
 
 // Lazy load heavy UI components
 const CollegeEventsHub = lazy(() => import("@/components/ui/college-events-hub"));
@@ -95,6 +96,7 @@ const App = () => (
             <Route path="/learn/:topicId/:lessonId" element={<ProtectedRoute><Tutorial /></ProtectedRoute>} />
             <Route path="/learn/codequest" element={<ProtectedRoute><CodeQuest /></ProtectedRoute>} />
             <Route path="/arcade" element={<ProtectedRoute><Arcade /></ProtectedRoute>} />
+            <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>

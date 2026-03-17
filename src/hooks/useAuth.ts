@@ -15,93 +15,135 @@ interface AuthState {
 let adminCache: { userId: string; isAdmin: boolean; timestamp: number } | null = null;
 const ADMIN_CACHE_DURATION = 5 * 60 * 1000;
 
+// Global cache for auth state to prevent redundant fetches and race conditions
+let globalAuthState: AuthState = {
+  user: null,
+  session: null,
+  isAdmin: false,
+  loading: true,
+  error: null,
+};
+let globalListeners: ((state: AuthState) => void)[] = [];
+let isAuthInitialized = false;
+
+// Notify all listeners of state changes
+const notifyListeners = () => {
+  globalListeners.forEach(listener => listener(globalAuthState));
+};
+
+// Update global state and notify listeners
+const setGlobalState = (newState: Partial<AuthState>) => {
+  globalAuthState = { ...globalAuthState, ...newState };
+  notifyListeners();
+};
+
 export function useAuth() {
-  const [state, setState] = useState<AuthState>({
-    user: null,
-    session: null,
-    isAdmin: false,
-    loading: true,
-    error: null,
-  });
+  const [state, setState] = useState<AuthState>(globalAuthState);
 
-  const isInitialized = useRef(false);
+  useEffect(() => {
+    // Add this component's state setter to the global listeners
+    const listener = (newState: AuthState) => {
+      setState(newState);
+    };
+    globalListeners.push(listener);
 
-  const getAdminStatus = useCallback(async (user: User | null) => {
+    // Sync current state immediately
+    setState(globalAuthState);
+
+    // Initialize auth only once globally
+    if (!isAuthInitialized) {
+      isAuthInitialized = true;
+      initializeAuth();
+    }
+
+    return () => {
+      // Remove listener on unmount
+      globalListeners = globalListeners.filter(l => l !== listener);
+    };
+  }, []);
+
+  const getAdminStatus = async (user: User | null) => {
     if (!user) return false;
     const now = Date.now();
     if (adminCache?.userId === user.id && (now - adminCache.timestamp) < ADMIN_CACHE_DURATION) {
       return adminCache.isAdmin;
     }
     try {
-      // Pass user.id directly to avoid redundant auth.getUser() calls
       const adminStatus = await checkIsAdmin(user.id);
       adminCache = { userId: user.id, isAdmin: adminStatus, timestamp: now };
       return adminStatus;
     } catch {
       return false;
     }
-  }, []);
+  };
 
-  useEffect(() => {
-    if (isInitialized.current) return;
-    isInitialized.current = true;
-
-    let isMounted = true;
-
-    async function initialize() {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-
-        if (error) throw error;
-
-        const user = session?.user ?? null;
-        const isAdmin = await getAdminStatus(user);
-
-        if (isMounted) {
-          setState({
-            user,
-            session,
-            isAdmin,
-            loading: false,
-            error: null,
-          });
-        }
-      } catch (err: any) {
-        console.error('[useAuth] Init Error:', err);
-        if (isMounted) {
-          setState(prev => ({ ...prev, loading: false, error: err }));
-        }
+  const initializeAuth = async () => {
+    // Safety timeout
+    const timeout = setTimeout(() => {
+      if (globalAuthState.loading) {
+        console.warn('[useAuth] Initialization timed out after 5s. Forcing loading false.');
+        setGlobalState({ loading: false });
       }
-    }
+    }, 5000);
 
-    initialize();
+    try {
+      console.log('[useAuth] Initializing...');
+      const { data: { session }, error } = await supabase.auth.getSession();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      // Prevent updates if component is unmounted or if event is irrelevant
-      if (!isMounted || event === 'TOKEN_REFRESHED') return;
+      if (error) {
+        console.error('[useAuth] getSession error:', error);
+        throw error;
+      }
 
       const user = session?.user ?? null;
+      const isAdmin = await getAdminStatus(user);
 
-      if (event === 'SIGNED_OUT') {
-        adminCache = null;
-        setState({ user: null, session: null, isAdmin: false, loading: false, error: null });
-      } else {
-        const isAdmin = await getAdminStatus(user);
-        setState({
-          user,
-          session,
-          isAdmin,
-          loading: false,
-          error: null
-        });
-      }
-    });
+      console.log('[useAuth] Init success, user:', user?.email, 'isAdmin:', isAdmin);
+      setGlobalState({
+        user,
+        session,
+        isAdmin,
+        loading: false,
+        error: null,
+      });
 
-    return () => {
-      isMounted = false;
-      subscription.unsubscribe();
-    };
-  }, [getAdminStatus]);
+      // Set up subscription only once
+      supabase.auth.onAuthStateChange(async (event, session) => {
+        console.log('[useAuth] Auth state change:', event, session?.user?.email);
+        
+        // Ignore TOKEN_REFRESHED unless session was previously null (edge case)
+        if (event === 'TOKEN_REFRESHED' && globalAuthState.session) return;
+
+        const user = session?.user ?? null;
+
+        if (event === 'SIGNED_OUT') {
+          adminCache = null;
+          setGlobalState({ user: null, session: null, isAdmin: false, loading: false, error: null });
+        } else {
+          // Keep loading true while checking admin status to prevent flicker/redirect
+          if (!user) {
+             setGlobalState({ user: null, session: null, isAdmin: false, loading: false, error: null });
+          } else {
+             // If user changed, re-check admin status
+             const isAdmin = await getAdminStatus(user);
+             setGlobalState({
+               user,
+               session,
+               isAdmin,
+               loading: false,
+               error: null
+             });
+          }
+        }
+      });
+
+    } catch (err: any) {
+      console.error('[useAuth] Init Error:', err);
+      setGlobalState({ loading: false, error: err });
+    } finally {
+      clearTimeout(timeout);
+    }
+  };
 
   const signIn = async (email: string, password: string) => {
     return await supabase.auth.signInWithPassword({ email, password });
@@ -122,7 +164,7 @@ export function useAuth() {
     const { error } = await supabase.auth.signOut();
     if (!error) {
       adminCache = null;
-      setState({ user: null, session: null, isAdmin: false, loading: false, error: null });
+      setGlobalState({ user: null, session: null, isAdmin: false, loading: false, error: null });
     }
     return { error };
   };
