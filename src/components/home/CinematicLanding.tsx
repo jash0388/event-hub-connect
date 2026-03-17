@@ -164,10 +164,20 @@ function Navbar() {
         return () => window.removeEventListener("scroll", handler);
     }, []);
 
-    // Different links based on auth state
-    const links = user
-        ? ["Events", "Projects", "Learn", "Tasks"]
-        : ["Home", "Events", "Projects", "Learn", "Contact"];
+    // Unified navigation items from Header.tsx logic
+    const navItems = [
+        { path: "/", label: "Home", guestOnly: true },
+        { path: "/events", label: "Events" },
+        { path: "/projects", label: "Projects" },
+        { path: "/learn", label: "Learn" },
+        { path: "/tasks", label: "Tasks" },
+        { path: "/contact", label: "Contact", guestOnly: true },
+    ];
+
+    const visibleLinks = navItems.filter(item => {
+        if (user) return !item.guestOnly;
+        return item.path !== "/tasks";
+    });
 
     return (
         <motion.nav
@@ -184,13 +194,13 @@ function Navbar() {
             {/* Nav pill */}
             <div className="liquid-glass rounded-full px-2 py-2 flex items-center gap-1 overflow-x-auto no-scrollbar max-w-[calc(100vw-6rem)]">
                 <div className="hidden md:flex items-center gap-1">
-                    {links.map((link) => (
+                    {visibleLinks.map((item) => (
                         <Link
-                            key={link}
-                            to={link === "Home" ? "/" : `/${link.toLowerCase()}`}
+                            key={item.path}
+                            to={item.path}
                             className="font-body text-sm whitespace-nowrap text-white/70 hover:text-white px-4 py-2 rounded-full hover:bg-white/5 transition-all duration-300 relative"
                         >
-                            {link}
+                            {item.label}
                         </Link>
                     ))}
                 </div>

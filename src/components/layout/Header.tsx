@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 
 const navItems = [
-  { path: "/", label: "Home" },
   { path: "/events", label: "Events" },
   { path: "/projects", label: "Projects" },
   { path: "/learn", label: "Learn" },
