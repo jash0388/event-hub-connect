@@ -8,12 +8,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  CheckCircle2, 
-  Clock, 
-  XCircle, 
-  Trophy, 
-  Send, 
+import {
+  CheckCircle2,
+  Clock,
+  XCircle,
+  Trophy,
+  Send,
   AlertCircle,
   Loader2,
   BookOpen
@@ -37,7 +37,7 @@ interface Submission {
 }
 
 export default function Tasks() {
-  const { user } = useAuth();
+  const { user, firebaseUser, isFirebaseUser, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [submissions, setSubmissions] = useState<Record<string, Submission>>({});
@@ -45,10 +45,21 @@ export default function Tasks() {
   const [submitting, setSubmitting] = useState<string | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
 
+  // Get the correct user ID based on auth provider
+  const getUserId = () => {
+    if (isFirebaseUser && firebaseUser) {
+      return firebaseUser.uid;
+    }
+    return user?.id;
+  };
+
   useEffect(() => {
-    if (user) {
-      fetchTasksAndSubmissions();
-      
+    const userId = getUserId();
+    console.log('[Tasks] User ID for queries:', userId, { isFirebaseUser, firebaseUser });
+
+    if (userId) {
+      fetchTasksAndSubmissions(userId);
+
       // Set up real-time subscription for submissions
       const channel = supabase
         .channel('schema-db-changes')
@@ -58,10 +69,10 @@ export default function Tasks() {
             event: '*',
             schema: 'public',
             table: 'task_submissions',
-            filter: `user_id=eq.${user.id}`
+            filter: `user_id=eq.${userId}`
           },
           () => {
-            fetchTasksAndSubmissions();
+            fetchTasksAndSubmissions(userId);
           }
         )
         .subscribe();
@@ -70,30 +81,40 @@ export default function Tasks() {
         supabase.removeChannel(channel);
       };
     }
-  }, [user]);
+  }, [user, isFirebaseUser, firebaseUser]);
 
-  const fetchTasksAndSubmissions = async () => {
+  const fetchTasksAndSubmissions = async (userId: string) => {
     try {
       setLoading(true);
-      
+      console.log('[Tasks] Fetching for userId:', userId);
+
       // Fetch tasks
       const { data: tasksData, error: tasksError } = await supabase
         .from('coding_tasks' as any)
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (tasksError) throw tasksError;
+      if (tasksError) {
+        console.error('[Tasks] Tasks error:', tasksError);
+        throw tasksError;
+      }
+
+      console.log('[Tasks] Tasks fetched:', tasksData?.length || 0);
       setTasks(tasksData || []);
 
-      // Fetch user's submissions
-      if (user) {
+      // Fetch user's submissions using correct userId
+      if (userId) {
         const { data: submissionsData, error: submissionsError } = await supabase
           .from('task_submissions' as any)
           .select('*')
-          .eq('user_id', user.id);
+          .eq('user_id', userId);
 
-        if (submissionsError) throw submissionsError;
-        
+        if (submissionsError) {
+          console.error('[Tasks] Submissions error:', submissionsError);
+          throw submissionsError;
+        }
+
+        console.log('[Tasks] Submissions fetched:', submissionsData?.length || 0);
         const submissionsMap: Record<string, Submission> = {};
         submissionsData?.forEach((sub: Submission) => {
           submissionsMap[sub.task_id] = sub;
@@ -101,10 +122,10 @@ export default function Tasks() {
         setSubmissions(submissionsMap);
       }
     } catch (error: any) {
-      console.error("Error fetching tasks:", error);
+      console.error('[Tasks] Error:', error);
       toast({
         title: "Error",
-        description: "Failed to load tasks. Please ensure the database is set up.",
+        description: error.message || "Failed to load tasks.",
         variant: "destructive"
       });
     } finally {
@@ -113,7 +134,18 @@ export default function Tasks() {
   };
 
   const handleSubmitAnswer = async (taskId: string) => {
+    const userId = getUserId();
     const answer = answers[taskId];
+
+    if (!userId) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to submit.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (!answer || answer.trim().length < 5) {
       toast({
         title: "Invalid Submission",
@@ -125,27 +157,37 @@ export default function Tasks() {
 
     try {
       setSubmitting(taskId);
+      console.log('[Tasks] Submitting answer for task:', taskId, 'userId:', userId);
+
+      const payload = {
+        task_id: taskId,
+        user_id: userId,
+        answer: answer,
+        status: 'pending',
+        points_awarded: 0
+      };
+
+      console.log('[Tasks] Submission payload:', payload);
+
       const { error } = await supabase
         .from('task_submissions' as any)
-        .insert({
-          task_id: taskId,
-          user_id: user?.id,
-          answer: answer,
-          status: 'pending',
-          points_awarded: 0
-        });
+        .insert(payload);
 
-      if (error) throw error;
+      if (error) {
+        console.error('[Tasks] Submission error:', error);
+        throw error;
+      }
 
       toast({
         title: "Submitted!",
         description: "Your answer has been sent for review.",
       });
-      
+
       // Clear answer field
       setAnswers(prev => ({ ...prev, [taskId]: "" }));
-      fetchTasksAndSubmissions();
+      fetchTasksAndSubmissions(userId);
     } catch (error: any) {
+      console.error('[Tasks] Submission failed:', error);
       toast({
         title: "Submission Failed",
         description: error.message,
@@ -162,12 +204,12 @@ export default function Tasks() {
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       <Header />
-      
+
       <main className="flex-1 pt-28 pb-16 px-6">
         <div className="container mx-auto max-w-5xl">
           {/* Dashboard Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className="bg-card border border-border p-6 rounded-3xl flex items-center gap-4"
@@ -181,7 +223,7 @@ export default function Tasks() {
               </div>
             </motion.div>
 
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
@@ -196,7 +238,7 @@ export default function Tasks() {
               </div>
             </motion.div>
 
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
@@ -272,13 +314,13 @@ export default function Tasks() {
                                 <XCircle className="w-5 h-5" />
                                 <span className="font-bold">Attempt Denied</span>
                               </div>
-                              <Textarea 
+                              <Textarea
                                 placeholder="Try again... provide a better solution."
                                 value={answers[task.id] || ""}
                                 onChange={(e) => setAnswers(prev => ({ ...prev, [task.id]: e.target.value }))}
                                 className="min-h-[120px] rounded-2xl bg-background/50"
                               />
-                              <Button 
+                              <Button
                                 onClick={() => handleSubmitAnswer(task.id)}
                                 disabled={submitting === task.id}
                                 className="rounded-xl bg-foreground text-background hover:bg-foreground/90 px-8"
@@ -289,13 +331,13 @@ export default function Tasks() {
                             </div>
                           ) : (
                             <div className="space-y-4">
-                              <Textarea 
+                              <Textarea
                                 placeholder="Initialize your response protocol here..."
                                 value={answers[task.id] || ""}
                                 onChange={(e) => setAnswers(prev => ({ ...prev, [task.id]: e.target.value }))}
                                 className="min-h-[120px] rounded-2xl bg-background/50 border-border focus:border-neon-cyan transition-all"
                               />
-                              <Button 
+                              <Button
                                 onClick={() => handleSubmitAnswer(task.id)}
                                 disabled={submitting === task.id}
                                 className="rounded-xl bg-neon-cyan text-black hover:bg-neon-cyan/90 px-8 font-bold"

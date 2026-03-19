@@ -541,9 +541,9 @@ const AdminDashboard = () => {
 
       if (error) {
         if (error.code === 'PGRST204' || error.message.includes('not found')) {
-           console.warn('Coding tasks table missing. You need to run the SQL migration.');
-           setCodingTasks([]);
-           return;
+          console.warn('Coding tasks table missing. You need to run the SQL migration.');
+          setCodingTasks([]);
+          return;
         }
         throw error;
       }
@@ -556,7 +556,7 @@ const AdminDashboard = () => {
   const fetchTaskSubmissions = async () => {
     try {
       console.log("[Admin] Fetching task submissions...");
-      
+
       // 1. Fetch submissions first (no joins to avoid schema cache issues)
       const { data: submissions, error: subError } = await supabase
         .from('task_submissions' as any)
@@ -583,20 +583,29 @@ const AdminDashboard = () => {
       // 3. Fetch all profiles to map names
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('id, full_name, email');
+        .select('id, full_name, email, firebase_uid, is_firebase_user');
 
-      // 4. Map everything together manually
+      // 4. Calculate total points per user
+      const userPointsMap: Record<string, number> = {};
+      submissions.forEach((sub: any) => {
+        if (sub.status === 'approved' && sub.points_awarded) {
+          userPointsMap[sub.user_id] = (userPointsMap[sub.user_id] || 0) + sub.points_awarded;
+        }
+      });
+
+      // 5. Map everything together manually
       const mappedSubmissions = submissions.map((sub: any) => {
         const task = tasks?.find(t => t.id === sub.task_id);
-        const profile = profiles?.find(p => p.id === sub.user_id);
-        
+        const profile = profiles?.find(p => p.id === sub.user_id || p.firebase_uid === sub.user_id);
+
         return {
           ...sub,
           coding_tasks: { title: task?.title || 'Unknown Task' },
-          profiles: { 
+          profiles: {
             full_name: profile?.full_name || 'Anonymous',
             email: profile?.email || 'No Email'
-          }
+          },
+          total_user_points: userPointsMap[sub.user_id] || 0
         };
       });
 
@@ -905,7 +914,7 @@ const AdminDashboard = () => {
     setIsSaving(true);
     try {
       const points = status === 'approved' ? codingTasks.find(t => t.id === selectedSubmission.task_id)?.points || 0 : 0;
-      
+
       const { error } = await supabase
         .from('task_submissions' as any)
         .update({
@@ -2236,17 +2245,17 @@ const AdminDashboard = () => {
                           <TableCell>
                             <Badge className={
                               sub.status === 'approved' ? 'bg-green-100 text-green-700' :
-                              sub.status === 'denied' ? 'bg-red-100 text-red-700' :
-                              'bg-amber-100 text-amber-700'
+                                sub.status === 'denied' ? 'bg-red-100 text-red-700' :
+                                  'bg-amber-100 text-amber-700'
                             }>
                               {sub.status.toUpperCase()}
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              onClick={() => handleReviewDialog(sub)} 
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleReviewDialog(sub)}
                               className="rounded-xl border-blue-200 text-blue-600 hover:bg-blue-50"
                             >
                               View & Review
@@ -2808,6 +2817,7 @@ const AdminDashboard = () => {
                         <p className="text-[10px] font-black uppercase text-muted-foreground mb-1">Student Node</p>
                         <p className="font-bold">{(selectedSubmission.profiles as any)?.full_name}</p>
                         <p className="text-xs text-muted-foreground">{(selectedSubmission.profiles as any)?.email}</p>
+                        <p className="text-xs font-bold text-blue-600 mt-2">Total Points: {(selectedSubmission as any).total_user_points || 0}</p>
                       </div>
                       <div className="p-4 bg-secondary/20 rounded-xl border border-border">
                         <p className="text-[10px] font-black uppercase text-muted-foreground mb-1">Target Challenge</p>
@@ -2815,7 +2825,7 @@ const AdminDashboard = () => {
                         <p className="text-xs text-muted-foreground">Submitted: {new Date(selectedSubmission.submitted_at).toLocaleString()}</p>
                       </div>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Student's Solution</Label>
                       <div className="p-6 bg-slate-950 text-emerald-400 font-mono text-sm rounded-2xl border border-white/5 overflow-auto max-h-[300px] whitespace-pre-wrap">
@@ -2826,16 +2836,16 @@ const AdminDashboard = () => {
                     <div className="flex justify-between items-center pt-4 border-t border-border">
                       <p className="text-xs text-muted-foreground italic">Decision finalizes the score synchronization for this node.</p>
                       <div className="flex gap-3">
-                        <Button 
-                          variant="outline" 
-                          onClick={() => reviewSubmission('denied')} 
+                        <Button
+                          variant="outline"
+                          onClick={() => reviewSubmission('denied')}
                           disabled={isSaving}
                           className="rounded-xl border-red-200 text-red-600 hover:bg-red-50 h-12 px-6"
                         >
                           <XCircle className="w-4 h-4 mr-2" /> Deny Access
                         </Button>
-                        <Button 
-                          onClick={() => reviewSubmission('approved')} 
+                        <Button
+                          onClick={() => reviewSubmission('approved')}
                           disabled={isSaving}
                           className="rounded-xl bg-green-600 hover:bg-green-700 text-white h-12 px-6"
                         >
