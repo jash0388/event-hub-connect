@@ -171,7 +171,7 @@ export default function UserAuth() {
             </div>
 
             {/* Login - Email/Password Form (Supabase) */}
-            {isLogin && hasFirebaseConfig && (
+            {isLogin && (
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="space-y-2">
                   <Label htmlFor="email" className="text-foreground font-medium">
