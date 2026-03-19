@@ -204,40 +204,61 @@ const AdminDashboard = () => {
   // Initialize camera QR scanner
   useEffect(() => {
     let html5QrCode: Html5Qrcode | null = null;
+    let isMounted = true;
 
     if (cameraScannerReady) {
       const timer = setTimeout(async () => {
+        if (!isMounted) return;
+
         try {
+          // First check if camera is available
+          const devices = await Html5Qrcode.getCameras();
+          if (!devices || devices.length === 0) {
+            setQrScanError('No camera found on this device');
+            setCameraScannerReady(false);
+            return;
+          }
+
           html5QrCode = new Html5Qrcode("qr-reader");
           const config = {
-            fps: 15,
-            qrbox: { width: 260, height: 260 },
-            aspectRatio: 1.0
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+            aspectRatio: 1.333333
           };
 
+          // Use the first back camera
+          const cameraId = devices.find(d => d.label.toLowerCase().includes('back'))?.id || devices[0].id;
+
           await html5QrCode.start(
-            { facingMode: "environment" },
+            cameraId,
             config,
             (decodedText) => {
               console.log('QR Scanned:', decodedText);
               handleQRVerify(decodedText);
               setCameraScannerReady(false);
-              if (html5QrCode) {
+              if (html5QrCode && html5QrCode.isScanning) {
                 html5QrCode.stop().catch(err => console.error("Error stopping scanner", err));
               }
             },
-            () => {
-              // Silent error for no QR in frame
+            (errorMessage) => {
+              // Ignore continuous scanning errors - these happen when no QR is in frame
             }
           );
-        } catch (err) {
+        } catch (err: any) {
           console.error('Failed to initialize scanner:', err);
-          setQrScanError('Could not access camera. Please ensure permissions are granted.');
+          if (err.toString().includes('NotAllowedError') || err.toString().includes('Permission')) {
+            setQrScanError('Camera permission denied. Please allow camera access and try again.');
+          } else if (err.toString().includes('NotFoundError')) {
+            setQrScanError('No camera found. Please connect a camera and try again.');
+          } else {
+            setQrScanError('Could not start camera. Please refresh and try again.');
+          }
           setCameraScannerReady(false);
         }
       }, 300);
 
       return () => {
+        isMounted = false;
         clearTimeout(timer);
         if (html5QrCode && html5QrCode.isScanning) {
           html5QrCode.stop().catch(err => console.error("Cleanup stop error", err));
@@ -585,6 +606,11 @@ const AdminDashboard = () => {
         .from('profiles')
         .select('id, full_name, email, firebase_uid, is_firebase_user');
 
+      // 3b. Fetch user registrations for additional user info
+      const { data: userRegistrations } = await supabase
+        .from('user_registrations')
+        .select('user_id, full_name, email, year, section, department, college, phone');
+
       // 4. Calculate total points per user
       const userPointsMap: Record<string, number> = {};
       submissions.forEach((sub: any) => {
@@ -597,13 +623,23 @@ const AdminDashboard = () => {
       const mappedSubmissions = submissions.map((sub: any) => {
         const task = tasks?.find(t => t.id === sub.task_id);
         const profile = profiles?.find(p => p.id === sub.user_id || p.firebase_uid === sub.user_id);
+        const userReg = userRegistrations?.find(r => r.user_id === sub.user_id);
+
+        // Use profile name, then user_registrations name, then fallback
+        const displayName = profile?.full_name || userReg?.full_name || 'Anonymous';
+        const displayEmail = profile?.email || userReg?.email || 'No Email';
 
         return {
           ...sub,
           coding_tasks: { title: task?.title || 'Unknown Task' },
           profiles: {
-            full_name: profile?.full_name || 'Anonymous',
-            email: profile?.email || 'No Email'
+            full_name: displayName,
+            email: displayEmail,
+            year: userReg?.year || '',
+            section: userReg?.section || '',
+            department: userReg?.department || '',
+            college: userReg?.college || '',
+            phone: userReg?.phone || ''
           },
           total_user_points: userPointsMap[sub.user_id] || 0
         };
@@ -2818,6 +2854,17 @@ const AdminDashboard = () => {
                         <p className="font-bold">{(selectedSubmission.profiles as any)?.full_name}</p>
                         <p className="text-xs text-muted-foreground">{(selectedSubmission.profiles as any)?.email}</p>
                         <p className="text-xs font-bold text-blue-600 mt-2">Total Points: {(selectedSubmission as any).total_user_points || 0}</p>
+                        {/* Registration Details */}
+                        {((selectedSubmission.profiles as any)?.year || (selectedSubmission.profiles as any)?.department) && (
+                          <div className="mt-3 pt-3 border-t border-border/50">
+                            <p className="text-[10px] font-black uppercase text-muted-foreground mb-1">Registration Details</p>
+                            {(selectedSubmission.profiles as any)?.year && <p className="text-xs">📚 {(selectedSubmission.profiles as any)?.year}</p>}
+                            {(selectedSubmission.profiles as any)?.section && <p className="text-xs">Section: {(selectedSubmission.profiles as any)?.section}</p>}
+                            {(selectedSubmission.profiles as any)?.department && <p className="text-xs">🏛️ {(selectedSubmission.profiles as any)?.department}</p>}
+                            {(selectedSubmission.profiles as any)?.college && <p className="text-xs">🎓 {(selectedSubmission.profiles as any)?.college}</p>}
+                            {(selectedSubmission.profiles as any)?.phone && <p className="text-xs">📱 {(selectedSubmission.profiles as any)?.phone}</p>}
+                          </div>
+                        )}
                       </div>
                       <div className="p-4 bg-secondary/20 rounded-xl border border-border">
                         <p className="text-[10px] font-black uppercase text-muted-foreground mb-1">Target Challenge</p>

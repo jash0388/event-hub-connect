@@ -5,8 +5,15 @@ import { signInWithGoogle, hasFirebaseConfig } from "@/integrations/firebase/cli
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Mail, Lock, ArrowRight, Eye, EyeOff, ArrowLeft } from "lucide-react";
+import { Loader2, Mail, Lock, ArrowRight, Eye, EyeOff, ArrowLeft, GraduationCap, BookOpen, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 export default function UserAuth() {
   const [isLogin, setIsLogin] = useState(true);
@@ -15,6 +22,19 @@ export default function UserAuth() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+
+  // Registration popup state
+  const [showRegistration, setShowRegistration] = useState(false);
+  const [registeredUser, setRegisteredUser] = useState<any>(null);
+  const [registrationData, setRegistrationData] = useState({
+    year: "",
+    section: "",
+    department: "",
+    college: "",
+    phone: ""
+  });
+  const [isRegistering, setIsRegistering] = useState(false);
+
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -78,8 +98,30 @@ export default function UserAuth() {
           console.log('[UserAuth] Profile created/updated for Firebase user');
         }
 
-        toast({ title: "Welcome!", description: "Successfully signed in with Google" });
-        navigate("/", { replace: true });
+        // Check if user has already registered their details (use admin client to bypass RLS)
+        const { data: existingReg, error: regCheckError } = await adminClient
+          .from('user_registrations')
+          .select('*')
+          .eq('user_id', user.uid)
+          .single();
+
+        console.log('[UserAuth] Registration check:', { existingReg, regCheckError });
+
+        if (!existingReg || regCheckError) {
+          // Show registration popup for new users
+          setRegisteredUser(user);
+          setRegistrationData({
+            year: "",
+            section: "",
+            department: "",
+            college: "",
+            phone: ""
+          });
+          setShowRegistration(true);
+        } else {
+          toast({ title: "Welcome back!", description: "Successfully signed in with Google" });
+          navigate("/", { replace: true });
+        }
       }
     } catch (error: any) {
       toast({
@@ -92,20 +134,100 @@ export default function UserAuth() {
     }
   };
 
+  // Handle registration form submission
+  const handleRegistrationSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsRegistering(true);
+
+    try {
+      if (!registeredUser) return;
+
+      // Use admin client to bypass RLS for Firebase users
+      const adminClient = supabaseAdmin || supabase;
+      const { error: regError } = await adminClient
+        .from('user_registrations')
+        .insert({
+          user_id: registeredUser.uid,
+          email: registeredUser.email || '',
+          full_name: registeredUser.displayName || registeredUser.email?.split('@')[0] || 'Google User',
+          year: registrationData.year,
+          section: registrationData.section,
+          department: registrationData.department,
+          college: registrationData.college,
+          phone: registrationData.phone,
+          created_at: new Date().toISOString()
+        });
+
+      if (regError) {
+        console.error('[UserAuth] Registration error:', regError);
+        throw regError;
+      }
+
+      toast({
+        title: "Registration Complete!",
+        description: "Welcome to DataNauts HUB! Your account has been created."
+      });
+      setShowRegistration(false);
+      navigate("/", { replace: true });
+    } catch (error: any) {
+      toast({
+        title: "Registration Error",
+        description: error.message || "Failed to complete registration",
+        variant: "destructive"
+      });
+    } finally {
+      setIsRegistering(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      // Only Supabase login - registration is Firebase only
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      if (isLogin) {
+        // Login
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
 
-      if (error) throw error;
-      toast({ title: "Welcome back!", description: "Login successful" });
-      navigate("/", { replace: true });
+        if (error) throw error;
+        toast({ title: "Welcome back!", description: "Login successful" });
+        navigate("/", { replace: true });
+      } else {
+        // Sign up with Supabase - show registration popup
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+        });
+
+        if (error) throw error;
+
+        if (data.user) {
+          // Create profile for new user
+          const adminClient = supabaseAdmin || supabase;
+          await adminClient.from('profiles').upsert({
+            id: data.user.id,
+            email: email,
+            full_name: email.split('@')[0],
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'id' });
+
+          // Show registration popup
+          setRegisteredUser({ uid: data.user.id, email: email, displayName: email.split('@')[0], photoURL: null });
+          setRegistrationData({
+            year: "",
+            section: "",
+            department: "",
+            college: "",
+            phone: ""
+          });
+          setShowRegistration(true);
+        } else {
+          toast({ title: "Check your email!", description: "Please confirm your email to complete registration" });
+        }
+      }
     } catch (error: any) {
       toast({
         title: "Error",
@@ -226,7 +348,7 @@ export default function UserAuth() {
                     <Loader2 className="w-5 h-5 animate-spin" />
                   ) : (
                     <>
-                      Sign In
+                      {isLogin ? "Sign In" : "Sign Up"}
                       <ArrowRight className="w-4 h-4 ml-2" />
                     </>
                   )}
@@ -234,15 +356,23 @@ export default function UserAuth() {
               </form>
             )}
 
-            {/* Registration - Firebase Google Only */}
-            {!isLogin && hasFirebaseConfig && (
+            {/* Registration options - Shown when NOT logged in */}
+            {!isLogin && (
               <div className="text-center py-4">
-                <p className="text-muted-foreground text-sm mb-2">
-                  Create your account quickly with Google
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  No email verification needed
-                </p>
+                {hasFirebaseConfig ? (
+                  <>
+                    <p className="text-muted-foreground text-sm mb-2">
+                      Create your account quickly with Google
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      No email verification needed
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-muted-foreground text-sm">
+                    Fill in your details to create an account
+                  </p>
+                )}
               </div>
             )}
 
@@ -308,6 +438,97 @@ export default function UserAuth() {
           </div>
         </div>
       </main>
+
+      {/* Registration Popup Dialog */}
+      <Dialog open={showRegistration} onOpenChange={setShowRegistration}>
+        <DialogContent className="sm:max-w-[500px] bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="text-foreground text-xl">Complete Your Registration</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Please provide your details to complete your account setup.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleRegistrationSubmit} className="space-y-4 mt-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="year" className="text-foreground">Year</Label>
+                <select
+                  id="year"
+                  value={registrationData.year}
+                  onChange={(e) => setRegistrationData({ ...registrationData, year: e.target.value })}
+                  className="w-full h-10 px-3 rounded-xl bg-secondary border-none text-foreground"
+                  required
+                >
+                  <option value="">Select Year</option>
+                  <option value="1st Year">1st Year</option>
+                  <option value="2nd Year">2nd Year</option>
+                  <option value="3rd Year">3rd Year</option>
+                  <option value="4th Year">4th Year</option>
+                  <option value="5th Year">5th Year</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="section" className="text-foreground">Section</Label>
+                <Input
+                  id="section"
+                  placeholder="A, B, C..."
+                  value={registrationData.section}
+                  onChange={(e) => setRegistrationData({ ...registrationData, section: e.target.value })}
+                  className="h-10 rounded-xl bg-secondary border-none"
+                  required
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="department" className="text-foreground">Department</Label>
+              <Input
+                id="department"
+                placeholder="CSE, IT, ECE, AI/ML..."
+                value={registrationData.department}
+                onChange={(e) => setRegistrationData({ ...registrationData, department: e.target.value })}
+                className="h-10 rounded-xl bg-secondary border-none"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="college" className="text-foreground">College</Label>
+              <Input
+                id="college"
+                placeholder="Your College Name"
+                value={registrationData.college}
+                onChange={(e) => setRegistrationData({ ...registrationData, college: e.target.value })}
+                className="h-10 rounded-xl bg-secondary border-none"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone" className="text-foreground">Phone Number</Label>
+              <Input
+                id="phone"
+                placeholder="+91 9876543210"
+                value={registrationData.phone}
+                onChange={(e) => setRegistrationData({ ...registrationData, phone: e.target.value })}
+                className="h-10 rounded-xl bg-secondary border-none"
+                required
+              />
+            </div>
+            <Button
+              type="submit"
+              className="w-full h-12 rounded-xl font-medium mt-4"
+              disabled={isRegistering}
+            >
+              {isRegistering ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                  Registering...
+                </>
+              ) : (
+                "Complete Registration"
+              )}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

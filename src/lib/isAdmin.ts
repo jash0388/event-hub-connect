@@ -2,7 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 /**
  * Check if a user has admin role
- * Checks user_roles table (NOT profiles.role)
+ * Checks user_roles table first, then profiles table
  */
 export async function isAdmin(userId?: string): Promise<boolean> {
   try {
@@ -14,18 +14,28 @@ export async function isAdmin(userId?: string): Promise<boolean> {
       targetUserId = user.id;
     }
 
-    // Query user_roles table for role
-    const { data, error } = await supabase
+    // First check user_roles table
+    const { data: roleData, error: roleError } = await supabase
       .from('user_roles')
       .select('role')
       .eq('user_id', targetUserId);
 
-    if (error) {
-      console.error('Error checking admin status:', error);
-      return false;
+    if (!roleError && roleData?.some((entry) => entry.role === 'admin')) {
+      return true;
     }
 
-    return data?.some((entry) => entry.role === 'admin') ?? false;
+    // Also check profiles table for is_admin flag
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', targetUserId)
+      .single();
+
+    if (!profileError && profileData?.is_admin === true) {
+      return true;
+    }
+
+    return false;
   } catch (error) {
     console.error('Error in isAdmin check:', error);
     return false;

@@ -123,7 +123,6 @@ export function useAuth() {
       return;
     }
 
-    // Create a pseudo-user object for Firebase user
     const pseudoUser = {
       id: firebaseUser.uid,
       email: firebaseUser.email,
@@ -155,49 +154,28 @@ export function useAuth() {
     try {
       console.log('[useAuth] Initializing Auth...');
 
-      // 1. Check Supabase session first
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (session?.user) {
-        const isAdmin = await getAdminStatus(session.user.id);
-        setGlobalState({
-          user: session.user,
-          session,
-          isAdmin,
-          loading: false,
-          error: null,
-          isFirebaseUser: false,
-        });
-      } else if (hasFirebaseConfig) {
-        // 2. Check saved Firebase user
-        const savedFirebaseUser = getSavedFirebaseUser();
-        if (savedFirebaseUser) {
-          await handleFirebaseUser(savedFirebaseUser);
-        } else {
-          // 3. Check current Firebase auth state
-          const auth = getFirebaseAuth();
-          if (auth?.currentUser) {
-            await handleFirebaseUser({
-              uid: auth.currentUser.uid,
-              email: auth.currentUser.email,
-              displayName: auth.currentUser.displayName,
-              photoURL: auth.currentUser.photoURL,
-            });
-          } else {
-            setGlobalState({ loading: false });
-          }
-        }
-      } else {
-        setGlobalState({ loading: false });
-      }
-
-      // 4. Subscribe to Supabase auth changes
+      // Subscribe to Supabase auth changes
       supabase.auth.onAuthStateChange(async (event, session) => {
-        console.log('[useAuth] Supabase Auth Event:', event);
+        console.log('[useAuth] Supabase Auth Event:', event, session?.user?.id);
+
+        // Handle initial session
+        if (event === 'INITIAL_SESSION') {
+          if (session?.user) {
+            const isAdmin = await getAdminStatus(session.user.id);
+            setGlobalState({
+              user: session.user,
+              session,
+              isAdmin,
+              loading: false,
+              error: null,
+              isFirebaseUser: false,
+            });
+          }
+          return;
+        }
 
         if (event === 'SIGNED_OUT') {
           adminCache = null;
-          // Also sign out from Firebase
           if (hasFirebaseConfig) {
             await signOutFirebase();
           }
@@ -224,11 +202,26 @@ export function useAuth() {
         }
       });
 
-      // 5. Subscribe to Firebase auth changes
+      // Check for saved Firebase user
       if (hasFirebaseConfig) {
-        const unsubscribe = onFirebaseAuthStateChange(async (firebaseUser) => {
-          console.log('[useAuth] Firebase Auth Event:', firebaseUser?.uid);
+        const savedFirebaseUser = getSavedFirebaseUser();
+        if (savedFirebaseUser) {
+          await handleFirebaseUser(savedFirebaseUser);
+        } else {
+          const auth = getFirebaseAuth();
+          if (auth?.currentUser) {
+            await handleFirebaseUser({
+              uid: auth.currentUser.uid,
+              email: auth.currentUser.email,
+              displayName: auth.currentUser.displayName,
+              photoURL: auth.currentUser.photoURL,
+            });
+          }
+        }
 
+        // Subscribe to Firebase auth changes
+        onFirebaseAuthStateChange(async (firebaseUser) => {
+          console.log('[useAuth] Firebase Auth Event:', firebaseUser?.uid);
           if (firebaseUser) {
             await handleFirebaseUser({
               uid: firebaseUser.uid,
@@ -236,27 +229,9 @@ export function useAuth() {
               displayName: firebaseUser.displayName,
               photoURL: firebaseUser.photoURL,
             });
-          } else {
-            // Check if there's still a Supabase session
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session?.user) {
-              setGlobalState({
-                user: null,
-                session: null,
-                isAdmin: false,
-                loading: false,
-                error: null,
-                isFirebaseUser: false,
-                firebaseUser: null
-              });
-              saveFirebaseUser(null);
-            }
           }
         });
-
-        // Cleanup will be handled by the component
       }
-
     } catch (err: any) {
       console.error('[useAuth] Auth Init Error:', err);
       setGlobalState({ loading: false, error: err });

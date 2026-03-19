@@ -318,6 +318,7 @@ export default function Tasks() {
                                 placeholder="Try again... provide a better solution."
                                 value={answers[task.id] || ""}
                                 onChange={(e) => setAnswers(prev => ({ ...prev, [task.id]: e.target.value }))}
+                                onPaste={(e) => e.preventDefault()}
                                 className="min-h-[120px] rounded-2xl bg-background/50"
                               />
                               <Button
@@ -335,6 +336,7 @@ export default function Tasks() {
                                 placeholder="Initialize your response protocol here..."
                                 value={answers[task.id] || ""}
                                 onChange={(e) => setAnswers(prev => ({ ...prev, [task.id]: e.target.value }))}
+                                onPaste={(e) => e.preventDefault()}
                                 className="min-h-[120px] rounded-2xl bg-background/50 border-border focus:border-neon-cyan transition-all"
                               />
                               <Button
