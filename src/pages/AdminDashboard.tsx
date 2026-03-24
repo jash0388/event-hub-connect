@@ -838,6 +838,52 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleDeleteUser = async (userId: string, userEmail: string) => {
+    if (!confirm(`Are you sure you want to permanently DELETE user ${userEmail}? This cannot be undone!`)) return;
+
+    if (!supabaseAdmin) {
+      toast({
+        title: "Setup Required",
+        description: "To delete users, please add VITE_SUPABASE_SERVICE_ROLE_KEY to your .env",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+
+      // Delete from Supabase Auth
+      const { error: authError } = await (supabaseAdmin as any).auth.admin.deleteUser(userId);
+      if (authError) throw authError;
+
+      // Delete from user_roles table
+      const { error: roleError } = await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', userId);
+      if (roleError) throw roleError;
+
+      // Delete from profiles table if exists
+      await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', userId);
+
+      toast({ title: "Success", description: `User ${userEmail} has been permanently deleted` });
+      fetchAdminUsers();
+      fetchUsers();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleDeleteAdminUser = async (adminUser: any) => {
     if (!confirm(`Permanently delete user ${adminUser.email}? This cannot be undone.`)) return;
 
@@ -2362,13 +2408,26 @@ const AdminDashboard = () => {
                         <TableCell className="font-medium text-blue-600">{u.email}</TableCell>
                         <TableCell>{u.full_name || '—'}</TableCell>
                         <TableCell className="text-right">
-                          {!adminUsers.find(a => a.user_id === u.id) ? (
-                            <Button variant="outline" size="sm" className="rounded-xl" onClick={() => handlePromoteToAdmin(u.id, u.email)}>
-                              <Shield className="w-3.5 h-3.5 mr-2" /> Make Admin
-                            </Button>
-                          ) : (
-                            <span className="text-xs font-bold text-blue-700 bg-blue-50 px-3 py-1 rounded-full border border-blue-100">Team Admin</span>
-                          )}
+                          <div className="flex items-center justify-end gap-2">
+                            {!adminUsers.find(a => a.user_id === u.id) ? (
+                              <Button variant="outline" size="sm" className="rounded-xl" onClick={() => handlePromoteToAdmin(u.id, u.email)}>
+                                <Shield className="w-3.5 h-3.5 mr-2" /> Make Admin
+                              </Button>
+                            ) : (
+                              <span className="text-xs font-bold text-blue-700 bg-blue-50 px-3 py-1 rounded-full border border-blue-100">Team Admin</span>
+                            )}
+                            {supabaseAdmin && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-destructive hover:text-destructive rounded-xl"
+                                onClick={() => handleDeleteUser(u.id, u.email)}
+                                title="Delete this user permanently"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
