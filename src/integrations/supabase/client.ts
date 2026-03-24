@@ -8,11 +8,9 @@ export const SERVICE_KEY = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY || '';
 export const PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
 export const SECRET_KEY = import.meta.env.VITE_SUPABASE_SECRET_KEY || '';
 
-// Connectivity Hack for India: use a local proxy in dev to avoid DNS blockage
-// This matches the vite.config.ts proxy target
-export const EFFECTIVE_SUPABASE_URL = (import.meta.env.DEV && SUPABASE_URL && !SUPABASE_URL.includes('localhost'))
-  ? `${window.location.origin}/supabase-proxy`
-  : SUPABASE_URL;
+// Direct Supabase URL - skip proxy to avoid connection issues
+// The proxy approach can cause hanging in some network environments
+export const EFFECTIVE_SUPABASE_URL = SUPABASE_URL;
 
 // --- SINGLETON CLIENT INITIALIZATION ---
 // We use singletons to prevent "Multiple instances" errors that cause AbortErrors in auth.
