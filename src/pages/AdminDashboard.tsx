@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -411,13 +411,6 @@ const AdminDashboard = () => {
     password: '',
     role: 'admin' as 'admin' | 'moderator' | 'user',
   });
-
-  // AI Command Center State
-  const [aiCommand, setAiCommand] = useState('');
-  const [aiOutput, setAiOutput] = useState<{ type: 'success' | 'error' | 'info' | 'command', message: string, timestamp: Date }[]>([
-    { type: 'info', message: '🤖 AI Command Center Ready!\n\nI can help you manage the dashboard. Try commands like:\n• "create event Hackathon 2024"\n• "show all events"\n• "delete project MyApp"\n• "sync internships"\n• "show stats"\n• "add user test@test.com as admin"', timestamp: new Date() }
-  ]);
-  const [isAiProcessing, setIsAiProcessing] = useState(false);
 
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
@@ -1342,285 +1335,6 @@ const AdminDashboard = () => {
       });
     }
     setEventDialogOpen(true);
-  };
-
-  // AI Command Processor
-  const processAICommand = async (command: string) => {
-    const lowerCmd = command.toLowerCase().trim();
-
-    // Add user command to output
-    setAiOutput(prev => [...prev, { type: 'command', message: `> ${command}`, timestamp: new Date() }]);
-    setIsAiProcessing(true);
-
-    try {
-      // Stats command
-      if (lowerCmd.includes('stats') || lowerCmd.includes('statistics') || lowerCmd.includes('overview') || lowerCmd.includes('dashboard')) {
-        const [eventsCount, projectsCount, usersCount, messagesCount] = await Promise.all([
-          supabase.from('events').select('id', { count: 'exact', head: true }),
-          supabase.from('projects').select('id', { count: 'exact', head: true }),
-          supabase.from('users').select('id', { count: 'exact', head: true }),
-          supabase.from('contact_messages').select('id', { count: 'exact', head: true })
-        ]);
-
-        const eventCount = eventsCount.count || 0;
-        const projectCount = projectsCount.count || 0;
-        const userCount = usersCount.count || 0;
-        const messageCount = messagesCount.count || 0;
-
-        setAiOutput(prev => [...prev, {
-          type: 'success',
-          message: `📊 Dashboard Statistics:\n\n• Events: ${eventCount}\n• Projects: ${projectCount}\n• Users: ${userCount}\n• Messages: ${messageCount}`,
-          timestamp: new Date()
-        }]);
-        setIsAiProcessing(false);
-        return;
-      }
-
-      // Show all events
-      if (lowerCmd.includes('show') && lowerCmd.includes('event')) {
-        const { data: events } = await supabase.from('events').select('*').order('created_at', { ascending: false }).limit(10);
-        if (events && events.length > 0) {
-          const eventList = events.map(e => `• ${e.title} (${e.date?.split('T')[0] || 'No date'})`).join('\n');
-          setAiOutput(prev => [...prev, {
-            type: 'success',
-            message: `📅 Recent Events (${events.length}):\n\n${eventList}`,
-            timestamp: new Date()
-          }]);
-        } else {
-          setAiOutput(prev => [...prev, { type: 'info', message: 'No events found in database.', timestamp: new Date() }]);
-        }
-        setIsAiProcessing(false);
-        return;
-      }
-
-      // Show all projects
-      if (lowerCmd.includes('show') && lowerCmd.includes('project')) {
-        const { data: projects } = await supabase.from('projects').select('*').order('created_at', { ascending: false }).limit(10);
-        if (projects && projects.length > 0) {
-          const projectList = projects.map(p => `• ${p.title}`).join('\n');
-          setAiOutput(prev => [...prev, {
-            type: 'success',
-            message: `💻 Recent Projects (${projects.length}):\n\n${projectList}`,
-            timestamp: new Date()
-          }]);
-        } else {
-          setAiOutput(prev => [...prev, { type: 'info', message: 'No projects found in database.', timestamp: new Date() }]);
-        }
-        setIsAiProcessing(false);
-        return;
-      }
-
-      // Sync internships
-      if (lowerCmd.includes('sync') && lowerCmd.includes('internship')) {
-        setAiOutput(prev => [...prev, { type: 'info', message: '🔄 Syncing internships...', timestamp: new Date() }]);
-
-        const internshipsData = [
-          { title: 'AI/ML Research Intern', company: 'OpenAI', description: 'Work on cutting-edge AI research', internship_link: 'https://openai.com/careers' },
-          { title: 'Cloud Engineer Intern', company: 'AWS', description: 'Learn cloud computing at scale', internship_link: 'https://amazon.jobs' },
-          { title: 'Data Scientist Intern', company: 'Netflix', description: 'Work on recommendation algorithms', internship_link: 'https://jobs.netflix.com' }
-        ];
-
-        for (const int of internshipsData) {
-          await (supabase as any).from('internships').upsert(int, { onConflict: 'title,company' });
-        }
-
-        setAiOutput(prev => [...prev, {
-          type: 'success',
-          message: `✅ Successfully synced ${internshipsData.length} internships!\n\nUpdated: OpenAI, AWS, Netflix`,
-          timestamp: new Date()
-        }]);
-        fetchAllData();
-        setIsAiProcessing(false);
-        return;
-      }
-
-      // Create event
-      if (lowerCmd.startsWith('create event') || lowerCmd.startsWith('add event')) {
-        const titleMatch = command.match(/(?:create|add) event (.+?)(?: on | at |$)/i);
-        const title = titleMatch ? titleMatch[1].trim() : 'New Event';
-
-        const { error } = await supabase.from('events').insert({
-          title,
-          description: 'Created via AI Command',
-          date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-          location: 'TBD',
-          organizer: 'Admin'
-        });
-
-        if (error) {
-          setAiOutput(prev => [...prev, { type: 'error', message: `❌ Failed to create event: ${error.message}`, timestamp: new Date() }]);
-        } else {
-          setAiOutput(prev => [...prev, { type: 'success', message: `✅ Created event "${title}"!`, timestamp: new Date() }]);
-          fetchAllData();
-        }
-        setIsAiProcessing(false);
-        return;
-      }
-
-      // Create project
-      if (lowerCmd.startsWith('create project') || lowerCmd.startsWith('add project')) {
-        const titleMatch = command.match(/(?:create|add) project (.+?)$/i);
-        const title = titleMatch ? titleMatch[1].trim() : 'New Project';
-
-        const { error } = await supabase.from('projects').insert({
-          title,
-          description: 'Created via AI Command',
-          github_url: 'https://github.com'
-        });
-
-        if (error) {
-          setAiOutput(prev => [...prev, { type: 'error', message: `❌ Failed to create project: ${error.message}`, timestamp: new Date() }]);
-        } else {
-          setAiOutput(prev => [...prev, { type: 'success', message: `✅ Created project "${title}"!`, timestamp: new Date() }]);
-          fetchAllData();
-        }
-        setIsAiProcessing(false);
-        return;
-      }
-
-      // Delete event
-      if ((lowerCmd.startsWith('delete event') || lowerCmd.startsWith('remove event')) && events.length > 0) {
-        const titleMatch = command.match(/(?:delete|remove) event (.+?)$/i);
-        if (titleMatch) {
-          const titleToDelete = titleMatch[1].toLowerCase();
-          const eventToDelete = events.find(e => e.title?.toLowerCase().includes(titleToDelete));
-
-          if (eventToDelete) {
-            await supabase.from('events').delete().eq('id', eventToDelete.id);
-            setAiOutput(prev => [...prev, { type: 'success', message: `✅ Deleted event "${eventToDelete.title}"!`, timestamp: new Date() }]);
-            fetchAllData();
-          } else {
-            setAiOutput(prev => [...prev, { type: 'error', message: `❌ Event not found: "${titleToDelete}"`, timestamp: new Date() }]);
-          }
-        } else {
-          setAiOutput(prev => [...prev, { type: 'info', message: 'Please specify which event to delete. Example: "delete event Hackathon"', timestamp: new Date() }]);
-        }
-        setIsAiProcessing(false);
-        return;
-      }
-
-      // Refresh data
-      if (lowerCmd.includes('refresh') || lowerCmd.includes('reload') || lowerCmd.includes('fetch')) {
-        setAiOutput(prev => [...prev, { type: 'info', message: '🔄 Refreshing all data...', timestamp: new Date() }]);
-        await fetchAllData();
-        setAiOutput(prev => [...prev, { type: 'success', message: '✅ Data refreshed successfully!', timestamp: new Date() }]);
-        setIsAiProcessing(false);
-        return;
-      }
-
-      // Clear/reset
-      if (lowerCmd.includes('clear') || lowerCmd.includes('reset')) {
-        setAiOutput([
-          { type: 'info', message: '🤖 AI Command Center Ready!\n\nI can help you manage the dashboard. Try commands like:\n• "create event Hackathon 2024"\n• "show all events"\n• "delete project MyApp"\n• "sync internships"\n• "show stats"', timestamp: new Date() }
-        ]);
-        setIsAiProcessing(false);
-        return;
-      }
-
-      // Help
-      if (lowerCmd.includes('help') || lowerCmd === '?') {
-        setAiOutput(prev => [...prev, {
-          type: 'info',
-          message: `📖 Available Commands:\n\n🔹 **View Data:**\n• "show events" - List all events\n• "show projects" - List all projects\n• "show users" - List all users\n• "show stats" - Dashboard statistics\n\n🔹 **Create:**\n• "create event [name]" - Add new event\n• "create project [name]" - Add new project\n\n🔹 **User Management:**\n• "add user email@domain.com as admin" - Make user admin\n• "remove admin email@domain.com" - Remove admin role\n\n🔹 **Delete:**\n• "delete event [name]" - Remove an event\n• "delete project [name]" - Remove a project\n\n🔹 **Actions:**\n• "sync internships" - Update internships\n• "refresh" - Reload all data\n• "clear" - Clear terminal`,
-          timestamp: new Date()
-        }]);
-        setIsAiProcessing(false);
-        return;
-      }
-
-      // Add user as admin
-      if ((lowerCmd.includes('add user') || lowerCmd.includes('make admin') || lowerCmd.includes('set admin')) && lowerCmd.includes('@')) {
-        const emailMatch = command.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
-        if (emailMatch) {
-          const email = emailMatch[1];
-          setAiOutput(prev => [...prev, { type: 'info', message: `🔄 Adding ${email} as admin...`, timestamp: new Date() }]);
-
-          try {
-            // Use admin client to update user role
-            const { data: userData, error: userError } = await supabaseAdmin.auth.admin.listUsers();
-            if (userError) {
-              setAiOutput(prev => [...prev, { type: 'error', message: `❌ Error: ${userError.message}`, timestamp: new Date() }]);
-            } else {
-              const targetUser = userData.users.find((u: any) => u.email === email);
-              if (targetUser) {
-                // Check if already admin, if so just confirm
-                const { data: existingRole } = await supabaseAdmin.from('user_roles').select('*').eq('user_id', targetUser.id).eq('role', 'admin').single();
-
-                if (existingRole) {
-                  setAiOutput(prev => [...prev, { type: 'success', message: `✅ ${email} is already an ADMIN!\n\n🆔 User ID: ${targetUser.id}`, timestamp: new Date() }]);
-                } else {
-                  // Try to insert, if duplicate then update
-                  try {
-                    const { error: roleError } = await supabaseAdmin.from('user_roles').insert({
-                      user_id: targetUser.id,
-                      role: 'admin',
-                      created_at: new Date().toISOString()
-                    });
-
-                    if (roleError && roleError.message.includes('duplicate')) {
-                      // Already exists, just confirm
-                      setAiOutput(prev => [...prev, { type: 'success', message: `✅ ${email} is already an ADMIN!`, timestamp: new Date() }]);
-                    } else if (roleError) {
-                      setAiOutput(prev => [...prev, { type: 'error', message: `❌ Error: ${roleError.message}`, timestamp: new Date() }]);
-                    } else {
-                      setAiOutput(prev => [...prev, { type: 'success', message: `✅ Added ${email} as ADMIN!\n\n🆔 User ID: ${targetUser.id}`, timestamp: new Date() }]);
-                      fetchAllData();
-                    }
-                  } catch (e: any) {
-                    setAiOutput(prev => [...prev, { type: 'success', message: `✅ ${email} is already an ADMIN!`, timestamp: new Date() }]);
-                  }
-                }
-              } else {
-                setAiOutput(prev => [...prev, { type: 'error', message: `❌ User not found: ${email}\n\nThe user must sign up first.`, timestamp: new Date() }]);
-              }
-            }
-          } catch (err: any) {
-            setAiOutput(prev => [...prev, { type: 'error', message: `❌ Error: ${err.message}`, timestamp: new Date() }]);
-          }
-        } else {
-          setAiOutput(prev => [...prev, { type: 'error', message: `❌ Please provide an email address.\nExample: "add user john@gmail.com as admin"`, timestamp: new Date() }]);
-        }
-        setIsAiProcessing(false);
-        return;
-      }
-
-      // Remove admin
-      if ((lowerCmd.includes('remove admin') || lowerCmd.includes('revoke admin') || lowerCmd.includes('demote')) && lowerCmd.includes('@')) {
-        const emailMatch = command.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
-        if (emailMatch) {
-          const email = emailMatch[1];
-          setAiOutput(prev => [...prev, { type: 'info', message: `🔄 Removing admin role from ${email}...`, timestamp: new Date() }]);
-
-          try {
-            const { data: userData } = await supabaseAdmin.auth.admin.listUsers();
-            const targetUser = userData.users.find((u: any) => u.email === email);
-            if (targetUser) {
-              await supabaseAdmin.from('user_roles').delete().eq('user_id', targetUser.id).eq('role', 'admin');
-              setAiOutput(prev => [...prev, { type: 'success', message: `✅ Removed admin role from ${email}!`, timestamp: new Date() }]);
-              fetchAllData();
-            } else {
-              setAiOutput(prev => [...prev, { type: 'error', message: `❌ User not found`, timestamp: new Date() }]);
-            }
-          } catch (err: any) {
-            setAiOutput(prev => [...prev, { type: 'error', message: `❌ Error: ${err.message}`, timestamp: new Date() }]);
-          }
-        }
-        setIsAiProcessing(false);
-        return;
-      }
-
-      // Unknown command
-      setAiOutput(prev => [...prev, {
-        type: 'error',
-        message: `❓ Unknown command: "${command}"\n\nType "help" for available commands.`,
-        timestamp: new Date()
-      }]);
-
-    } catch (error: any) {
-      setAiOutput(prev => [...prev, { type: 'error', message: `❌ Error: ${error.message}`, timestamp: new Date() }]);
-    }
-
-    setIsAiProcessing(false);
   };
 
   const handleEventSubmit = async (e: React.FormEvent) => {
@@ -2731,29 +2445,15 @@ const AdminDashboard = () => {
                     <span className="text-xs font-mono text-blue-300/70 tracking-widest uppercase">system_terminal_v2.0.4</span>
                   </div>
                   <div className="h-[400px] overflow-y-auto p-6 font-mono text-sm leading-relaxed scrollbar-thin scrollbar-thumb-blue-900">
-                    {aiOutput.map((out, i) => (
-                      <div key={i} className={`mb-2`}>
-                        <span className="opacity-50 mr-2 text-indigo-400">[{new Date().toLocaleTimeString()}]</span>
-                        <span className="text-sky-400 mr-2">➜</span>
-                        <span className={out.type === 'error' ? 'text-blue-300' : 'text-gradient brightness-125'}>{out.message}</span>
-                      </div>
-                    ))}
-                    {isAiProcessing && (
-                      <div className="flex items-center gap-2 text-sky-400 font-bold animate-pulse">
-                        <Loader2 className="w-4 h-4 animate-spin" /> Analyzing data patterns...
-                      </div>
-                    )}
+                    {/* AI Output removed */}
                   </div>
                   <div className="p-4 bg-[#1e293b]/50 border-t border-blue-900/30">
                     <div className="flex gap-3">
                       <Input
-                        value={aiCommand}
-                        onChange={(e) => setAiCommand(e.target.value)}
                         placeholder="Ask the Robot AI anything..."
                         className="bg-black/40 border-blue-900/40 text-blue-100 rounded-xl h-12"
-                        onKeyDown={(e) => e.key === 'Enter' && processAICommand(aiCommand)}
                       />
-                      <Button onClick={() => processAICommand(aiCommand)} className="h-12 w-12 rounded-xl bg-blue-600 hover:bg-blue-500">
+                      <Button className="h-12 w-12 rounded-xl bg-blue-600 hover:bg-blue-500">
                         <Send className="w-5 h-5 text-white" />
                       </Button>
                     </div>
@@ -3153,17 +2853,31 @@ const AdminDashboard = () => {
                               {taskSubmissions
                                 .filter(s => s.user_id === selectedUserProfile.id || s.user_id === selectedUserProfile.firebase_uid)
                                 .map((sub: any) => (
-                                  <TableRow key={sub.id}>
-                                    <TableCell className="font-bold">{sub.coding_tasks?.title || 'Unknown Task'}</TableCell>
-                                    <TableCell className="text-muted-foreground text-sm">{format(new Date(sub.submitted_at), 'PP p')}</TableCell>
-                                    <TableCell>
-                                      {sub.status === 'approved' && <span className="text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-md text-xs font-bold">Approved</span>}
-                                      {sub.status === 'pending' && <span className="text-amber-600 bg-amber-50 px-2.5 py-1 rounded-md text-xs font-bold">Pending Review</span>}
-                                      {sub.status === 'denied' && <span className="text-red-600 bg-red-50 px-2.5 py-1 rounded-md text-xs font-bold">Denied</span>}
-                                    </TableCell>
-                                    <TableCell className="text-right font-mono font-bold text-blue-600">+{sub.points_awarded || 0}</TableCell>
-                                  </TableRow>
-                              ))}
+                                  <React.Fragment key={sub.id}>
+                                    <TableRow>
+                                      <TableCell className="font-bold">{sub.coding_tasks?.title || 'Unknown Task'}</TableCell>
+                                      <TableCell className="text-muted-foreground text-sm">{format(new Date(sub.submitted_at), 'PP p')}</TableCell>
+                                      <TableCell>
+                                        {sub.status === 'approved' && <span className="text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-md text-xs font-bold">Approved</span>}
+                                        {sub.status === 'pending' && <span className="text-amber-600 bg-amber-50 px-2.5 py-1 rounded-md text-xs font-bold">Pending Review</span>}
+                                        {sub.status === 'denied' && <span className="text-red-600 bg-red-50 px-2.5 py-1 rounded-md text-xs font-bold">Denied</span>}
+                                      </TableCell>
+                                      <TableCell className="text-right font-mono font-bold text-blue-600">+{sub.points_awarded || 0}</TableCell>
+                                    </TableRow>
+                                    {sub.answer && (
+                                      <TableRow className="bg-slate-50 border-none">
+                                        <TableCell colSpan={4} className="py-0">
+                                          <div className="p-4 mb-4 bg-slate-900 rounded-xl overflow-x-auto">
+                                            <p className="text-[10px] font-bold text-slate-500 uppercase mb-2">Submitted Answer Code</p>
+                                            <pre className="text-xs text-emerald-400 font-mono">
+                                              {sub.answer}
+                                            </pre>
+                                          </div>
+                                        </TableCell>
+                                      </TableRow>
+                                    )}
+                                  </React.Fragment>
+                                ))}
                             </TableBody>
                           </Table>
                         )}
