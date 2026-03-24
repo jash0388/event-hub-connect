@@ -196,6 +196,8 @@ const AdminDashboard = () => {
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const [adminDialogOpen, setAdminDialogOpen] = useState(false);
+  const [userProfileDialogOpen, setUserProfileDialogOpen] = useState(false);
+  const [selectedUserProfile, setSelectedUserProfile] = useState<any>(null);
   const [scannedQRResult, setScannedQRResult] = useState<any>(null);
   const [qrScanError, setQrScanError] = useState<string>('');
   const [isVerifying, setIsVerifying] = useState(false);
@@ -654,30 +656,47 @@ const AdminDashboard = () => {
 
   const fetchAdminUsers = async () => {
     try {
-      // Fetch all user roles joined with profiles for emails
-      const { data, error } = await supabase
+      // Fetch all user roles directly but filter specifically for admins
+      const { data: rolesData, error: rolesError } = await supabase
         .from('user_roles')
-        .select(`
-          id,
-          role,
-          created_at,
-          user_id,
-          profiles:user_id (email, full_name)
-        `)
+        .select('*')
+        .in('role', ['admin'])
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (rolesError) throw rolesError;
 
-      // Map to include profiles details, handling array/object join
-      const adminsWithDetails = (data || []).map((role: any) => {
-        const profile = Array.isArray(role.profiles) ? role.profiles[0] : role.profiles;
+      // Fetch profiles manually to map emails correctly
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('id, email, full_name');
+
+      // Map to include profiles details safely
+      const adminsWithDetails = (rolesData || []).map((role: any) => {
+        const profile = profilesData?.find(p => p.id === role.user_id);
+        const isAdminHardcoded = ['jashwanthsingh0707@gmail.com', 'jashwanth038@gmail.com'].includes((profile?.email || '').toLowerCase());
+        
         return {
           id: role.id,
+          // If the profile email matches root, strictly mark as super_admin computationally
           email: profile?.email || profile?.full_name || role.user_id,
-          role: role.role,
+          role: isAdminHardcoded ? 'super_admin' : role.role,
           created_at: role.created_at,
           user_id: role.user_id,
         };
+      });
+
+      // Add hardcoded super admins if they aren't already fetched
+      const hardcodedAdmins = ['jashwanthsingh0707@gmail.com', 'jashwanth038@gmail.com'];
+      hardcodedAdmins.forEach(email => {
+        if (!adminsWithDetails.find(a => (a.email || '').toLowerCase() === email.toLowerCase())) {
+          adminsWithDetails.push({
+            id: 'root-' + email,
+            email: email,
+            role: 'super_admin',
+            created_at: new Date().toISOString(),
+            user_id: 'root'
+          });
+        }
       });
 
       setAdminUsers(adminsWithDetails);
@@ -696,6 +715,11 @@ const AdminDashboard = () => {
 
       if (profilesError) throw profilesError;
 
+      // Fetch user registrations to catch Firebase users who might not be in profiles
+      const { data: userRegistrations } = await supabase
+        .from('user_registrations')
+        .select('*');
+
       // Fetch task submissions to calculate points
       const { data: submissionsData } = await supabase
         .from('task_submissions')
@@ -709,8 +733,37 @@ const AdminDashboard = () => {
         }
       });
 
-      // Add points to each user
-      const usersWithPoints = (profilesData || []).map((user: any) => ({
+      // Merge profiles and user_registrations uniquely
+      const allUniqueUsersMap = new Map();
+      
+      // Add from profiles
+      (profilesData || []).forEach((p: any) => {
+        allUniqueUsersMap.set(p.id, {
+          id: p.id,
+          full_name: p.full_name,
+          email: p.email,
+          firebase_uid: p.firebase_uid,
+          is_firebase_user: p.is_firebase_user
+        });
+      });
+
+      // Add from registrations if missing
+      (userRegistrations || []).forEach((r: any) => {
+        if (!allUniqueUsersMap.has(r.user_id)) {
+          allUniqueUsersMap.set(r.user_id, {
+            id: r.user_id,
+            full_name: r.full_name || r.email?.split('@')[0],
+            email: r.email,
+            firebase_uid: r.user_id, 
+            is_firebase_user: true
+          });
+        }
+      });
+
+      // Add points to each unified user
+      const unifiedUsers = Array.from(allUniqueUsersMap.values());
+      
+      const usersWithPoints = unifiedUsers.map((user: any) => ({
         ...user,
         total_points: userPointsMap[user.id] || 0,
         has_submissions: !!userPointsMap[user.id]
@@ -784,53 +837,46 @@ const AdminDashboard = () => {
     setIsSaving(true);
 
     try {
-      // Creation requires SERVICE_ROLE_KEY. Advise user to use promotion from Users tab instead if missing.
-      if (!supabaseAdmin) {
+      // Search precisely for the specified email in the already fetched user grid
+      const targetUser = allUsers.find(u => u.email === adminForm.email);
+      
+      if (!targetUser) {
         toast({
-          title: "Setup Required",
-          description: "To create users directly, please add VITE_SUPABASE_SERVICE_ROLE_KEY to your .env. Alternatively, promote existing users from the 'Users' tab.",
+          title: "User Not Found",
+          description: "No registered user found with that email. The user must sign in to the platform at least once.",
           variant: "destructive",
         });
         setIsSaving(false);
         return;
       }
-      const { data: authData, error: authError } = await (supabaseAdmin as any).auth.admin.createUser({
-        email: adminForm.email,
-        password: adminForm.password,
-        email_confirm: true,
-      });
-
-      if (authError) throw authError;
-
-      if (!authData.user) throw new Error('Failed to create user');
 
       // First check if user already has a role
-      const { data: existingRole } = await supabase
+      const { data: existingRole, error: fetchError } = await supabase
         .from('user_roles')
         .select('role')
-        .eq('user_id', authData.user.id)
+        .eq('user_id', targetUser.id)
         .maybeSingle();
 
+      if (fetchError) throw fetchError;
+
       // Add role to user_roles table
-      let roleError;
+      let roleError = null;
       if (existingRole) {
-        // Update existing role
         const result = await supabase
           .from('user_roles')
           .update({ role: adminForm.role })
-          .eq('user_id', authData.user.id);
+          .eq('user_id', targetUser.id);
         roleError = result.error;
       } else {
-        // Insert new role
         const result = await supabase
           .from('user_roles')
-          .insert([{ user_id: authData.user.id, role: adminForm.role }]);
+          .insert([{ user_id: targetUser.id, role: adminForm.role }]);
         roleError = result.error;
       }
 
       if (roleError) throw roleError;
 
-      toast({ title: "Success", description: `${adminForm.role} created successfully` });
+      toast({ title: "Success", description: `${targetUser.email} has been promoted to ${adminForm.role}` });
       setAdminDialogOpen(false);
       setAdminForm({ email: '', password: '', role: 'admin' });
       fetchAdminUsers();
@@ -846,8 +892,6 @@ const AdminDashboard = () => {
   };
 
   const handleRemoveAdmin = async (adminUser: any) => {
-    if (!confirm(`Remove ${adminUser.role} role from ${adminUser.email}?`)) return;
-
     try {
       // Remove from user_roles table
       const { error } = await supabase
@@ -857,7 +901,7 @@ const AdminDashboard = () => {
 
       if (error) throw error;
 
-      toast({ title: "Success", description: "Admin role removed" });
+      toast({ title: "Success", description: "Admin privileges have been revoked." });
       fetchAdminUsers();
     } catch (error: any) {
       toast({
@@ -1255,8 +1299,15 @@ const AdminDashboard = () => {
   };
 
   const handleLogout = async () => {
-    await signOut();
-    navigate('/');
+    try {
+      await signOut();
+    } catch (e) {
+      console.warn("Forcing logout despite session errors", e);
+    } finally {
+      localStorage.removeItem('sb-' + import.meta.env.VITE_SUPABASE_URL + '-auth-token');
+      navigate('/');
+      window.location.href = '/'; // Hard redirect for maximum reliability
+    }
   };
 
   const handleEventDialog = (event?: Event) => {
@@ -2474,11 +2525,15 @@ const AdminDashboard = () => {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-2">
-                            {!adminUsers.find(a => a.user_id === u.id) ? (
-                              <Button variant="outline" size="sm" className="rounded-xl" onClick={() => handlePromoteToAdmin(u.id, u.email)}>
-                                <Shield className="w-3.5 h-3.5 mr-2" /> Make Admin
-                              </Button>
-                            ) : (
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="rounded-xl border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100" 
+                              onClick={() => { setSelectedUserProfile(u); setUserProfileDialogOpen(true); }}
+                            >
+                              <UserPlus className="w-3.5 h-3.5 mr-2" /> View Profile
+                            </Button>
+                            {adminUsers.find(a => a.user_id === u.id) && (
                               <span className="text-xs font-bold text-blue-700 bg-blue-50 px-3 py-1 rounded-full border border-blue-100">Team Admin</span>
                             )}
                             {supabaseAdmin && (
@@ -2507,11 +2562,9 @@ const AdminDashboard = () => {
                   <h2 className="text-2xl font-bold">Privileged Team</h2>
                   <p className="text-sm text-muted-foreground">{adminUsers.length} active administrators</p>
                 </div>
-                {supabaseAdmin && (
-                  <Button onClick={() => { setAdminForm({ email: '', password: '', role: 'admin' }); setAdminDialogOpen(true); }} className="rounded-xl">
-                    <UserPlus className="w-4 h-4 mr-2" /> Create Admin
-                  </Button>
-                )}
+                <Button onClick={() => { setAdminForm({ email: '', password: '', role: 'admin' }); setAdminDialogOpen(true); }} className="rounded-xl">
+                  <UserPlus className="w-4 h-4 mr-2" /> Validate & Add Admin
+                </Button>
               </div>
               <div className="bg-card border border-border rounded-2xl overflow-x-auto shadow-sm">
                 <Table>
@@ -2524,9 +2577,13 @@ const AdminDashboard = () => {
                         <TableCell className="font-medium">{a.email}</TableCell>
                         <TableCell><span className="capitalize text-xs font-bold px-2 py-1 bg-blue-50 text-blue-700 rounded-lg">{a.role}</span></TableCell>
                         <TableCell className="text-right">
-                          <Button variant="ghost" size="sm" className="text-blue-600 rounded-xl" onClick={() => handleRemoveAdmin(a)}>
-                            <ShieldOff className="w-4 h-4 mr-2" /> Revoke
-                          </Button>
+                          {a.role !== 'super_admin' ? (
+                            <Button variant="ghost" size="sm" className="text-blue-600 rounded-xl" onClick={() => handleRemoveAdmin(a)}>
+                              <ShieldOff className="w-4 h-4 mr-2" /> Revoke
+                            </Button>
+                          ) : (
+                            <span className="text-xs font-bold text-muted-foreground mr-4 border border-border px-2 py-1 rounded-md">Permanent</span>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -2898,13 +2955,9 @@ const AdminDashboard = () => {
                     <Label>Identity (Email)</Label>
                     <Input type="email" value={adminForm.email} onChange={e => setAdminForm({ ...adminForm, email: e.target.value })} required className="h-12 rounded-xl border-blue-100 focus:border-blue-300" />
                   </div>
-                  <div className="space-y-2">
-                    <Label>Security Token (Password)</Label>
-                    <Input type="password" value={adminForm.password} onChange={e => setAdminForm({ ...adminForm, password: e.target.value })} required className="h-12 rounded-xl border-blue-100" />
-                  </div>
-                  <div className="flex justify-end gap-3 pt-4">
+                  <div className="flex justify-end gap-3 pt-6 border-t border-border mt-4">
                     <Button type="button" variant="ghost" onClick={() => setAdminDialogOpen(false)} className="rounded-xl h-11">Cancel</Button>
-                    <Button type="submit" disabled={isSaving} className="rounded-xl h-11 px-8 bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-200">Enforce Policy</Button>
+                    <Button type="submit" disabled={isSaving} className="rounded-xl h-11 px-8 bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-200">Promote to Admin</Button>
                   </div>
                 </form>
               </DialogContent>
@@ -3032,6 +3085,93 @@ const AdminDashboard = () => {
                         >
                           <CheckCircle className="w-4 h-4 mr-2" /> Approve & Sync
                         </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </DialogContent>
+            </Dialog>
+
+            {/* User Profile Dialog */}
+            <Dialog open={userProfileDialogOpen} onOpenChange={setUserProfileDialogOpen}>
+              <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl p-6 bg-background">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-bold flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                      <Users className="w-5 h-5" />
+                    </div>
+                    Student Profile
+                  </DialogTitle>
+                </DialogHeader>
+                {selectedUserProfile && (
+                  <div className="space-y-6 mt-4">
+                    {/* Basic Info Card */}
+                    <div className="bg-secondary/20 border border-border rounded-2xl p-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <p className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-1">Identity Details</p>
+                          <h3 className="text-xl font-bold text-foreground">{selectedUserProfile.full_name || 'Anonymous User'}</h3>
+                          <p className="text-blue-600 font-medium mb-1">{selectedUserProfile.email}</p>
+                          
+                          {/* Login Provider Badge */}
+                          {selectedUserProfile.is_firebase_user ? (
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-red-50 text-red-700 border border-red-200 mt-2">
+                              Google Authenticated (Firebase)
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 mt-2">
+                              Native Secure Login (Supabase)
+                            </span>
+                          )}
+                        </div>
+                        <div className="md:text-right">
+                          <p className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-1">Performance Matrix</p>
+                          <div className="inline-flex flex-col items-center md:items-end">
+                            <span className="text-3xl font-black text-blue-600">{selectedUserProfile.total_points || 0}</span>
+                            <span className="text-xs text-muted-foreground font-bold">TOTAL XP SECURED</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Task Submissions History */}
+                    <div>
+                      <h4 className="text-lg font-bold mb-4 flex items-center gap-2">
+                        <Terminal className="w-5 h-5" /> Challenge Submissions History
+                      </h4>
+                      <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+                        {taskSubmissions.filter(s => s.user_id === selectedUserProfile.id || s.user_id === selectedUserProfile.firebase_uid).length === 0 ? (
+                          <div className="p-8 text-center text-muted-foreground">
+                            No coding challenges submitted by this student yet.
+                          </div>
+                        ) : (
+                          <Table>
+                            <TableHeader className="bg-secondary/30">
+                              <TableRow>
+                                <TableHead>Challenge Name</TableHead>
+                                <TableHead>Submitted At</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead className="text-right">Points Array</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {taskSubmissions
+                                .filter(s => s.user_id === selectedUserProfile.id || s.user_id === selectedUserProfile.firebase_uid)
+                                .map((sub: any) => (
+                                  <TableRow key={sub.id}>
+                                    <TableCell className="font-bold">{sub.coding_tasks?.title || 'Unknown Task'}</TableCell>
+                                    <TableCell className="text-muted-foreground text-sm">{format(new Date(sub.submitted_at), 'PP p')}</TableCell>
+                                    <TableCell>
+                                      {sub.status === 'approved' && <span className="text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-md text-xs font-bold">Approved</span>}
+                                      {sub.status === 'pending' && <span className="text-amber-600 bg-amber-50 px-2.5 py-1 rounded-md text-xs font-bold">Pending Review</span>}
+                                      {sub.status === 'denied' && <span className="text-red-600 bg-red-50 px-2.5 py-1 rounded-md text-xs font-bold">Denied</span>}
+                                    </TableCell>
+                                    <TableCell className="text-right font-mono font-bold text-blue-600">+{sub.points_awarded || 0}</TableCell>
+                                  </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        )}
                       </div>
                     </div>
                   </div>

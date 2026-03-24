@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -197,9 +198,7 @@ function CodeEditorModal({
 export default function Tasks() {
   const { user, firebaseUser, isFirebaseUser } = useAuth();
   const { toast } = useToast();
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [submissions, setSubmissions] = useState<Record<string, Submission>>({});
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [submitting, setSubmitting] = useState<string | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -212,11 +211,44 @@ export default function Tasks() {
     return user?.id;
   };
 
-  useEffect(() => {
-    const userId = getUserId();
-    if (userId) {
-      fetchTasksAndSubmissions(userId);
+  const userId = getUserId();
 
+  const { data, isLoading: loading } = useQuery({
+    queryKey: ['coding_tasks', userId],
+    queryFn: async () => {
+      const { data: tasksData, error: taskError } = await supabase
+        .from('coding_tasks' as any)
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      const submissionsMap: Record<string, Submission> = {};
+      
+      if (userId) {
+        const { data: submissionsData } = await supabase
+          .from('task_submissions' as any)
+          .select('*')
+          .eq('user_id', userId)
+          .limit(200);
+          
+        (submissionsData || []).forEach((sub: any) => {
+          if (!submissionsMap[sub.task_id] ||
+            new Date(sub.submitted_at || 0) > new Date(submissionsMap[sub.task_id].submitted_at || 0)) {
+            submissionsMap[sub.task_id] = sub;
+          }
+        });
+      }
+
+      return { tasks: (tasksData || []) as Task[], submissions: submissionsMap };
+    },
+    staleTime: 60000, // Cache for 1 minute
+  });
+
+  const tasks = data?.tasks || [];
+  const submissions = data?.submissions || {};
+
+  useEffect(() => {
+    if (userId) {
       const channel = supabase
         .channel('schema-db-changes')
         .on(
@@ -228,7 +260,7 @@ export default function Tasks() {
             filter: `user_id=eq.${userId}`
           },
           () => {
-            fetchTasksAndSubmissions(userId);
+            queryClient.invalidateQueries({ queryKey: ['coding_tasks', userId] });
           }
         )
         .subscribe();
@@ -237,38 +269,7 @@ export default function Tasks() {
         supabase.removeChannel(channel);
       };
     }
-  }, [user, isFirebaseUser, firebaseUser]);
-
-  const fetchTasksAndSubmissions = async (userId: string) => {
-    try {
-      setLoading(true);
-
-      const { data: tasksData } = await supabase
-        .from('coding_tasks' as any)
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      const { data: submissionsData } = await supabase
-        .from('task_submissions' as any)
-        .select('*')
-        .eq('user_id', userId);
-
-      const submissionsMap: Record<string, Submission> = {};
-      (submissionsData || []).forEach((sub: any) => {
-        if (!submissionsMap[sub.task_id] ||
-          new Date(sub.submitted_at) > new Date(submissionsMap[sub.task_id].submitted_at || 0)) {
-          submissionsMap[sub.task_id] = sub;
-        }
-      });
-
-      setTasks((tasksData || []) as Task[]);
-      setSubmissions(submissionsMap);
-    } catch (error) {
-      console.error('[Tasks] Error:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [userId, queryClient]);
 
   const handleOpenModal = (task: Task) => {
     setSelectedTask(task);
@@ -322,7 +323,7 @@ export default function Tasks() {
 
       setIsModalOpen(false);
       setCodeAnswer("");
-      fetchTasksAndSubmissions(userId);
+      queryClient.invalidateQueries({ queryKey: ['coding_tasks', userId] });
     } catch (error: any) {
       toast({
         title: "Submission Failed",

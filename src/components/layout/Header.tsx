@@ -30,8 +30,15 @@ export function Header() {
   }, []);
 
   const handleLogout = async () => {
-    await signOut();
-    navigate("/");
+    try {
+      await signOut();
+    } catch (e) {
+      console.warn("Forcing logout despite session errors", e);
+    } finally {
+      localStorage.removeItem('sb-' + import.meta.env.VITE_SUPABASE_URL + '-auth-token');
+      navigate('/');
+      window.location.href = '/'; // Hard redirect for maximum reliability
+    }
   };
 
   return (

@@ -63,11 +63,21 @@ let globalAuthState: AuthState = {
 };
 
 // Timeout for auth initialization to prevent hanging
-const AUTH_INIT_TIMEOUT = 10000; // 10 seconds
+const AUTH_INIT_TIMEOUT = 3000; // 3 seconds
 
 let globalListeners: ((state: AuthState) => void)[] = [];
 let isAuthInitialized = false;
 let authInitTimeout: ReturnType<typeof setTimeout> | null = null;
+let supabaseChecked = false;
+let firebaseChecked = false;
+
+const checkAndResolveLoading = () => {
+  if (supabaseChecked && (!hasFirebaseConfig || firebaseChecked)) {
+    if (!globalAuthState.user) {
+      setGlobalState({ loading: false });
+    }
+  }
+};
 
 const notifyListeners = () => {
   globalListeners.forEach(listener => listener(globalAuthState));
@@ -110,19 +120,23 @@ export function useAuth() {
 
   const handleFirebaseUser = useCallback(async (firebaseUser: FirebaseUserData | null) => {
     if (!firebaseUser) {
-      setGlobalState({
-        user: null,
-        session: null,
-        isAdmin: false,
-        loading: false,
-        error: null,
-        isFirebaseUser: false,
-        firebaseUser: null
-      });
+      firebaseChecked = true;
+      if (globalAuthState.isFirebaseUser || !globalAuthState.user) {
+        setGlobalState({
+          user: null,
+          session: null,
+          isAdmin: false,
+          error: null,
+          isFirebaseUser: false,
+          firebaseUser: null
+        });
+      }
+      checkAndResolveLoading();
       saveFirebaseUser(null);
       return;
     }
 
+    firebaseChecked = true;
     const pseudoUser = {
       id: firebaseUser.uid,
       email: firebaseUser.email,
@@ -157,8 +171,33 @@ export function useAuth() {
       // Set a timeout to prevent hanging forever
       authInitTimeout = setTimeout(() => {
         console.warn('[useAuth] Auth initialization timeout - resolving to unauthenticated state');
-        setGlobalState({ loading: false, error: new Error('Auth initialization timeout') });
+        supabaseChecked = true;
+        firebaseChecked = true;
+        checkAndResolveLoading();
       }, AUTH_INIT_TIMEOUT);
+
+      // Instantly load session from storage to bypass INITIAL_SESSION delay
+      try {
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        if (currentSession?.user) {
+          supabaseChecked = true;
+          const isAdmin = await getAdminStatus(currentSession.user.id);
+          setGlobalState({
+            user: currentSession.user,
+            session: currentSession,
+            isAdmin,
+            loading: false,
+            error: null,
+            isFirebaseUser: false,
+          });
+          if (authInitTimeout) {
+            clearTimeout(authInitTimeout);
+            authInitTimeout = null;
+          }
+        }
+      } catch (e) {
+        console.error("Error fetching explicit session", e);
+      }
 
       // Handle visibility change - prevent session loss when switching tabs
       const handleVisibilityChange = async () => {
@@ -190,6 +229,13 @@ export function useAuth() {
 
         // Handle initial session
         if (event === 'INITIAL_SESSION') {
+          supabaseChecked = true;
+          // Clear the timeout since we got a response
+          if (authInitTimeout) {
+            clearTimeout(authInitTimeout);
+            authInitTimeout = null;
+          }
+
           if (session?.user) {
             const isAdmin = await getAdminStatus(session.user.id);
             setGlobalState({
@@ -200,29 +246,11 @@ export function useAuth() {
               error: null,
               isFirebaseUser: false,
             });
-            // Clear the timeout since we got a response
-            if (authInitTimeout) {
-              clearTimeout(authInitTimeout);
-              authInitTimeout = null;
-            }
-            return;
-          } else if (!hasFirebaseConfig) {
-            // No session and no Firebase config - set loading to false
-            console.log('[useAuth] No initial session, no Firebase config - setting loading to false');
-            setGlobalState({ loading: false });
-            // Clear the timeout since we got a response
-            if (authInitTimeout) {
-              clearTimeout(authInitTimeout);
-              authInitTimeout = null;
-            }
             return;
           }
-          // Has Firebase config - don't set loading false yet, wait for Firebase check
-          // Clear the timeout to prevent premature timeout
-          if (authInitTimeout) {
-            clearTimeout(authInitTimeout);
-            authInitTimeout = null;
-          }
+          
+          // No user found via Supabase yet, check if we can resolve loading
+          checkAndResolveLoading();
         }
 
         if (event === 'SIGNED_OUT') {
@@ -273,7 +301,8 @@ export function useAuth() {
         // Set a shorter timeout for Firebase check
         const firebaseTimeout = setTimeout(() => {
           console.warn('[useAuth] Firebase auth check timeout');
-          setGlobalState({ loading: false });
+          firebaseChecked = true;
+          checkAndResolveLoading();
         }, 5000);
 
         try {
@@ -305,6 +334,8 @@ export function useAuth() {
               displayName: firebaseUser.displayName,
               photoURL: firebaseUser.photoURL,
             });
+          } else {
+            await handleFirebaseUser(null);
           }
         });
       } else {

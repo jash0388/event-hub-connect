@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { supabase } from '@/integrations/supabase/client';
@@ -49,36 +50,35 @@ const aiInternships: Internship[] = [
 ];
 
 const Feed = () => {
-  const [events, setEvents] = useState<Event[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
   const [internships] = useState<Internship[]>(aiInternships);
-  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    fetchAllData();
-  }, []);
+  const { data: events = [], isLoading: eventsLoading } = useQuery({
+    queryKey: ['feed_events'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('events')
+        .select('*')
+        .order('date', { ascending: true })
+        .limit(50);
+      return (data || []) as Event[];
+    },
+    staleTime: 60000,
+  });
 
-  const fetchAllData = async () => {
-    setIsLoading(true);
-    await Promise.all([fetchEvents(), fetchProjects()]);
-    setIsLoading(false);
-  };
+  const { data: projects = [], isLoading: projectsLoading } = useQuery({
+    queryKey: ['feed_projects'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('projects')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(50);
+      return (data || []) as Project[];
+    },
+    staleTime: 60000,
+  });
 
-  const fetchEvents = async () => {
-    const { data } = await supabase
-      .from('events')
-      .select('*')
-      .order('date', { ascending: true });
-    setEvents(data || []);
-  };
-
-  const fetchProjects = async () => {
-    const { data } = await supabase
-      .from('projects')
-      .select('*')
-      .order('created_at', { ascending: false });
-    setProjects(data || []);
-  };
+  const isLoading = eventsLoading || projectsLoading;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">

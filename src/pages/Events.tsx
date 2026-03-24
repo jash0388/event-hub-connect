@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { Calendar, Clock, MapPin, Search, Users, Bookmark, ChevronRight, Image, ArrowRight } from "lucide-react";
 import { format, isBefore, isToday, parseISO, startOfDay } from "date-fns";
@@ -68,24 +69,22 @@ function getPhotosArray(photos: string | string[] | null | undefined): string[] 
 export default function Events() {
   const { toast } = useToast();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
-  const [events, setEvents] = useState<EnhancedEvent[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState<Category | "All">("All");
   const [sortBy, setSortBy] = useState<SortOption>("date");
-  const [savedIds, setSavedIds] = useState<string[]>([]);
-  const [registeredEvents, setRegisteredEvents] = useState<Set<string>>(new Set());
   const [showPhotosModal, setShowPhotosModal] = useState<string | null>(null);
   const [currentPhotos, setCurrentPhotos] = useState<string[]>([]);
 
-  const fetchPageData = async () => {
-    setIsLoading(true);
-    try {
+  const { data, isLoading } = useQuery({
+    queryKey: ['events_page_data', user?.id],
+    queryFn: async () => {
       const { data: rows, error } = await supabase
         .from("events")
         .select("*")
-        .order("date", { ascending: true });
+        .order("date", { ascending: true })
+        .limit(100);
 
       if (error) throw error;
 
@@ -97,38 +96,51 @@ export default function Events() {
         trendingScore: Math.max(0, event.trending_score || 0),
       }));
 
-      const { data: attendeesRows } = await (supabase as any).from("event_registrations").select("event_id");
+      const { data: attendeesRows } = await (supabase as any)
+        .from("event_registrations")
+        .select("event_id")
+        .limit(1000);
+        
       const attendeeCountMap = new Map<string, number>();
       (attendeesRows || []).forEach((row: any) => {
         attendeeCountMap.set(row.event_id, (attendeeCountMap.get(row.event_id) || 0) + 1);
       });
 
-      setEvents(baseEvents.map(event => ({
+      const eventsWithAttendees = baseEvents.map(event => ({
         ...event,
         attendees: attendeeCountMap.get(event.id) || 0
-      })));
+      }));
+
+      let savedIdsList: string[] = [];
+      let registeredEventsSet = new Set<string>();
 
       if (user?.id) {
-        const { data: savedRows } = await supabase.from("user_saved_events").select("event_id").eq("user_id", user.id);
-        setSavedIds((savedRows || []).map(row => row.event_id));
+        const { data: savedRows } = await supabase.from("user_saved_events").select("event_id").eq("user_id", user.id).limit(100);
+        savedIdsList = (savedRows || []).map((row: any) => row.event_id);
 
-        const { data: regs } = await (supabase
+        const { data: regs } = await supabase
           .from("event_registrations" as any)
           .select("event_id")
-          .eq("user_id", user.id) as any);
-        if (regs) setRegisteredEvents(new Set(regs.map((r: any) => r.event_id)));
+          .eq("user_id", user.id)
+          .limit(100) as any;
+          
+        if (regs) {
+          registeredEventsSet = new Set(regs.map((r: any) => r.event_id));
+        }
       }
-    } catch (error) {
-      console.error("Error loading events:", error);
-      toast({ title: "Failed to load events", variant: "destructive" });
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
-  useEffect(() => {
-    fetchPageData();
-  }, [user?.id]);
+      return {
+        events: eventsWithAttendees,
+        savedIds: savedIdsList,
+        registeredEvents: registeredEventsSet
+      };
+    },
+    staleTime: 60000,
+  });
+
+  const events = data?.events || [];
+  const savedIds = data?.savedIds || [];
+  const registeredEvents = data?.registeredEvents || new Set<string>();
 
   const filteredEvents = useMemo(() => {
     return events
@@ -149,16 +161,28 @@ export default function Events() {
       toast({ title: "Login required", description: "Please login to save events", variant: "destructive" });
       return;
     }
+    
+    // Optimistic update
+    queryClient.setQueryData(['events_page_data', user.id], (old: any) => {
+      if (!old) return old;
+      const isSaved = old.savedIds.includes(eventId);
+      return {
+        ...old,
+        savedIds: isSaved 
+          ? old.savedIds.filter((id: string) => id !== eventId)
+          : [...old.savedIds, eventId]
+      };
+    });
+
     try {
       if (savedIds.includes(eventId)) {
         await supabase.from("user_saved_events").delete().eq("user_id", user.id).eq("event_id", eventId);
-        setSavedIds(prev => prev.filter(id => id !== eventId));
       } else {
         await supabase.from("user_saved_events").insert({ user_id: user.id, event_id: eventId });
-        setSavedIds(prev => [...prev, eventId]);
       }
     } catch (error) {
       toast({ title: "Error updating saved events", variant: "destructive" });
+      queryClient.invalidateQueries({ queryKey: ['events_page_data', user.id] });
     }
   };
 

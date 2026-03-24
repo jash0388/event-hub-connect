@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 // Admin email addresses - add your email here to get admin access
 const ADMIN_EMAILS = [
   'jashwanthsingh0707@gmail.com', // Add your email here
+  'jashwanth038@gmail.com',       // The actual email the user is testing with
   'admin@example.com',
 ];
 
