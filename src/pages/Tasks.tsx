@@ -216,11 +216,13 @@ export default function Tasks() {
   const { data, isLoading: loading } = useQuery({
     queryKey: ['coding_tasks', userId],
     queryFn: async () => {
-      const { data: tasksData, error: taskError } = await supabase
+      const { data: tasksDataRaw, error: taskError } = await supabase
         .from('coding_tasks' as any)
         .select('*')
         .order('created_at', { ascending: false })
         .limit(100);
+
+      const tasksData = (tasksDataRaw || []).filter((task: any) => !task.title?.startsWith('[DELETED]'));
 
       const submissionsMap: Record<string, Submission> = {};
       
