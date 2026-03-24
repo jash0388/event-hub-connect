@@ -688,13 +688,43 @@ const AdminDashboard = () => {
 
   const fetchUsers = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch profiles
+      const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setAllUsers(data || []);
+      if (profilesError) throw profilesError;
+
+      // Fetch task submissions to calculate points
+      const { data: submissionsData } = await supabase
+        .from('task_submissions')
+        .select('user_id, points_awarded, status');
+
+      // Calculate total points per user
+      const userPointsMap: Record<string, number> = {};
+      (submissionsData || []).forEach((sub: any) => {
+        if (sub.status === 'approved' && sub.points_awarded) {
+          userPointsMap[sub.user_id] = (userPointsMap[sub.user_id] || 0) + sub.points_awarded;
+        }
+      });
+
+      // Add points to each user
+      const usersWithPoints = (profilesData || []).map((user: any) => ({
+        ...user,
+        total_points: userPointsMap[user.id] || 0,
+        has_submissions: !!userPointsMap[user.id]
+      }));
+
+      // Sort by points (highest first), then by name
+      usersWithPoints.sort((a: any, b: any) => {
+        if (b.total_points !== a.total_points) {
+          return b.total_points - a.total_points;
+        }
+        return (a.full_name || '').localeCompare(b.full_name || '');
+      });
+
+      setAllUsers(usersWithPoints);
     } catch (error: any) {
       console.error('Error fetching users:', error);
     }
@@ -2411,23 +2441,35 @@ const AdminDashboard = () => {
               <div className="flex justify-between items-center mb-6">
                 <div>
                   <h2 className="text-2xl font-bold">Platform Community</h2>
-                  <p className="text-sm text-muted-foreground">{allUsers.length} total members registrered</p>
+                  <p className="text-sm text-muted-foreground">{allUsers.length} total members registered</p>
                 </div>
               </div>
               <div className="bg-card border border-border rounded-2xl overflow-x-auto shadow-sm">
                 <Table>
                   <TableHeader className="bg-secondary/20">
                     <TableRow>
+                      <TableHead className="w-12">#</TableHead>
+                      <TableHead>Student Name</TableHead>
                       <TableHead>Email</TableHead>
-                      <TableHead>Full Name</TableHead>
+                      <TableHead className="text-center">Points</TableHead>
                       <TableHead className="text-right">Access Role</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {allUsers.map((u) => (
+                    {allUsers.map((u, index) => (
                       <TableRow key={u.id} className="hover:bg-secondary/10">
-                        <TableCell className="font-medium text-blue-600">{u.email}</TableCell>
-                        <TableCell>{u.full_name || '—'}</TableCell>
+                        <TableCell className="font-mono text-muted-foreground">{index + 1}</TableCell>
+                        <TableCell className="font-medium">{u.full_name || '—'}</TableCell>
+                        <TableCell className="text-blue-600">{u.email}</TableCell>
+                        <TableCell className="text-center">
+                          {u.total_points > 0 ? (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              {u.total_points} XP
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">No submissions</span>
+                          )}
+                        </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-2">
                             {!adminUsers.find(a => a.user_id === u.id) ? (

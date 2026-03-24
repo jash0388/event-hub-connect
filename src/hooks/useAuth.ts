@@ -160,6 +160,30 @@ export function useAuth() {
         setGlobalState({ loading: false, error: new Error('Auth initialization timeout') });
       }, AUTH_INIT_TIMEOUT);
 
+      // Handle visibility change - prevent session loss when switching tabs
+      const handleVisibilityChange = async () => {
+        if (document.visibilityState === 'visible') {
+          // Re-check session when page becomes visible again
+          console.log('[useAuth] Page became visible, checking session...');
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user && !globalAuthState.user) {
+            // Session exists but not in state - restore it
+            const isAdmin = await getAdminStatus(session.user.id);
+            setGlobalState({
+              user: session.user,
+              session,
+              isAdmin,
+              loading: false,
+              error: null,
+              isFirebaseUser: false,
+            });
+          }
+        }
+      };
+
+      // Add visibility change listener to prevent session issues when switching tabs
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+
       // Subscribe to Supabase auth changes
       supabase.auth.onAuthStateChange(async (event, session) => {
         console.log('[useAuth] Supabase Auth Event:', event, session?.user?.id);
@@ -202,6 +226,16 @@ export function useAuth() {
         }
 
         if (event === 'SIGNED_OUT') {
+          // Check if this might be a false positive due to tab switching
+          // by re-checking the session before clearing state
+          const { data: { session: currentSession } } = await supabase.auth.getSession();
+          if (currentSession?.user) {
+            // Session actually exists - don't sign out
+            console.log('[useAuth] Ignoring false SIGNED_OUT event, session still valid');
+            return;
+          }
+
+          // Actual sign out
           adminCache = null;
           if (hasFirebaseConfig) {
             await signOutFirebase();
