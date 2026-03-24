@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
@@ -668,7 +669,7 @@ const AdminDashboard = () => {
       const adminsWithDetails = (rolesData || []).map((role: any) => {
         const profile = profilesData?.find(p => p.id === role.user_id);
         const isAdminHardcoded = ['jashwanthsingh0707@gmail.com', 'jashwanth038@gmail.com'].includes((profile?.email || '').toLowerCase());
-        
+
         return {
           id: role.id,
           // If the profile email matches root, strictly mark as super_admin computationally
@@ -729,7 +730,7 @@ const AdminDashboard = () => {
 
       // Merge profiles and user_registrations uniquely
       const allUniqueUsersMap = new Map();
-      
+
       // Add from profiles
       (profilesData || []).forEach((p: any) => {
         allUniqueUsersMap.set(p.id, {
@@ -748,7 +749,7 @@ const AdminDashboard = () => {
             id: r.user_id,
             full_name: r.full_name || r.email?.split('@')[0],
             email: r.email,
-            firebase_uid: r.user_id, 
+            firebase_uid: r.user_id,
             is_firebase_user: true
           });
         }
@@ -756,7 +757,7 @@ const AdminDashboard = () => {
 
       // Add points to each unified user
       const unifiedUsers = Array.from(allUniqueUsersMap.values());
-      
+
       const usersWithPoints = unifiedUsers.map((user: any) => ({
         ...user,
         total_points: userPointsMap[user.id] || 0,
@@ -833,7 +834,7 @@ const AdminDashboard = () => {
     try {
       // Search precisely for the specified email in the already fetched user grid
       const targetUser = allUsers.find(u => u.email === adminForm.email);
-      
+
       if (!targetUser) {
         toast({
           title: "User Not Found",
@@ -1295,7 +1296,7 @@ const AdminDashboard = () => {
   const handleLogout = () => {
     // Fire and forget - never await this, otherwise stale tokens will freeze the UI
     signOut().catch(e => console.warn("Background logout error:", e));
-    
+
     // Visually logout instantly while backend processes
     localStorage.removeItem('sb-' + import.meta.env.VITE_SUPABASE_URL + '-auth-token');
     window.location.href = '/';
@@ -2234,10 +2235,10 @@ const AdminDashboard = () => {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-2">
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              className="rounded-xl border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100" 
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="rounded-xl border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100"
                               onClick={() => { setSelectedUserProfile(u); setUserProfileDialogOpen(true); }}
                             >
                               <UserPlus className="w-3.5 h-3.5 mr-2" /> View Profile
@@ -2429,38 +2430,7 @@ const AdminDashboard = () => {
               </div>
             </TabsContent>
 
-            <TabsContent value="aicommand" className="mt-0">
-              <div className="space-y-6">
-                <div className="flex items-center gap-3">
-                  <Bot className="w-8 h-8 text-blue-600" />
-                  <h2 className="text-2xl font-bold">Robot AI Intelligence</h2>
-                </div>
-                <div className="bg-[#0f172a] rounded-2xl border border-blue-900/50 shadow-2xl overflow-hidden">
-                  <div className="bg-[#1e293b] px-5 py-3 flex items-center gap-3 border-b border-blue-900/30">
-                    <div className="flex gap-1.5">
-                      <div className="w-3 h-3 rounded-full bg-blue-500/50"></div>
-                      <div className="w-3 h-3 rounded-full bg-sky-500/50"></div>
-                      <div className="w-3 h-3 rounded-full bg-indigo-500/50"></div>
-                    </div>
-                    <span className="text-xs font-mono text-blue-300/70 tracking-widest uppercase">system_terminal_v2.0.4</span>
-                  </div>
-                  <div className="h-[400px] overflow-y-auto p-6 font-mono text-sm leading-relaxed scrollbar-thin scrollbar-thumb-blue-900">
-                    {/* AI Output removed */}
-                  </div>
-                  <div className="p-4 bg-[#1e293b]/50 border-t border-blue-900/30">
-                    <div className="flex gap-3">
-                      <Input
-                        placeholder="Ask the Robot AI anything..."
-                        className="bg-black/40 border-blue-900/40 text-blue-100 rounded-xl h-12"
-                      />
-                      <Button className="h-12 w-12 rounded-xl bg-blue-600 hover:bg-blue-500">
-                        <Send className="w-5 h-5 text-white" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </TabsContent>
+            {/* AI Command Center Removed */}
             {/* Event Management Dialog */}
             <Dialog open={eventDialogOpen} onOpenChange={setEventDialogOpen}>
               <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto rounded-2xl">
@@ -2807,7 +2777,7 @@ const AdminDashboard = () => {
                           <p className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-1">Identity Details</p>
                           <h3 className="text-xl font-bold text-foreground">{selectedUserProfile.full_name || 'Anonymous User'}</h3>
                           <p className="text-blue-600 font-medium mb-1">{selectedUserProfile.email}</p>
-                          
+
                           {/* Login Provider Badge */}
                           {selectedUserProfile.is_firebase_user ? (
                             <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-red-50 text-red-700 border border-red-200 mt-2">
