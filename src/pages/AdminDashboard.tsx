@@ -1299,16 +1299,13 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await signOut();
-    } catch (e) {
-      console.warn("Forcing logout despite session errors", e);
-    } finally {
-      localStorage.removeItem('sb-' + import.meta.env.VITE_SUPABASE_URL + '-auth-token');
-      navigate('/');
-      window.location.href = '/'; // Hard redirect for maximum reliability
-    }
+  const handleLogout = () => {
+    // Fire and forget - never await this, otherwise stale tokens will freeze the UI
+    signOut().catch(e => console.warn("Background logout error:", e));
+    
+    // Visually logout instantly while backend processes
+    localStorage.removeItem('sb-' + import.meta.env.VITE_SUPABASE_URL + '-auth-token');
+    window.location.href = '/';
   };
 
   const handleEventDialog = (event?: Event) => {
@@ -2111,8 +2108,6 @@ const AdminDashboard = () => {
   };
 
   const handleMessageDelete = async (id: string) => {
-    if (!confirm('Delete this message permanently?')) return;
-
     try {
       const { error } = await supabase.from('contact_messages').update({ message: '[DELETED]' }).eq('id', id);
       if (error) throw error;
@@ -2193,7 +2188,6 @@ const AdminDashboard = () => {
                 <TabsTrigger value="admins" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md">Admins</TabsTrigger>
                 <TabsTrigger value="qrscan" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md">QR Scan</TabsTrigger>
                 <TabsTrigger value="attendance" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md">Attendance</TabsTrigger>
-                <TabsTrigger value="aicommand" className="rounded-xl px-4 py-2 text-sm font-bold bg-blue-600/5 text-blue-700 data-[state=active]:bg-blue-600 data-[state=active]:text-white hover:bg-blue-600/10 transition-all border border-blue-100/50">Robot AI</TabsTrigger>
                 <TabsTrigger value="messages" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md">Messages</TabsTrigger>
               </TabsList>
             </div>

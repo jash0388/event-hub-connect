@@ -29,16 +29,13 @@ export function Header() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const handleLogout = async () => {
-    try {
-      await signOut();
-    } catch (e) {
-      console.warn("Forcing logout despite session errors", e);
-    } finally {
-      localStorage.removeItem('sb-' + import.meta.env.VITE_SUPABASE_URL + '-auth-token');
-      navigate('/');
-      window.location.href = '/'; // Hard redirect for maximum reliability
-    }
+  const handleLogout = () => {
+    // Fire and forget - never await this, otherwise stale tokens will freeze the UI
+    signOut().catch(e => console.warn("Background logout error:", e));
+    
+    // Visually logout instantly while backend processes
+    localStorage.removeItem('sb-' + import.meta.env.VITE_SUPABASE_URL + '-auth-token');
+    window.location.href = '/';
   };
 
   return (
