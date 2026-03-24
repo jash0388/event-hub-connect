@@ -549,7 +549,8 @@ const AdminDashboard = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setMessages(data || []);
+      const activeMessages = (data || []).filter(msg => msg.message !== '[DELETED]');
+      setMessages(activeMessages);
     } catch (error: any) {
       console.error('Error fetching messages:', error);
     }
@@ -2113,7 +2114,7 @@ const AdminDashboard = () => {
     if (!confirm('Delete this message permanently?')) return;
 
     try {
-      const { error } = await supabase.from('contact_messages').delete().eq('id', id);
+      const { error } = await supabase.from('contact_messages').update({ message: '[DELETED]' }).eq('id', id);
       if (error) throw error;
       toast({ title: "Success", description: "Message removed from inbox" });
       fetchMessages();
@@ -2181,19 +2182,19 @@ const AdminDashboard = () => {
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-8">
             <div className="overflow-x-auto pb-4 mb-4 -mx-6 px-6 no-scrollbar">
-              <TabsList className="inline-flex w-max min-w-full md:grid md:w-full md:grid-cols-6 lg:grid-cols-11 gap-2 bg-secondary/30 p-1.5 rounded-2xl">
+              <TabsList className="inline-flex w-max min-w-full md:grid md:w-full md:grid-cols-6 lg:grid-cols-12 gap-2 bg-secondary/30 p-1.5 rounded-2xl">
                 <TabsTrigger value="events" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md">Events</TabsTrigger>
                 <TabsTrigger value="projects" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md">Projects</TabsTrigger>
                 <TabsTrigger value="internships" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md">Internships</TabsTrigger>
                 <TabsTrigger value="social" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md">Social</TabsTrigger>
                 <TabsTrigger value="submissions" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md">Submissions</TabsTrigger>
                 <TabsTrigger value="tasks" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md text-blue-600">Tasks</TabsTrigger>
-                <TabsTrigger value="messages" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md">Messages</TabsTrigger>
                 <TabsTrigger value="users" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md">Users</TabsTrigger>
                 <TabsTrigger value="admins" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md">Admins</TabsTrigger>
                 <TabsTrigger value="qrscan" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md">QR Scan</TabsTrigger>
                 <TabsTrigger value="attendance" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md">Attendance</TabsTrigger>
                 <TabsTrigger value="aicommand" className="rounded-xl px-4 py-2 text-sm font-bold bg-blue-600/5 text-blue-700 data-[state=active]:bg-blue-600 data-[state=active]:text-white hover:bg-blue-600/10 transition-all border border-blue-100/50">Robot AI</TabsTrigger>
+                <TabsTrigger value="messages" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md">Messages</TabsTrigger>
               </TabsList>
             </div>
 
