@@ -14,24 +14,30 @@ export async function isAdmin(userId?: string): Promise<boolean> {
       targetUserId = user.id;
     }
 
-    // First check user_roles table
-    const { data: roleData, error: roleError } = await supabase
+    // First check user_roles table with timeout
+    const rolePromise = supabase
       .from('user_roles')
       .select('role')
       .eq('user_id', targetUserId);
 
-    if (!roleError && roleData?.some((entry) => entry.role === 'admin')) {
+    const roleTimeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000));
+    const roleResult = await Promise.race([rolePromise, roleTimeout]) as any;
+
+    if (roleResult && !roleResult.error && roleResult.data?.some((entry: any) => entry.role === 'admin')) {
       return true;
     }
 
     // Also check profiles table for is_admin flag
-    const { data: profileData, error: profileError } = await supabase
+    const profilePromise = supabase
       .from('profiles')
       .select('is_admin')
       .eq('id', targetUserId)
       .single();
 
-    if (!profileError && profileData?.is_admin === true) {
+    const profileTimeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000));
+    const profileResult = await Promise.race([profilePromise, profileTimeout]) as any;
+
+    if (profileResult && !profileResult.error && profileResult.data?.is_admin === true) {
       return true;
     }
 

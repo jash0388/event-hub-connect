@@ -62,8 +62,12 @@ let globalAuthState: AuthState = {
   firebaseUser: null,
 };
 
+// Timeout for auth initialization to prevent hanging
+const AUTH_INIT_TIMEOUT = 10000; // 10 seconds
+
 let globalListeners: ((state: AuthState) => void)[] = [];
 let isAuthInitialized = false;
+let authInitTimeout: ReturnType<typeof setTimeout> | null = null;
 
 const notifyListeners = () => {
   globalListeners.forEach(listener => listener(globalAuthState));
@@ -154,6 +158,12 @@ export function useAuth() {
     try {
       console.log('[useAuth] Initializing Auth...');
 
+      // Set a timeout to prevent hanging forever
+      authInitTimeout = setTimeout(() => {
+        console.warn('[useAuth] Auth initialization timeout - resolving to unauthenticated state');
+        setGlobalState({ loading: false, error: new Error('Auth initialization timeout') });
+      }, AUTH_INIT_TIMEOUT);
+
       // Subscribe to Supabase auth changes
       supabase.auth.onAuthStateChange(async (event, session) => {
         console.log('[useAuth] Supabase Auth Event:', event, session?.user?.id);
@@ -170,6 +180,15 @@ export function useAuth() {
               error: null,
               isFirebaseUser: false,
             });
+          } else {
+            // No session - set loading to false to allow app to proceed
+            console.log('[useAuth] No initial session, setting loading to false');
+            setGlobalState({ loading: false });
+          }
+          // Clear the timeout since we got a response
+          if (authInitTimeout) {
+            clearTimeout(authInitTimeout);
+            authInitTimeout = null;
           }
           return;
         }
@@ -199,27 +218,42 @@ export function useAuth() {
             error: null,
             isFirebaseUser: false,
           });
+          // Clear the timeout since we got a response
+          if (authInitTimeout) {
+            clearTimeout(authInitTimeout);
+            authInitTimeout = null;
+          }
         }
       });
 
       // Check for saved Firebase user
       if (hasFirebaseConfig) {
-        const savedFirebaseUser = getSavedFirebaseUser();
-        if (savedFirebaseUser) {
-          await handleFirebaseUser(savedFirebaseUser);
-        } else {
-          const auth = getFirebaseAuth();
-          if (auth?.currentUser) {
-            await handleFirebaseUser({
-              uid: auth.currentUser.uid,
-              email: auth.currentUser.email,
-              displayName: auth.currentUser.displayName,
-              photoURL: auth.currentUser.photoURL,
-            });
+        // Set a shorter timeout for Firebase check
+        const firebaseTimeout = setTimeout(() => {
+          console.warn('[useAuth] Firebase auth check timeout');
+          setGlobalState({ loading: false });
+        }, 5000);
+
+        try {
+          const savedFirebaseUser = getSavedFirebaseUser();
+          if (savedFirebaseUser) {
+            await handleFirebaseUser(savedFirebaseUser);
+          } else {
+            const auth = getFirebaseAuth();
+            if (auth?.currentUser) {
+              await handleFirebaseUser({
+                uid: auth.currentUser.uid,
+                email: auth.currentUser.email,
+                displayName: auth.currentUser.displayName,
+                photoURL: auth.currentUser.photoURL,
+              });
+            }
           }
+        } finally {
+          clearTimeout(firebaseTimeout);
         }
 
-        // Subscribe to Firebase auth changes
+        // Subscribe to Firebase auth changes (non-blocking)
         onFirebaseAuthStateChange(async (firebaseUser) => {
           console.log('[useAuth] Firebase Auth Event:', firebaseUser?.uid);
           if (firebaseUser) {
@@ -231,6 +265,9 @@ export function useAuth() {
             });
           }
         });
+      } else {
+        // No Firebase config - ensure loading is set to false
+        setGlobalState({ loading: false });
       }
     } catch (err: any) {
       console.error('[useAuth] Auth Init Error:', err);

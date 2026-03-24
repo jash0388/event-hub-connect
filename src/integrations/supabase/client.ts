@@ -25,17 +25,22 @@ export const supabase = (() => {
 
   if (!EFFECTIVE_SUPABASE_URL || !SUPABASE_ANON_KEY || !EFFECTIVE_SUPABASE_URL.startsWith('http')) {
     console.warn('[Supabase] Main client missing URL or Key.');
+    console.warn('[Supabase] EFFECTIVE_SUPABASE_URL:', EFFECTIVE_SUPABASE_URL);
     // Fallback object to prevent crashes
     return {
       auth: {
         getSession: () => Promise.resolve({ data: { session: null }, error: null }),
         getUser: () => Promise.resolve({ data: { user: null }, error: null }),
         signInWithPassword: () => Promise.resolve({ data: { user: null, session: null }, error: new Error("Supabase is not configured. Check your .env file.") }),
-        onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => { } } } }),
+        onAuthStateChange: (callback: (event: string, session: any) => void) => {
+          // Immediately call with INITIAL_SESSION event to prevent hanging
+          setTimeout(() => callback('INITIAL_SESSION', null), 0);
+          return { data: { subscription: { unsubscribe: () => { } } } };
+        },
         signOut: () => Promise.resolve({ error: null }),
       },
-      from: () => ({ 
-        select: () => ({ 
+      from: () => ({
+        select: () => ({
           eq: () => ({
             single: () => Promise.resolve({ data: null, error: null }),
             maybeSingle: () => Promise.resolve({ data: null, error: null }),
@@ -48,7 +53,7 @@ export const supabase = (() => {
         delete: () => ({ eq: () => Promise.resolve({ data: null, error: null }) }),
       } as any),
       channel: () => ({
-        on: () => ({ subscribe: () => ({ unsubscribe: () => {} }) }),
+        on: () => ({ subscribe: () => ({ unsubscribe: () => { } }) }),
       } as any),
     } as any;
   }
