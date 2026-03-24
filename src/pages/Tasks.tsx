@@ -2,9 +2,6 @@ import { useState, useEffect } from "react";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { CodeEditor } from "@/components/ui/code-editor";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -12,14 +9,12 @@ import { useToast } from "@/hooks/use-toast";
 import {
   CheckCircle2,
   Clock,
-  XCircle,
   Trophy,
   Send,
   AlertCircle,
   Loader2,
   BookOpen,
-  Eye,
-  EyeOff
+  X,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -37,19 +32,179 @@ interface Submission {
   answer: string;
   status: 'pending' | 'approved' | 'denied';
   points_awarded: number;
+  submitted_at?: string;
+}
+
+// Fullscreen Modal Component - Light Theme
+function CodeEditorModal({
+  isOpen,
+  onClose,
+  task,
+  onSubmit,
+  submitting,
+  onRunCode,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  task: Task | null;
+  onSubmit: (taskId: string, answer: string) => void;
+  submitting: boolean;
+  onRunCode: (code: string) => void;
+}) {
+  const [code, setCode] = useState("");
+  const [language, setLanguage] = useState("python");
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    setCode("");
+  }, [task?.id]);
+
+  if (!isOpen || !task) return null;
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-6"
+        onClick={onClose}
+      >
+        <motion.div
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.95, opacity: 0 }}
+          transition={{ duration: 0.2, ease: "easeOut" }}
+          className="w-[95vw] h-[90vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Top Bar - White */}
+          <div className="flex items-center justify-end px-6 py-4 bg-white border-b border-slate-200 gap-3">
+            <select
+              value={language}
+              onChange={(e) => setLanguage(e.target.value)}
+              className="bg-slate-100 text-slate-900 text-sm px-4 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="python">Python</option>
+              <option value="javascript">JavaScript</option>
+              <option value="cpp">C++</option>
+              <option value="java">Java</option>
+            </select>
+            <Button
+              size="sm"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold transition-all hover:scale-105"
+              onClick={() => onRunCode(code)}
+            >
+              Run Code
+            </Button>
+            <Button
+              size="sm"
+              className="bg-green-600 hover:bg-green-700 text-white font-semibold transition-all hover:scale-105"
+              onClick={() => onSubmit(task.id, code)}
+              disabled={submitting || !code.trim()}
+            >
+              {submitting ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              ) : (
+                <Send className="w-4 h-4 mr-2" />
+              )}
+              Submit
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-slate-500 hover:text-slate-900 hover:bg-slate-100"
+              onClick={onClose}
+            >
+              <X className="w-5 h-5" />
+            </Button>
+          </div>
+
+          {/* Main Content - Split View */}
+          <div className="flex-1 flex overflow-hidden">
+            {/* Left: Problem Description (40%) - White Background */}
+            <div className="w-[40%] min-w-[350px] overflow-y-auto bg-white border-r border-slate-200">
+              <div className="p-6 space-y-6">
+                {/* Title & Badges */}
+                <div>
+                  <h3 className="text-2xl font-bold text-slate-900 mb-4 leading-tight">{task.title}</h3>
+                  <div className="flex items-center gap-2">
+                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 border border-green-200">
+                      Easy
+                    </span>
+                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700 border border-blue-200">
+                      {task.points} Points
+                    </span>
+                  </div>
+                </div>
+
+                {/* Description */}
+                <div>
+                  <h4 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">Description</h4>
+                  <p className="text-slate-700 leading-relaxed text-base whitespace-pre-wrap">
+                    {task.description}
+                  </p>
+                </div>
+
+                {/* Example Box - Light Gray */}
+                <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
+                  <h4 className="text-sm font-semibold text-slate-600 uppercase tracking-wider mb-3">Example</h4>
+                  <p className="text-slate-800 leading-relaxed font-mono text-sm">
+                    {task.description.substring(0, 200)}...
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Right: Code Editor (60%) - Light Theme */}
+            <div className="flex-1 flex flex-col bg-slate-50">
+              <div className="flex-1 p-4">
+                <div className="h-full rounded-xl overflow-hidden border border-slate-200 bg-white shadow-sm">
+                  <div className="h-full" style={{ background: '#ffffff' }}>
+                    <textarea
+                      value={code}
+                      onChange={(e) => setCode(e.target.value)}
+                      placeholder="// Write your code here..."
+                      className="w-full h-full p-4 bg-transparent text-slate-900 font-mono text-sm leading-relaxed resize-none focus:outline-none"
+                      style={{
+                        fontFamily: '"JetBrains Mono", "Fira Code", Consolas, monospace',
+                        fontSize: '14px',
+                        lineHeight: '1.6',
+                      }}
+                      spellCheck={false}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
 }
 
 export default function Tasks() {
-  const { user, firebaseUser, isFirebaseUser, loading: authLoading } = useAuth();
+  const { user, firebaseUser, isFirebaseUser } = useAuth();
   const { toast } = useToast();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [submissions, setSubmissions] = useState<Record<string, Submission>>({});
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState<string | null>(null);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [showPreview, setShowPreview] = useState<Record<string, boolean>>({});
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [codeAnswer, setCodeAnswer] = useState("");
 
-  // Get the correct user ID based on auth provider
   const getUserId = () => {
     if (isFirebaseUser && firebaseUser) {
       return firebaseUser.uid;
@@ -59,12 +214,9 @@ export default function Tasks() {
 
   useEffect(() => {
     const userId = getUserId();
-    console.log('[Tasks] User ID for queries:', userId, { isFirebaseUser, firebaseUser });
-
     if (userId) {
       fetchTasksAndSubmissions(userId);
 
-      // Set up real-time subscription for submissions
       const channel = supabase
         .channel('schema-db-changes')
         .on(
@@ -75,8 +227,7 @@ export default function Tasks() {
             table: 'task_submissions',
             filter: `user_id=eq.${userId}`
           },
-          (payload) => {
-            console.log('[Tasks] Real-time update received:', payload);
+          () => {
             fetchTasksAndSubmissions(userId);
           }
         )
@@ -86,72 +237,59 @@ export default function Tasks() {
         supabase.removeChannel(channel);
       };
     }
-  }, [user, isFirebaseUser, firebaseUser, user?.id, firebaseUser?.uid]);
+  }, [user, isFirebaseUser, firebaseUser]);
 
   const fetchTasksAndSubmissions = async (userId: string) => {
     try {
       setLoading(true);
-      console.log('[Tasks] Fetching for userId:', userId);
 
-      // Fetch tasks
-      const { data: tasksData, error: tasksError } = await supabase
+      const { data: tasksData } = await supabase
         .from('coding_tasks' as any)
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (tasksError) {
-        console.error('[Tasks] Tasks error:', tasksError);
-        throw tasksError;
-      }
+      const { data: submissionsData } = await supabase
+        .from('task_submissions' as any)
+        .select('*')
+        .eq('user_id', userId);
 
-      console.log('[Tasks] Tasks fetched:', tasksData?.length || 0);
-      setTasks(tasksData || []);
-
-      // Fetch user's submissions using correct userId
-      if (userId) {
-        const { data: submissionsData, error: submissionsError } = await supabase
-          .from('task_submissions' as any)
-          .select('*')
-          .eq('user_id', userId);
-
-        if (submissionsError) {
-          console.error('[Tasks] Submissions error:', submissionsError);
-          throw submissionsError;
-        }
-
-        console.log('[Tasks] Submissions fetched:', submissionsData?.length || 0);
-        const submissionsMap: Record<string, Submission> = {};
-        submissionsData?.forEach((sub: Submission) => {
+      const submissionsMap: Record<string, Submission> = {};
+      (submissionsData || []).forEach((sub: any) => {
+        if (!submissionsMap[sub.task_id] ||
+          new Date(sub.submitted_at) > new Date(submissionsMap[sub.task_id].submitted_at || 0)) {
           submissionsMap[sub.task_id] = sub;
-        });
-        setSubmissions(submissionsMap);
-      }
-    } catch (error: any) {
-      console.error('[Tasks] Error:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to load tasks.",
-        variant: "destructive"
+        }
       });
+
+      setTasks((tasksData || []) as Task[]);
+      setSubmissions(submissionsMap);
+    } catch (error) {
+      console.error('[Tasks] Error:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSubmitAnswer = async (taskId: string) => {
+  const handleOpenModal = (task: Task) => {
+    setSelectedTask(task);
+    setCodeAnswer("");
+    setIsModalOpen(true);
+  };
+
+  const handleSubmitAnswer = async (taskId: string, answer?: string) => {
     const userId = getUserId();
-    const answer = answers[taskId];
+    const finalAnswer = answer || codeAnswer;
 
     if (!userId) {
       toast({
-        title: "Error",
-        description: "You must be logged in to submit.",
+        title: "Authentication Required",
+        description: "Please log in to submit answers.",
         variant: "destructive"
       });
       return;
     }
 
-    if (!answer || answer.trim().length < 5) {
+    if (!finalAnswer || finalAnswer.trim().length < 5) {
       toast({
         title: "Invalid Submission",
         description: "Please provide a more detailed answer.",
@@ -162,37 +300,30 @@ export default function Tasks() {
 
     try {
       setSubmitting(taskId);
-      console.log('[Tasks] Submitting answer for task:', taskId, 'userId:', userId);
 
       const payload = {
         task_id: taskId,
         user_id: userId,
-        answer: answer,
+        answer: finalAnswer,
         status: 'pending',
         points_awarded: 0
       };
-
-      console.log('[Tasks] Submission payload:', payload);
 
       const { error } = await supabase
         .from('task_submissions' as any)
         .insert(payload);
 
-      if (error) {
-        console.error('[Tasks] Submission error:', error);
-        throw error;
-      }
+      if (error) throw error;
 
       toast({
         title: "Submitted!",
         description: "Your answer has been sent for review.",
       });
 
-      // Clear answer field
-      setAnswers(prev => ({ ...prev, [taskId]: "" }));
+      setIsModalOpen(false);
+      setCodeAnswer("");
       fetchTasksAndSubmissions(userId);
     } catch (error: any) {
-      console.error('[Tasks] Submission failed:', error);
       toast({
         title: "Submission Failed",
         description: error.message,
@@ -207,24 +338,56 @@ export default function Tasks() {
   const completedCount = Object.values(submissions).filter(sub => sub.status === 'approved').length;
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
+    <div className="min-h-screen bg-[#f8fafc] flex flex-col font-['Inter',system-ui,sans-serif]">
       <Header />
 
-      <main className="flex-1 pt-28 pb-16 px-6">
-        <div className="container mx-auto max-w-5xl">
+      <CodeEditorModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        task={selectedTask}
+        onSubmit={handleSubmitAnswer}
+        submitting={submitting !== null}
+        onRunCode={async (code: string) => {
+          if (!code.trim()) {
+            toast({
+              title: "No Code",
+              description: "Write some code before running.",
+              variant: "destructive"
+            });
+            return;
+          }
+          try {
+            await navigator.clipboard.writeText(code);
+            toast({
+              title: "Code Copied!",
+              description: "Paste it in the compiler and run.",
+            });
+            window.open("https://www.programiz.com/python-programming/online-compiler/", "_blank");
+          } catch (err) {
+            toast({
+              title: "Failed to Copy",
+              description: "Please copy your code manually.",
+              variant: "destructive"
+            });
+          }
+        }}
+      />
+
+      <main className="flex-1 pt-28 pb-16 px-4 md:px-6">
+        <div className="container mx-auto max-w-4xl">
           {/* Dashboard Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-card border border-border p-6 rounded-3xl flex items-center gap-4"
+              className="bg-white border border-slate-200 p-5 rounded-2xl flex items-center gap-4 shadow-sm"
             >
-              <div className="w-12 h-12 rounded-2xl bg-neon-cyan/10 flex items-center justify-center">
-                <Trophy className="w-6 h-6 text-neon-cyan" />
+              <div className="w-12 h-12 rounded-xl bg-cyan-50 flex items-center justify-center">
+                <Trophy className="w-6 h-6 text-cyan-600" />
               </div>
               <div>
-                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Total Points</p>
-                <p className="text-2xl font-black">{totalPoints}</p>
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Points</p>
+                <p className="text-2xl font-bold text-slate-900">{totalPoints}</p>
               </div>
             </motion.div>
 
@@ -232,14 +395,14 @@ export default function Tasks() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="bg-card border border-border p-6 rounded-3xl flex items-center gap-4"
+              className="bg-white border border-slate-200 p-5 rounded-2xl flex items-center gap-4 shadow-sm"
             >
-              <div className="w-12 h-12 rounded-2xl bg-neon-green/10 flex items-center justify-center">
-                <CheckCircle2 className="w-6 h-6 text-neon-green" />
+              <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center">
+                <CheckCircle2 className="w-6 h-6 text-green-600" />
               </div>
               <div>
-                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Tasks Approved</p>
-                <p className="text-2xl font-black">{completedCount}</p>
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Approved</p>
+                <p className="text-2xl font-bold text-slate-900">{completedCount}</p>
               </div>
             </motion.div>
 
@@ -247,152 +410,94 @@ export default function Tasks() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="bg-card border border-border p-6 rounded-3xl flex items-center gap-4"
+              className="bg-white border border-slate-200 p-5 rounded-2xl flex items-center gap-4 shadow-sm"
             >
-              <div className="w-12 h-12 rounded-2xl bg-neon-magenta/10 flex items-center justify-center">
-                <BookOpen className="w-6 h-6 text-neon-magenta" />
+              <div className="w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center">
+                <BookOpen className="w-6 h-6 text-purple-600" />
               </div>
               <div>
-                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Active Tasks</p>
-                <p className="text-2xl font-black">{tasks.length}</p>
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Tasks</p>
+                <p className="text-2xl font-bold text-slate-900">{tasks.length}</p>
               </div>
             </motion.div>
           </div>
 
-          <div className="mb-10">
-            <h1 className="text-4xl font-bold mb-2">Coding Tasks</h1>
-            <p className="text-muted-foreground">Complete the challenges assigned by your instructor to earn points.</p>
+          {/* Page Title */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-slate-900 mb-2">Coding Tasks</h1>
+            <p className="text-slate-600">Complete the challenges assigned by your instructor to earn points.</p>
           </div>
 
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20">
-              <Loader2 className="w-10 h-10 animate-spin text-neon-cyan mb-4" />
-              <p className="text-muted-foreground animate-pulse">Synchronizing with the hub...</p>
+              <Loader2 className="w-10 h-10 animate-spin text-cyan-600 mb-4" />
+              <p className="text-slate-500 animate-pulse">Loading tasks...</p>
             </div>
           ) : tasks.length === 0 ? (
-            <div className="text-center py-20 bg-card rounded-3xl border border-dashed border-border">
-              <AlertCircle className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-20" />
-              <h2 className="text-xl font-bold mb-2">No Tasks Available</h2>
-              <p className="text-muted-foreground">Your instructor hasn't posted any tasks yet.</p>
+            <div className="text-center py-20 bg-white rounded-2xl border border-slate-200 shadow-sm">
+              <AlertCircle className="w-12 h-12 mx-auto mb-4 text-slate-400" />
+              <h2 className="text-xl font-bold text-slate-900 mb-2">No Tasks Available</h2>
+              <p className="text-slate-600">Your instructor hasn't posted any tasks yet.</p>
             </div>
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-4">
               {tasks.map((task, index) => {
                 const submission = submissions[task.id];
                 const isPending = submission?.status === 'pending';
                 const isApproved = submission?.status === 'approved';
-                const isDenied = submission?.status === 'denied';
 
                 return (
                   <motion.div
                     key={task.id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05 }}
+                    className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow"
                   >
-                    <Card className={`p-8 rounded-3xl border-border transition-all duration-300 ${isApproved ? 'bg-neon-green/5 border-neon-green/20' : ''}`}>
-                      <div className="flex flex-col md:flex-row justify-between gap-6">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-4">
-                            <h3 className="text-2xl font-bold">{task.title}</h3>
-                            <span className="px-3 py-1 rounded-full bg-secondary text-[10px] font-bold uppercase tracking-widest">
-                              {task.points} Points
-                            </span>
-                          </div>
-                          <p className="text-muted-foreground leading-relaxed mb-6 whitespace-pre-wrap">
-                            {task.description}
-                          </p>
-
-                          {isApproved ? (
-                            <div className="flex items-center gap-2 text-neon-green bg-neon-green/10 w-fit px-4 py-2 rounded-xl border border-neon-green/20">
-                              <CheckCircle2 className="w-5 h-5" />
-                              <span className="font-bold">Challenge Completed (+{submission.points_awarded} XP)</span>
-                            </div>
-                          ) : isPending ? (
-                            <div className="flex items-center gap-2 text-neon-amber bg-neon-amber/10 w-fit px-4 py-2 rounded-xl border border-neon-amber/20">
-                              <Clock className="w-5 h-5" />
-                              <span className="font-bold">Awaiting Review</span>
-                            </div>
-                          ) : isDenied ? (
-                            <div className="space-y-4">
-                              <div className="flex items-center gap-2 text-neon-red bg-neon-red/10 w-fit px-4 py-2 rounded-xl border border-neon-red/20">
-                                <XCircle className="w-5 h-5" />
-                                <span className="font-bold">Attempt Denied</span>
-                              </div>
-                              <Textarea
-                                placeholder="Try again... provide a better solution."
-                                value={answers[task.id] || ""}
-                                onChange={(e) => setAnswers(prev => ({ ...prev, [task.id]: e.target.value }))}
-                                onPaste={(e) => e.preventDefault()}
-                                className="min-h-[120px] rounded-2xl bg-background/50"
-                              />
-                              {answers[task.id] && (
-                                <div className="flex items-center gap-2">
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setShowPreview(prev => ({ ...prev, [task.id]: !prev[task.id] }))}
-                                    className="rounded-xl"
-                                  >
-                                    {showPreview[task.id] ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
-                                    {showPreview[task.id] ? "Hide Preview" : "Preview Code"}
-                                  </Button>
-                                </div>
-                              )}
-                              {showPreview[task.id] && answers[task.id] && (
-                                <div className="p-4 bg-secondary/50 rounded-xl font-mono text-sm overflow-auto max-h-[200px] border border-border">
-                                  <pre className="whitespace-pre-wrap">{answers[task.id]}</pre>
-                                </div>
-                              )}
-                              <Button
-                                onClick={() => handleSubmitAnswer(task.id)}
-                                disabled={submitting === task.id}
-                                className="rounded-xl bg-foreground text-background hover:bg-foreground/90 px-8"
-                              >
-                                {submitting === task.id ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
-                                Resubmit Answer
-                              </Button>
-                            </div>
-                          ) : (
-                            <div className="space-y-4">
-                              <CodeEditor
-                                value={answers[task.id] || ""}
-                                onChange={(value) => setAnswers(prev => ({ ...prev, [task.id]: value }))}
-                                placeholder="Initialize your response protocol here..."
-                                language="text"
-                                minHeight="150px"
-                              />
-                              {answers[task.id] && (
-                                <div className="flex items-center gap-2">
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setShowPreview(prev => ({ ...prev, [task.id]: !prev[task.id] }))}
-                                    className="rounded-xl"
-                                  >
-                                    {showPreview[task.id] ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
-                                    {showPreview[task.id] ? "Hide Preview" : "Preview Code"}
-                                  </Button>
-                                </div>
-                              )}
-                              {showPreview[task.id] && answers[task.id] && (
-                                <div className="p-4 bg-secondary/50 rounded-xl font-mono text-sm overflow-auto max-h-[200px] border border-border">
-                                  <pre className="whitespace-pre-wrap">{answers[task.id]}</pre>
-                                </div>
-                              )}
-                              <Button
-                                onClick={() => handleSubmitAnswer(task.id)}
-                                disabled={submitting === task.id}
-                                className="rounded-xl bg-neon-cyan text-black hover:bg-neon-cyan/90 px-8 font-bold"
-                              >
-                                {submitting === task.id ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
-                                Submit for Review
-                              </Button>
-                            </div>
-                          )}
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <h3 className="text-xl font-bold text-slate-900 mb-2">{task.title}</h3>
+                        <div className="flex items-center gap-2">
+                          <span className="px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700">
+                            Easy
+                          </span>
+                          <span className="px-3 py-1 rounded-full text-xs font-bold bg-cyan-100 text-cyan-700">
+                            {task.points} Points
+                          </span>
                         </div>
                       </div>
-                    </Card>
+                      {isApproved ? (
+                        <div className="flex items-center gap-2 text-green-600 bg-green-50 px-4 py-2 rounded-full">
+                          <CheckCircle2 className="w-4 h-4" />
+                          <span className="text-sm font-semibold">Completed +{submission.points_awarded} XP</span>
+                        </div>
+                      ) : isPending ? (
+                        <div className="flex items-center gap-2 text-amber-600 bg-amber-50 px-4 py-2 rounded-full">
+                          <Clock className="w-4 h-4" />
+                          <span className="text-sm font-semibold">Pending Review</span>
+                        </div>
+                      ) : null}
+                    </div>
+
+                    <p className="text-slate-600 leading-relaxed mb-4 line-clamp-2">
+                      {task.description}
+                    </p>
+
+                    <div className="bg-slate-50 rounded-xl p-4 mb-4 border border-slate-100">
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Example</p>
+                      <p className="text-sm text-slate-700 font-mono">
+                        {task.description.substring(0, 150)}...
+                      </p>
+                    </div>
+
+                    {!isApproved && !isPending && (
+                      <Button
+                        onClick={() => handleOpenModal(task)}
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl text-base transition-all hover:scale-[1.02] active:scale-[0.98]"
+                      >
+                        Solve Problem
+                      </Button>
+                    )}
                   </motion.div>
                 );
               })}

@@ -2134,8 +2134,8 @@ const AdminDashboard = () => {
                 <TabsTrigger value="events" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md">Events</TabsTrigger>
                 <TabsTrigger value="projects" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md">Projects</TabsTrigger>
                 <TabsTrigger value="internships" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md">Internships</TabsTrigger>
-                <TabsTrigger value="polls" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md">Polls</TabsTrigger>
                 <TabsTrigger value="social" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md">Social</TabsTrigger>
+                <TabsTrigger value="submissions" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md">Submissions</TabsTrigger>
                 <TabsTrigger value="tasks" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md text-blue-600">Tasks</TabsTrigger>
                 <TabsTrigger value="messages" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md">Messages</TabsTrigger>
                 <TabsTrigger value="users" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md">Users</TabsTrigger>
@@ -2308,7 +2308,7 @@ const AdminDashboard = () => {
               </div>
             </TabsContent>
 
-            <TabsContent value="tasks" className="mt-0 space-y-8">
+            <TabsContent value="tasks" className="mt-0">
               <div>
                 <div className="flex justify-between items-center mb-6">
                   <div>
@@ -2345,7 +2345,9 @@ const AdminDashboard = () => {
                   </Table>
                 </div>
               </div>
+            </TabsContent>
 
+            <TabsContent value="submissions" className="mt-0">
               <div>
                 <div className="mb-6">
                   <h2 className="text-2xl font-bold">Submissions</h2>

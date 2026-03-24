@@ -7,14 +7,42 @@ import { supabase } from "@/integrations/supabase/client";
  * @param userId - The user ID to check
  * @param forceRefresh - If true, bypasses any caching to get fresh data (default: true for debug)
  */
+// Admin email addresses - add your email here to get admin access
+const ADMIN_EMAILS = [
+  'jashwanthsingh0707@gmail.com', // Add your email here
+  'admin@example.com',
+];
+
 export async function isAdmin(userId?: string, forceRefresh: boolean = true): Promise<boolean> {
   try {
     let targetUserId = userId;
+    let userEmail = '';
 
     if (!targetUserId) {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError || !user) return false;
       targetUserId = user.id;
+      userEmail = user.email || '';
+    }
+
+    // Check if user email is in admin list
+    if (userEmail && ADMIN_EMAILS.includes(userEmail.toLowerCase())) {
+      console.log('[isAdmin] User is admin by email whitelist:', targetUserId, userEmail);
+      return true;
+    }
+
+    // If no email yet, try to get from profiles table
+    if (!userEmail) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('id', targetUserId)
+        .single();
+
+      if (profile?.email && ADMIN_EMAILS.includes(profile.email.toLowerCase())) {
+        console.log('[isAdmin] User is admin by email from profile:', targetUserId, profile.email);
+        return true;
+      }
     }
 
     // First check user_roles table with timeout
