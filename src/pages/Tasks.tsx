@@ -54,6 +54,16 @@ function CodeEditorModal({
 }) {
   const [code, setCode] = useState("");
   const [language, setLanguage] = useState("python");
+  const { toast } = useToast();
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    toast({
+      title: "Pasting Disabled",
+      description: "To ensure academic integrity, please type your solution manually. Pasting is not allowed in this challenge.",
+      variant: "destructive"
+    });
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -175,6 +185,7 @@ function CodeEditorModal({
                     <textarea
                       value={code}
                       onChange={(e) => setCode(e.target.value)}
+                      onPaste={handlePaste}
                       placeholder="// Write your code here..."
                       className="w-full h-full p-4 bg-transparent text-slate-900 font-mono text-sm leading-relaxed resize-none focus:outline-none"
                       style={{
