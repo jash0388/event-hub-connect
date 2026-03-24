@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useAuth } from "@/hooks/useAuth";
 
 // Import the cinematic landing page
@@ -5,9 +6,18 @@ import CinematicLanding from "@/components/home/CinematicLanding";
 
 const Home = () => {
   const { loading } = useAuth();
+  const [showContent, setShowContent] = useState(false);
 
-  // If we are loading auth state, show a small loader or nothing
-  if (loading) {
+  // Fallback timeout - show content after 3 seconds even if auth is still loading
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowContent(true);
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Show loading for first 1.5 seconds, then show content
+  if (loading && !showContent) {
     return (
       <div
         className="min-h-screen flex flex-col items-center justify-center"

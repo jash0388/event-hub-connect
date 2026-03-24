@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { CodeEditor } from "@/components/ui/code-editor";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -16,7 +17,9 @@ import {
   Send,
   AlertCircle,
   Loader2,
-  BookOpen
+  BookOpen,
+  Eye,
+  EyeOff
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -44,6 +47,7 @@ export default function Tasks() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState<string | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [showPreview, setShowPreview] = useState<Record<string, boolean>>({});
 
   // Get the correct user ID based on auth provider
   const getUserId = () => {
@@ -71,7 +75,8 @@ export default function Tasks() {
             table: 'task_submissions',
             filter: `user_id=eq.${userId}`
           },
-          () => {
+          (payload) => {
+            console.log('[Tasks] Real-time update received:', payload);
             fetchTasksAndSubmissions(userId);
           }
         )
@@ -81,7 +86,7 @@ export default function Tasks() {
         supabase.removeChannel(channel);
       };
     }
-  }, [user, isFirebaseUser, firebaseUser]);
+  }, [user, isFirebaseUser, firebaseUser, user?.id, firebaseUser?.uid]);
 
   const fetchTasksAndSubmissions = async (userId: string) => {
     try {
@@ -321,6 +326,24 @@ export default function Tasks() {
                                 onPaste={(e) => e.preventDefault()}
                                 className="min-h-[120px] rounded-2xl bg-background/50"
                               />
+                              {answers[task.id] && (
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setShowPreview(prev => ({ ...prev, [task.id]: !prev[task.id] }))}
+                                    className="rounded-xl"
+                                  >
+                                    {showPreview[task.id] ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
+                                    {showPreview[task.id] ? "Hide Preview" : "Preview Code"}
+                                  </Button>
+                                </div>
+                              )}
+                              {showPreview[task.id] && answers[task.id] && (
+                                <div className="p-4 bg-secondary/50 rounded-xl font-mono text-sm overflow-auto max-h-[200px] border border-border">
+                                  <pre className="whitespace-pre-wrap">{answers[task.id]}</pre>
+                                </div>
+                              )}
                               <Button
                                 onClick={() => handleSubmitAnswer(task.id)}
                                 disabled={submitting === task.id}
@@ -332,13 +355,31 @@ export default function Tasks() {
                             </div>
                           ) : (
                             <div className="space-y-4">
-                              <Textarea
-                                placeholder="Initialize your response protocol here..."
+                              <CodeEditor
                                 value={answers[task.id] || ""}
-                                onChange={(e) => setAnswers(prev => ({ ...prev, [task.id]: e.target.value }))}
-                                onPaste={(e) => e.preventDefault()}
-                                className="min-h-[120px] rounded-2xl bg-background/50 border-border focus:border-neon-cyan transition-all"
+                                onChange={(value) => setAnswers(prev => ({ ...prev, [task.id]: value }))}
+                                placeholder="Initialize your response protocol here..."
+                                language="text"
+                                minHeight="150px"
                               />
+                              {answers[task.id] && (
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setShowPreview(prev => ({ ...prev, [task.id]: !prev[task.id] }))}
+                                    className="rounded-xl"
+                                  >
+                                    {showPreview[task.id] ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
+                                    {showPreview[task.id] ? "Hide Preview" : "Preview Code"}
+                                  </Button>
+                                </div>
+                              )}
+                              {showPreview[task.id] && answers[task.id] && (
+                                <div className="p-4 bg-secondary/50 rounded-xl font-mono text-sm overflow-auto max-h-[200px] border border-border">
+                                  <pre className="whitespace-pre-wrap">{answers[task.id]}</pre>
+                                </div>
+                              )}
                               <Button
                                 onClick={() => handleSubmitAnswer(task.id)}
                                 disabled={submitting === task.id}

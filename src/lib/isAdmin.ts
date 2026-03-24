@@ -3,8 +3,11 @@ import { supabase } from "@/integrations/supabase/client";
 /**
  * Check if a user has admin role
  * Checks user_roles table first, then profiles table
+ * 
+ * @param userId - The user ID to check
+ * @param forceRefresh - If true, bypasses any caching to get fresh data (default: true for debug)
  */
-export async function isAdmin(userId?: string): Promise<boolean> {
+export async function isAdmin(userId?: string, forceRefresh: boolean = true): Promise<boolean> {
   try {
     let targetUserId = userId;
 
@@ -24,6 +27,7 @@ export async function isAdmin(userId?: string): Promise<boolean> {
     const roleResult = await Promise.race([rolePromise, roleTimeout]) as any;
 
     if (roleResult && !roleResult.error && roleResult.data?.some((entry: any) => entry.role === 'admin')) {
+      console.log('[isAdmin] User has admin role in user_roles:', targetUserId);
       return true;
     }
 
@@ -38,9 +42,11 @@ export async function isAdmin(userId?: string): Promise<boolean> {
     const profileResult = await Promise.race([profilePromise, profileTimeout]) as any;
 
     if (profileResult && !profileResult.error && profileResult.data?.is_admin === true) {
+      console.log('[isAdmin] User has is_admin flag in profiles:', targetUserId);
       return true;
     }
 
+    console.log('[isAdmin] User is NOT admin:', targetUserId);
     return false;
   } catch (error) {
     console.error('Error in isAdmin check:', error);

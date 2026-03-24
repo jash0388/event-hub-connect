@@ -1017,6 +1017,27 @@ const AdminDashboard = () => {
     }
   };
 
+  const deleteSubmission = async () => {
+    if (!selectedSubmission) return;
+
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('task_submissions' as any)
+        .delete()
+        .eq('id', selectedSubmission.id);
+
+      if (error) throw error;
+      toast({ title: 'Submission Deleted', description: 'The answer has been permanently deleted' });
+      setReviewDialogOpen(false);
+      fetchTaskSubmissions();
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleQRVerify = async (qrCode: string) => {
     setIsVerifying(true);
     setQrScanError('');
@@ -2940,7 +2961,17 @@ const AdminDashboard = () => {
                     </div>
 
                     <div className="flex justify-between items-center pt-4 border-t border-border">
-                      <p className="text-xs text-muted-foreground italic">Decision finalizes the score synchronization for this node.</p>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          onClick={deleteSubmission}
+                          disabled={isSaving}
+                          className="rounded-xl text-red-500 hover:bg-red-50 hover:text-red-600 h-12 px-4"
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" /> Delete Answer
+                        </Button>
+                        <p className="text-xs text-muted-foreground italic self-center">Decision finalizes the score synchronization for this node.</p>
+                      </div>
                       <div className="flex gap-3">
                         <Button
                           variant="outline"

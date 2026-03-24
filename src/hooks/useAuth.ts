@@ -99,13 +99,9 @@ export function useAuth() {
   }, []);
 
   const getAdminStatus = async (userId: string) => {
-    const now = Date.now();
-    if (adminCache?.userId === userId && (now - adminCache.timestamp) < ADMIN_CACHE_DURATION) {
-      return adminCache.isAdmin;
-    }
     try {
-      const adminStatus = await checkIsAdmin(userId);
-      adminCache = { userId, isAdmin: adminStatus, timestamp: now };
+      // Always get fresh admin status - no caching for now to debug issues
+      const adminStatus = await checkIsAdmin(userId, true);
       return adminStatus;
     } catch {
       return false;
@@ -180,17 +176,29 @@ export function useAuth() {
               error: null,
               isFirebaseUser: false,
             });
-          } else {
-            // No session - set loading to false to allow app to proceed
-            console.log('[useAuth] No initial session, setting loading to false');
+            // Clear the timeout since we got a response
+            if (authInitTimeout) {
+              clearTimeout(authInitTimeout);
+              authInitTimeout = null;
+            }
+            return;
+          } else if (!hasFirebaseConfig) {
+            // No session and no Firebase config - set loading to false
+            console.log('[useAuth] No initial session, no Firebase config - setting loading to false');
             setGlobalState({ loading: false });
+            // Clear the timeout since we got a response
+            if (authInitTimeout) {
+              clearTimeout(authInitTimeout);
+              authInitTimeout = null;
+            }
+            return;
           }
-          // Clear the timeout since we got a response
+          // Has Firebase config - don't set loading false yet, wait for Firebase check
+          // Clear the timeout to prevent premature timeout
           if (authInitTimeout) {
             clearTimeout(authInitTimeout);
             authInitTimeout = null;
           }
-          return;
         }
 
         if (event === 'SIGNED_OUT') {

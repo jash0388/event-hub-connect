@@ -26,6 +26,7 @@ import {
     ArrowRight,
     Mail,
     MapPin,
+    X,
 } from "lucide-react";
 
 /* ──────────────────────────────────────────────
@@ -154,7 +155,7 @@ function ScrollReveal({ children, className = "", delay = 0 }: { children: React
 /* ──────────────────────────────────────────────
    A. NAVBAR
 ────────────────────────────────────────────── */
-function Navbar() {
+function Navbar({ openCodeModal }: { openCodeModal?: () => void }) {
     const [scrolled, setScrolled] = useState(false);
     const { user, signOut } = useAuth();
 
@@ -221,10 +222,20 @@ function Navbar() {
                         </button>
                     </div>
                 ) : (
-                    <Link to="/login" className="bg-white inline-flex text-[#02040A] font-body flex-shrink-0 font-semibold text-sm px-5 py-2.5 rounded-full items-center gap-2 hover:bg-white/90 transition-all duration-300 hover:scale-105 ml-1">
-                        Join Now
-                        <ArrowUpRight className="w-4 h-4" />
-                    </Link>
+                    <div className="flex items-center gap-2 ml-1">
+                        {openCodeModal && (
+                            <button
+                                onClick={openCodeModal}
+                                className="font-body text-white/70 hover:text-white px-4 py-2 rounded-full hover:bg-white/5 transition-all duration-300 text-sm border border-white/20"
+                            >
+                                Enter Code
+                            </button>
+                        )}
+                        <Link to="/login" className="bg-white inline-flex text-[#02040A] font-body flex-shrink-0 font-semibold text-sm px-5 py-2.5 rounded-full items-center gap-2 hover:bg-white/90 transition-all duration-300 hover:scale-105">
+                            Join Now
+                            <ArrowUpRight className="w-4 h-4" />
+                        </Link>
+                    </div>
                 )}
             </div>
         </motion.nav>
@@ -849,10 +860,27 @@ function Footer() {
    MAIN APP
 ────────────────────────────────────────────── */
 export default function CinematicLanding() {
+    const [isCodeModalOpen, setIsCodeModalOpen] = useState(false);
+    const [enteredCode, setEnteredCode] = useState("");
+
+    const openCodeModal = () => setIsCodeModalOpen(true);
+    const closeCodeModal = () => {
+        setIsCodeModalOpen(false);
+        setEnteredCode("");
+    };
+
+    const handleCodeSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (enteredCode.trim()) {
+            console.log("Code submitted:", enteredCode);
+            closeCodeModal();
+        }
+    };
+
     return (
         <div className="bg-[#02040A] text-white min-h-[100dvh] font-body selection:bg-white/30 selection:text-white overflow-x-hidden">
             <style dangerouslySetInnerHTML={{ __html: globalStyles }} />
-            <Navbar />
+            <Navbar openCodeModal={openCodeModal} />
             <main>
                 <HeroSection />
                 <MissionStatement />
@@ -863,6 +891,54 @@ export default function CinematicLanding() {
                 <FAQ />
             </main>
             <Footer />
+
+            {/* Code Entry Modal */}
+            <AnimatePresence>
+                {isCodeModalOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[100] flex items-center justify-center"
+                        style={{ backgroundColor: "rgba(255, 255, 255, 0.9)" }}
+                        onClick={closeCodeModal}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="bg-white rounded-2xl p-8 w-full max-w-md shadow-2xl"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="flex items-center justify-between mb-6">
+                                <h3 className="text-2xl font-bold text-[#02040A]">Enter Code</h3>
+                                <button
+                                    onClick={closeCodeModal}
+                                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                                >
+                                    <X className="w-5 h-5 text-gray-600" />
+                                </button>
+                            </div>
+                            <form onSubmit={handleCodeSubmit}>
+                                <input
+                                    type="text"
+                                    value={enteredCode}
+                                    onChange={(e) => setEnteredCode(e.target.value)}
+                                    placeholder="Enter your access code"
+                                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-[#02040A] placeholder-gray-400 focus:border-[#02040A] focus:outline-none transition-colors text-lg"
+                                    autoFocus
+                                />
+                                <button
+                                    type="submit"
+                                    className="w-full mt-4 bg-[#02040A] text-white py-3 rounded-xl font-semibold hover:bg-[#02040A]/90 transition-colors"
+                                >
+                                    Submit
+                                </button>
+                            </form>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
