@@ -51,11 +51,11 @@ export function Header() {
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3 group">
-            <div className="relative">
+            <div className="relative h-10 w-10 overflow-hidden rounded-full border border-border/50 bg-background/50 shadow-inner">
               <img
                 src="/logo.png"
                 alt="DataNauts"
-                className="h-10 w-auto object-contain transition-transform duration-300 group-hover:scale-110"
+                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
               />
             </div>
             <span className="text-2xl font-bold tracking-tight text-gradient">

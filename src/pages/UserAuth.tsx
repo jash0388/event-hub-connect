@@ -273,8 +273,14 @@ export default function UserAuth() {
           <div className="bg-card rounded-3xl p-8 border border-border card-3d animate-fade-in-up relative z-10">
             {/* Logo */}
             <div className="flex justify-center mb-6">
-              <Link to="/" className="flex items-center gap-2">
-                <img src="/logo.png" alt="DataNauts" className="h-10 w-auto object-contain" />
+              <Link to="/" className="flex items-center gap-2 group">
+                <div className="relative h-10 w-10 overflow-hidden rounded-full border border-border/50 bg-background/50 shadow-inner">
+                  <img 
+                    src="/logo.png" 
+                    alt="DataNauts" 
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110" 
+                  />
+                </div>
                 <span className="text-xl font-bold tracking-tight text-foreground">
                   Data<span className="text-[hsl(var(--accent))]">Nauts</span>
                 </span>

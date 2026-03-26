@@ -56,8 +56,14 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
           {/* Brand */}
           <div className="md:col-span-2">
-            <Link to="/" className="flex items-center gap-3 mb-4">
-              <img src="/logo.png" alt="DataNauts" className="h-10 w-auto object-contain" />
+            <Link to="/" className="flex items-center gap-3 mb-4 group">
+              <div className="relative h-10 w-10 overflow-hidden rounded-full border border-border/50 bg-background/50 shadow-inner">
+                <img
+                  src="/logo.png"
+                  alt="DataNauts"
+                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
+                />
+              </div>
               <span className="text-2xl font-bold tracking-tight text-gradient">
                 DataNauts
               </span>
