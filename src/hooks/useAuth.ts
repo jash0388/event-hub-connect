@@ -63,7 +63,7 @@ let globalAuthState: AuthState = {
 };
 
 // Timeout for auth initialization to prevent hanging
-const AUTH_INIT_TIMEOUT = 3000; // 3 seconds
+const AUTH_INIT_TIMEOUT = 15000; // 15 seconds
 
 let globalListeners: ((state: AuthState) => void)[] = [];
 let isAuthInitialized = false;
@@ -303,7 +303,7 @@ export function useAuth() {
           console.warn('[useAuth] Firebase auth check timeout');
           firebaseChecked = true;
           checkAndResolveLoading();
-        }, 5000);
+        }, 15000);
 
         try {
           const savedFirebaseUser = getSavedFirebaseUser();

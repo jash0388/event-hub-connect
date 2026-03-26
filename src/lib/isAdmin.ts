@@ -46,31 +46,25 @@ export async function isAdmin(userId?: string, forceRefresh: boolean = true): Pr
       }
     }
 
-    // First check user_roles table with timeout
-    const rolePromise = supabase
+    // First check user_roles table
+    const { data: roleData, error: roleError } = await supabase
       .from('user_roles')
       .select('role')
       .eq('user_id', targetUserId);
 
-    const roleTimeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000));
-    const roleResult = await Promise.race([rolePromise, roleTimeout]) as any;
-
-    if (roleResult && !roleResult.error && roleResult.data?.some((entry: any) => entry.role === 'admin')) {
+    if (!roleError && roleData?.some((entry: any) => entry.role === 'admin')) {
       console.log('[isAdmin] User has admin role in user_roles:', targetUserId);
       return true;
     }
 
     // Also check profiles table for is_admin flag
-    const profilePromise = supabase
+    const { data: profileData, error: profileError } = await supabase
       .from('profiles')
       .select('is_admin')
       .eq('id', targetUserId)
       .single();
 
-    const profileTimeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000));
-    const profileResult = await Promise.race([profilePromise, profileTimeout]) as any;
-
-    if (profileResult && !profileResult.error && profileResult.data?.is_admin === true) {
+    if (!profileError && profileData?.is_admin === true) {
       console.log('[isAdmin] User has is_admin flag in profiles:', targetUserId);
       return true;
     }
