@@ -396,11 +396,15 @@ export default function Tasks() {
       // Fetch user profile names & Google Auth fallback registrations
       const { data: profiles } = await supabase.from('profiles').select('*');
       const { data: userRegistrations } = await supabase.from('user_registrations').select('user_id, full_name, email');
+      // Secret sauce bridging: Users who only filled an Event Form have their true name here, bridged by email instead of ID
+      const { data: eventRegistrations } = await supabase.from('event_registrations').select('full_name, email');
       
       const leaderboard = Object.entries(lbMap).map(([uId, pts]) => {
         const prof = profiles?.find(p => p.id === uId || p.firebase_uid === uId);
         const reg = userRegistrations?.find(r => r.user_id === uId);
-        let displayName = prof?.full_name || reg?.full_name || prof?.username || prof?.email?.split('@')[0] || reg?.email?.split('@')[0];
+        const eventReg = prof?.email ? eventRegistrations?.find(e => e.email?.toLowerCase().trim() === prof.email?.toLowerCase().trim()) : null;
+        
+        let displayName = prof?.full_name || reg?.full_name || eventReg?.full_name || prof?.username || prof?.email?.split('@')[0] || reg?.email?.split('@')[0];
         
         // Fast-path bypass to capture the logged-in Google Auth user locally if databases lag or miss their profile row
         if (!displayName && uId === userId) {
