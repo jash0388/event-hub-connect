@@ -400,9 +400,14 @@ export default function Tasks() {
       const leaderboard = Object.entries(lbMap).map(([uId, pts]) => {
         const prof = profiles?.find(p => p.id === uId || p.firebase_uid === uId);
         const reg = userRegistrations?.find(r => r.user_id === uId);
+        let displayName = prof?.full_name || reg?.full_name || prof?.username || prof?.email?.split('@')[0] || reg?.email?.split('@')[0];
         
-        const displayName = prof?.full_name || reg?.full_name || prof?.username || prof?.email?.split('@')[0] || reg?.email?.split('@')[0] || `Node_${uId.slice(0, 4).toUpperCase()}`;
-        return { name: displayName, points: pts, isMe: uId === userId };
+        // Fast-path bypass to capture the logged-in Google Auth user locally if databases lag or miss their profile row
+        if (!displayName && uId === userId) {
+          displayName = user?.user_metadata?.full_name || firebaseUser?.displayName || user?.email?.split('@')[0] || firebaseUser?.email?.split('@')[0];
+        }
+        
+        return { name: displayName || `Node_${uId.slice(0, 4).toUpperCase()}`, points: pts, isMe: uId === userId };
       }).sort((a,b) => b.points - a.points).slice(0, 5);
 
       return { tasks: tasksData as Task[], submissions: submissionsMap, leaderboard };
