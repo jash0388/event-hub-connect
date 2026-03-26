@@ -74,7 +74,13 @@ let firebaseChecked = false;
 const checkAndResolveLoading = () => {
   if (supabaseChecked && (!hasFirebaseConfig || firebaseChecked)) {
     if (!globalAuthState.user) {
-      setGlobalState({ loading: false });
+      // Firebase onAuthStateChanged often fires a rapid `null` initially before extracting IndexedDB.
+      // We must debounce dropping the loading state to prevent false-positive logouts!
+      setTimeout(() => {
+        if (!globalAuthState.user) {
+          setGlobalState({ loading: false });
+        }
+      }, 1500);
     }
   }
 };

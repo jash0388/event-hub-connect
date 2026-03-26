@@ -357,6 +357,27 @@ export default function Tasks() {
   const getUserId = () => isFirebaseUser && firebaseUser ? firebaseUser.uid : user?.id;
   const userId = getUserId();
 
+  // Actively fix Firebase Users who slipped into the platform without hitting the standard Profile Creation triggers
+  useEffect(() => {
+    if (isFirebaseUser && firebaseUser && user?.id) {
+      const healOrphanedProfiles = async () => {
+        const { data } = await supabase.from('profiles').select('id').eq('firebase_uid', firebaseUser.uid).maybeSingle();
+        if (!data) {
+          console.log("[Auth Sync] Writing missing Google User profile map...");
+          await supabase.from('profiles').upsert({
+            id: user.id,
+            firebase_uid: firebaseUser.uid,
+            full_name: firebaseUser.displayName || 'Anonymous Explorer',
+            email: firebaseUser.email,
+            is_firebase_user: true
+          });
+          queryClient.invalidateQueries({ queryKey: ['coding_tasks_and_leaderboard'] });
+        }
+      };
+      healOrphanedProfiles();
+    }
+  }, [isFirebaseUser, firebaseUser, user?.id, queryClient]);
+
   // Fetches Tasks & Leaderboard concurrently
   const { data, isLoading: loading } = useQuery({
     queryKey: ['coding_tasks_and_leaderboard', userId, filterDifficulty],
