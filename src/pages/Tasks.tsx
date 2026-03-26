@@ -354,28 +354,29 @@ export default function Tasks() {
   const [submissionCode, setSubmissionCode] = useState("");
   const [filterDifficulty, setFilterDifficulty] = useState<string>("All");
 
-  const getUserId = () => isFirebaseUser && firebaseUser ? firebaseUser.uid : user?.id;
+  // Use Supabase user.id primarily to correctly match historical task_submissions records!
+  const getUserId = () => user?.id || (isFirebaseUser && firebaseUser ? firebaseUser.uid : undefined);
   const userId = getUserId();
 
   // Actively fix Firebase Users who slipped into the platform without hitting the standard Profile Creation triggers
   useEffect(() => {
     if (isFirebaseUser && firebaseUser && user?.id) {
       const healOrphanedProfiles = async () => {
-        // Profiles table crashes because Firebase UIDs aren't UUID castable. Writing securely to flexible user_registrations instead.
-        const { data } = await supabase.from('user_registrations').select('user_id').eq('user_id', firebaseUser.uid).maybeSingle();
-        if (!data) {
-          console.log("[Auth Sync] Writing missing Google User mapping to user_registrations...");
-          await supabase.from('user_registrations').upsert({
-            user_id: firebaseUser.uid,
-            full_name: firebaseUser.displayName || 'Google User',
-            email: firebaseUser.email,
-            phone: '9999999999',
-            year: '1st',
-            section: 'A',
-            department: 'CSE',
-            college: 'Automated Sync'
-          });
-          queryClient.invalidateQueries({ queryKey: ['coding_tasks_and_leaderboard'] });
+        // Profiles table crashes due to UUID mismatch and RLS read-blocking. Writing strictly to public-readable user_registrations.
+        const { error } = await supabase.from('user_registrations').upsert({
+          user_id: firebaseUser.uid,
+          full_name: firebaseUser.displayName || user?.user_metadata?.full_name || 'Google User',
+          email: firebaseUser.email || user?.email,
+          phone: '-',
+          year: '-',
+          section: '-',
+          department: '-',
+          college: 'Automated Sync'
+        }, { onConflict: 'user_id' }); // Crucial: prevents silent insert failures
+        
+        if (!error) {
+          console.log("[Auth Sync] Synced Google User to public registry.");
+          // Only invalidate if we know it succeeded
         }
       };
       healOrphanedProfiles();
