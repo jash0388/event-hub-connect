@@ -5,8 +5,9 @@ import {
     useTransform,
     AnimatePresence,
 } from "framer-motion";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 import {
     Orbit,
     ArrowUpRight,
@@ -862,6 +863,8 @@ function Footer() {
 export default function CinematicLanding() {
     const [isCodeModalOpen, setIsCodeModalOpen] = useState(false);
     const [enteredCode, setEnteredCode] = useState("");
+    const navigate = useNavigate();
+    const { toast } = useToast();
 
     const openCodeModal = () => setIsCodeModalOpen(true);
     const closeCodeModal = () => {
@@ -871,9 +874,26 @@ export default function CinematicLanding() {
 
     const handleCodeSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (enteredCode.trim()) {
-            console.log("Code submitted:", enteredCode);
-            closeCodeModal();
+        const code = enteredCode.trim();
+        if (code) {
+            const ADMIN_CODES = ['819234', '475619', '902381'];
+            if (ADMIN_CODES.includes(code)) {
+                localStorage.setItem('admin_access_code', code);
+                toast({
+                    title: "Access Granted",
+                    description: "Welcome to the Admin Dashboard",
+                });
+                closeCodeModal();
+                navigate('/admin/dashboard');
+                return;
+            } else {
+                toast({
+                    title: "Invalid Code",
+                    description: "The access code you entered is incorrect.",
+                    variant: "destructive"
+                });
+                setEnteredCode("");
+            }
         }
     };
 

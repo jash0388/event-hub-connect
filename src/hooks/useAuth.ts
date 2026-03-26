@@ -372,6 +372,7 @@ export function useAuth() {
 
     adminCache = null;
     saveFirebaseUser(null);
+    localStorage.removeItem('admin_access_code');
     setGlobalState({
       user: null,
       session: null,
