@@ -361,15 +361,19 @@ export default function Tasks() {
   useEffect(() => {
     if (isFirebaseUser && firebaseUser && user?.id) {
       const healOrphanedProfiles = async () => {
-        const { data } = await supabase.from('profiles').select('id').eq('firebase_uid', firebaseUser.uid).maybeSingle();
+        // Profiles table crashes because Firebase UIDs aren't UUID castable. Writing securely to flexible user_registrations instead.
+        const { data } = await supabase.from('user_registrations').select('user_id').eq('user_id', firebaseUser.uid).maybeSingle();
         if (!data) {
-          console.log("[Auth Sync] Writing missing Google User profile map...");
-          await supabase.from('profiles').upsert({
-            id: user.id,
-            firebase_uid: firebaseUser.uid,
-            full_name: firebaseUser.displayName || 'Anonymous Explorer',
+          console.log("[Auth Sync] Writing missing Google User mapping to user_registrations...");
+          await supabase.from('user_registrations').upsert({
+            user_id: firebaseUser.uid,
+            full_name: firebaseUser.displayName || 'Google User',
             email: firebaseUser.email,
-            is_firebase_user: true
+            phone: '9999999999',
+            year: '1st',
+            section: 'A',
+            department: 'CSE',
+            college: 'Automated Sync'
           });
           queryClient.invalidateQueries({ queryKey: ['coding_tasks_and_leaderboard'] });
         }
