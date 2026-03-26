@@ -358,30 +358,26 @@ export default function Tasks() {
   const getUserId = () => user?.id || (isFirebaseUser && firebaseUser ? firebaseUser.uid : undefined);
   const userId = getUserId();
 
-  // Actively fix Firebase Users who slipped into the platform without hitting the standard Profile Creation triggers
+  // When a Firebase/Google user visits, backfill their display name onto their existing submissions
   useEffect(() => {
-    if (isFirebaseUser && firebaseUser && user?.id) {
-      const healOrphanedProfiles = async () => {
-        // Profiles table crashes due to UUID mismatch and RLS read-blocking. Writing strictly to public-readable user_registrations.
-        const { error } = await supabase.from('user_registrations').upsert({
-          user_id: firebaseUser.uid,
-          full_name: firebaseUser.displayName || user?.user_metadata?.full_name || 'Google User',
-          email: firebaseUser.email || user?.email,
-          phone: '-',
-          year: '-',
-          section: '-',
-          department: '-',
-          college: 'Automated Sync'
-        }, { onConflict: 'user_id' }); // Crucial: prevents silent insert failures
-        
-        if (!error) {
-          console.log("[Auth Sync] Synced Google User to public registry.");
-          // Only invalidate if we know it succeeded
-        }
-      };
-      healOrphanedProfiles();
-    }
-  }, [isFirebaseUser, firebaseUser, user?.id, queryClient]);
+    if (!userId) return;
+    const displayName = firebaseUser?.displayName || user?.user_metadata?.full_name;
+    if (!displayName) return;
+
+    const backfillName = async () => {
+      // Update all submissions from this user that are missing a display name
+      const { error } = await supabase.from('task_submissions' as any)
+        .update({ user_display_name: displayName })
+        .eq('user_id', userId)
+        .is('user_display_name', null);
+      
+      if (!error) {
+        console.log("[Auth Sync] Backfilled display name on submissions for:", displayName);
+        queryClient.invalidateQueries({ queryKey: ['coding_tasks_and_leaderboard'] });
+      }
+    };
+    backfillName();
+  }, [userId, firebaseUser?.displayName, user?.user_metadata?.full_name, queryClient]);
 
   // Fetches Tasks & Leaderboard concurrently
   const { data, isLoading: loading } = useQuery({
@@ -412,32 +408,30 @@ export default function Tasks() {
         });
       }
 
-      // Fetch Leaderboard logic (mocking aggregated points temporarily if complex query fails)
-      const { data: globalSubs } = await supabase.from('task_submissions' as any).select('user_id, points_awarded, status');
+      // Fetch Leaderboard logic
+      const { data: globalSubs } = await supabase.from('task_submissions' as any).select('user_id, points_awarded, status, user_display_name');
       const lbMap: Record<string, number> = {};
+      const nameFromSubs: Record<string, string> = {};
       (globalSubs || []).forEach((s: any) => {
         if (s.status === 'approved') lbMap[s.user_id] = (lbMap[s.user_id] || 0) + (s.points_awarded || 0);
+        // Capture display names stored directly on submissions (our new reliable source)
+        if (s.user_display_name) nameFromSubs[s.user_id] = s.user_display_name;
       });
       
-      // Fetch user profile names & Google Auth fallback registrations
+      // Fetch profiles for Supabase-native users
       const { data: profiles } = await supabase.from('profiles').select('*');
-      const { data: userRegistrations } = await supabase.from('user_registrations').select('user_id, full_name, email');
-      // Secret sauce bridging: Users who only filled an Event Form have their true name here, bridged by email instead of ID
-      const { data: eventRegistrations } = await supabase.from('event_registrations').select('full_name, email');
       
       const leaderboard = Object.entries(lbMap).map(([uId, pts]) => {
         const prof = profiles?.find(p => p.id === uId || p.firebase_uid === uId);
-        const reg = userRegistrations?.find(r => r.user_id === uId);
-        const eventReg = prof?.email ? eventRegistrations?.find(e => e.email?.toLowerCase().trim() === prof.email?.toLowerCase().trim()) : null;
         
-        let displayName = prof?.full_name || reg?.full_name || eventReg?.full_name || prof?.username || prof?.email?.split('@')[0] || reg?.email?.split('@')[0];
+        // Priority: 1) profile name, 2) name saved on submission, 3) current user's live session, 4) fallback
+        let displayName = prof?.full_name || nameFromSubs[uId];
         
-        // Fast-path bypass to capture the logged-in Google Auth user locally if databases lag or miss their profile row
         if (!displayName && uId === userId) {
           displayName = user?.user_metadata?.full_name || firebaseUser?.displayName || user?.email?.split('@')[0] || firebaseUser?.email?.split('@')[0];
         }
         
-        return { name: displayName || `Node_${uId.slice(0, 4).toUpperCase()}`, points: pts, isMe: uId === userId };
+        return { name: displayName || `Coder_${uId.slice(0, 5)}`, points: pts, isMe: uId === userId };
       }).sort((a,b) => b.points - a.points).slice(0, 5);
 
       return { tasks: tasksData as Task[], submissions: submissionsMap, leaderboard };
@@ -464,12 +458,14 @@ export default function Tasks() {
     try {
       setSubmitting(taskId);
       const pointsObj = tasks.find(t => t.id === taskId);
+      const displayName = firebaseUser?.displayName || user?.user_metadata?.full_name || user?.email?.split('@')[0] || firebaseUser?.email?.split('@')[0] || 'Anonymous';
       const payload = {
         task_id: taskId,
         user_id: userId,
         answer: answer,
         status: isAutoApproved ? 'approved' : 'pending',
-        points_awarded: isAutoApproved ? (pointsObj?.points || 0) : 0
+        points_awarded: isAutoApproved ? (pointsObj?.points || 0) : 0,
+        user_display_name: displayName
       };
 
       const { error } = await supabase.from('task_submissions' as any).insert(payload);
