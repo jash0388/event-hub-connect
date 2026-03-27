@@ -39,32 +39,49 @@ const LANGUAGE_VERSIONS = {
   java: "15.0.2"
 };
 
-// --- Puter.js Code Execution Engine with Pre-Authentication ---
-const getPuterClient = async () => {
-  const puter = (window as any).puter;
-  if (!puter) throw new Error("Puter.js not loaded.");
-  
-  if (!puter.auth.isSignedIn()) {
-    try {
-      await puter.auth.signIn({
-        email: 'jashwanth038@gmail.com',
-        password: 'Sonu@1234'
-      });
-    } catch(err) {
-      console.error("Puter Auth failed:", err);
-    }
+// --- Lightning Fast Piston API Code Execution Engine ---
+const executeCodePiston = async (code: string, language: keyof typeof LANGUAGE_VERSIONS) => {
+  const version = LANGUAGE_VERSIONS[language];
+  try {
+    const response = await fetch("https://emkc.org/api/v2/piston/execute", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ language, version, files: [{ content: code }] })
+    });
+    const data = await response.json();
+    return data.run;
+  } catch (error) {
+    return { output: "Error: Could not connect to execution engine.", code: -1, stderr: "Network error" };
   }
-  return puter;
 };
 
-const askAI = async (prompt: string) => {
+// --- Direct Gemini API Integration ---
+const askGemini = async (prompt: string) => {
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  if (!apiKey) {
+    return "[System Error] VITE_GEMINI_API_KEY is missing in your .env file. Please generate a free Google Gemini API Key and add it to your .env to unlock the AI Judge.";
+  }
+  
   try {
-    const puter = await getPuterClient();
-    // Forcing gpt-4o-mini - the lowest latency, fastest TTFT model on Puter's network
-    const response = await puter.ai.chat(prompt, { model: "gpt-4o-mini" });
-    return typeof response === 'string' ? response.trim() : (response?.message?.content?.trim() || "No output returned.");
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { maxOutputTokens: 800 }
+      })
+    });
+    
+    if (!response.ok) {
+      console.error("Gemini API Error:", await response.text());
+      return `[System Alert] Gemini API returned an error! Verify your API key.`;
+    }
+    
+    const data = await response.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    return text ? text.trim() : "No output from AI.";
   } catch (error: any) {
-    return `[System Alert] Puter API servers are currently unreachable.`;
+    return `[System Alert] Gemini API servers are currently unreachable.`;
   }
 };
 
@@ -127,12 +144,9 @@ function CodeEditorModal({
     setIsRunning(true);
     setOutput("Running code...\n");
     
-    const prompt = `Act as a ${language} console. Print ONLY the EXACT execution output of this code. No markdown, no explanations. If error, print the exact error trace.
-Code:
-${code}`;
-
-    const result = await askAI(prompt);
-    setOutput(result);
+    // Using Piston API instead of LLM for 100% accurate, instant runtime execution
+    const runResult = await executeCodePiston(code, language);
+    setOutput(runResult.output || (runResult.stderr ? runResult.stderr : "Program executed successfully with no output."));
     setIsRunning(false);
   };
 
@@ -159,7 +173,7 @@ Quickly verify:
 If entirely correct, output EXACTLY: "✅ All Hidden Test Cases Passed!"
 Else, output EXACTLY: "❌ Hidden Test Cases Failed.\nReason: [1 short sentence]"`;
 
-    const result = await askAI(prompt);
+    const result = await askGemini(prompt);
     
     setOutput(`\n=== Verification Results ===\n\n${result}`);
     if (result.includes("✅")) {
@@ -183,7 +197,7 @@ Previous hints given: ${hints.join(" | ")}
 
 Give 1 short hint (max 1 sentence) to help them proceed. Make sure it is completely different from previous hints. Do NOT write the code for them.`;
 
-    const result = await askAI(prompt);
+    const result = await askGemini(prompt);
     
     setHints(prev => {
         const newHints = [...prev];
