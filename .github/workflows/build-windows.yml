@@ -1,0 +1,38 @@
+name: Build Windows App
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'desktop-app/**'
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Code Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Dependencies
+        working-directory: desktop-app
+        run: npm install
+
+      - name: Build Windows App
+        working-directory: desktop-app
+        run: npm run build:win
+
+      - name: Upload to Existing Release
+        working-directory: desktop-app
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          Get-ChildItem -Path "dist" -Filter "*Setup*.exe" | Rename-Item -NewName "DataNauts-HUB-Setup.exe"
+          gh release upload v1.0.0 "dist/DataNauts-HUB-Setup.exe" --clobber
