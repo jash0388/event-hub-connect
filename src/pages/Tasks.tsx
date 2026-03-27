@@ -563,8 +563,8 @@ export default function Tasks() {
               )}
             </div>
 
-            {/* Right Column: Leaderboard & Stats */}
-            <div className="flex-[1] space-y-6">
+            {/* Right Column: Leaderboard & Stats - STICKY */}
+            <div className="flex-[1] space-y-6 lg:sticky lg:top-6 lg:self-start">
               {/* Personal Stats */}
               <div className="bg-gradient-to-br from-indigo-900 to-slate-900 rounded-2xl p-6 text-white shadow-xl">
                 <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-indigo-100"><Trophy className="w-5 h-5 text-amber-400" /> Your Stats</h3>
