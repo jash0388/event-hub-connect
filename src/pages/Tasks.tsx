@@ -384,9 +384,20 @@ export default function Tasks() {
   const { data, isLoading: loading, refetch } = useQuery({
     queryKey: ['coding_tasks_and_leaderboard', userId, filterDifficulty],
     queryFn: async () => {
-      // Fetch Tasks
-      const { data: tasksDataRaw } = await supabase.from('coding_tasks' as any).select('*').order('created_at', { ascending: false });
-      
+      // Execute all database queries concurrently
+      const [
+        { data: tasksDataRaw },
+        userSubsRes,
+        { data: globalSubs },
+        { data: profiles }
+      ] = await Promise.all([
+        supabase.from('coding_tasks' as any).select('*').order('created_at', { ascending: false }),
+        userId ? supabase.from('task_submissions' as any).select('*').eq('user_id', userId) : Promise.resolve({ data: null }),
+        supabase.from('task_submissions' as any).select('user_id, points_awarded, status, user_display_name'),
+        supabase.from('profiles').select('id, full_name, firebase_uid')
+      ]);
+      const submissionsData = userSubsRes.data;
+
       // Mock logic for difficulty/tags if missing in database
       let tasksData = (tasksDataRaw || []).filter((t: any) => !t.title?.startsWith('[DELETED]')).map((t: any, i: number) => ({
         ...t,
@@ -401,7 +412,6 @@ export default function Tasks() {
       const submissionsMap: Record<string, Submission> = {};
       
       if (userId) {
-        const { data: submissionsData } = await supabase.from('task_submissions' as any).select('*').eq('user_id', userId);
         (submissionsData || []).forEach((sub: any) => {
           if (!submissionsMap[sub.task_id] || new Date(sub.submitted_at || 0) > new Date(submissionsMap[sub.task_id].submitted_at || 0)) {
             submissionsMap[sub.task_id] = sub;
@@ -410,7 +420,6 @@ export default function Tasks() {
       }
 
       // Fetch Leaderboard logic
-      const { data: globalSubs } = await supabase.from('task_submissions' as any).select('user_id, points_awarded, status, user_display_name');
       const lbMap: Record<string, number> = {};
       const nameFromSubs: Record<string, string> = {};
       (globalSubs || []).forEach((s: any) => {
@@ -418,9 +427,6 @@ export default function Tasks() {
         // Capture display names stored directly on submissions (our new reliable source)
         if (s.user_display_name) nameFromSubs[s.user_id] = s.user_display_name;
       });
-      
-      // Fetch profiles for Supabase-native users
-      const { data: profiles } = await supabase.from('profiles').select('*');
       
       const leaderboard = Object.entries(lbMap).map(([uId, pts]) => {
         const prof = profiles?.find(p => p.id === uId || p.firebase_uid === uId);

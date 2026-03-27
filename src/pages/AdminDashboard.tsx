@@ -577,37 +577,17 @@ const AdminDashboard = () => {
       console.log("[Admin] Fetching task submissions...");
 
       // 1. Fetch submissions first (no joins to avoid schema cache issues)
-      const { data: submissions, error: subError } = await supabase
-        .from('task_submissions' as any)
-        .select('*')
-        .order('submitted_at', { ascending: false });
-
-      if (subError) {
-        console.error("[Admin] Error fetching submissions:", subError);
-        setTaskSubmissions([]);
-        return;
-      }
-
-      if (!submissions || submissions.length === 0) {
-        console.log("[Admin] No submissions found.");
-        setTaskSubmissions([]);
-        return;
-      }
-
-      // 2. Fetch all tasks to map titles
-      const { data: tasks } = await supabase
-        .from('coding_tasks' as any)
-        .select('id, title');
-
-      // 3. Fetch all profiles to map names
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, full_name, email, firebase_uid, is_firebase_user');
-
-      // 3b. Fetch user registrations for additional user info
-      const { data: userRegistrations } = await supabase
-        .from('user_registrations')
-        .select('user_id, full_name, email, year, section, department, college, phone');
+      const [
+        { data: submissions, error: subError },
+        { data: tasks },
+        { data: profiles },
+        { data: userRegistrations }
+      ] = await Promise.all([
+        supabase.from('task_submissions' as any).select('*').order('submitted_at', { ascending: false }),
+        supabase.from('coding_tasks' as any).select('id, title'),
+        supabase.from('profiles').select('id, full_name, email, firebase_uid, is_firebase_user'),
+        supabase.from('user_registrations').select('user_id, full_name, email, year, section, department, college, phone')
+      ]);
 
       // 4. Calculate total points per user
       const userPointsMap: Record<string, number> = {};
@@ -653,18 +633,13 @@ const AdminDashboard = () => {
   const fetchAdminUsers = async () => {
     try {
       // Fetch all user roles directly but filter specifically for admins
-      const { data: rolesData, error: rolesError } = await supabase
-        .from('user_roles')
-        .select('*')
-        .in('role', ['admin'])
-        .order('created_at', { ascending: false });
-
-      if (rolesError) throw rolesError;
-
-      // Fetch profiles manually to map emails correctly
-      const { data: profilesData } = await supabase
-        .from('profiles')
-        .select('id, email, full_name');
+      const [
+        { data: rolesData, error: rolesError },
+        { data: profilesData }
+      ] = await Promise.all([
+        supabase.from('user_roles').select('*').in('role', ['admin']).order('created_at', { ascending: false }),
+        supabase.from('profiles').select('id, email, full_name')
+      ]);
 
       // Map to include profiles details safely
       const adminsWithDetails = (rolesData || []).map((role: any) => {
@@ -703,23 +678,16 @@ const AdminDashboard = () => {
 
   const fetchUsers = async () => {
     try {
-      // Fetch profiles
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (profilesError) throw profilesError;
-
-      // Fetch user registrations to catch Firebase users who might not be in profiles
-      const { data: userRegistrations } = await supabase
-        .from('user_registrations')
-        .select('*');
-
-      // Fetch task submissions to calculate points
-      const { data: submissionsData } = await supabase
-        .from('task_submissions')
-        .select('user_id, points_awarded, status');
+      // Fetch profiles, user registrations, and task submissions concurrently
+      const [
+        { data: profilesData, error: profilesError },
+        { data: userRegistrations },
+        { data: submissionsData }
+      ] = await Promise.all([
+        supabase.from('profiles').select('*').order('created_at', { ascending: false }),
+        supabase.from('user_registrations').select('*'),
+        supabase.from('task_submissions').select('user_id, points_awarded, status')
+      ]);
 
       // Calculate total points per user
       const userPointsMap: Record<string, number> = {};
