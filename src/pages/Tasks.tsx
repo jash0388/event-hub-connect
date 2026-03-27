@@ -391,10 +391,10 @@ export default function Tasks() {
         { data: globalSubs },
         { data: profiles }
       ] = await Promise.all([
-        supabase.from('coding_tasks' as any).select('*').order('created_at', { ascending: false }),
-        userId ? supabase.from('task_submissions' as any).select('*').eq('user_id', userId) : Promise.resolve({ data: null }),
-        supabase.from('task_submissions' as any).select('user_id, points_awarded, status, user_display_name'),
-        supabase.from('profiles').select('id, full_name, firebase_uid')
+        supabase.from('coding_tasks' as any).select('*').order('created_at', { ascending: false }).limit(200),
+        userId ? supabase.from('task_submissions' as any).select('*').eq('user_id', userId).limit(500) : Promise.resolve({ data: null }),
+        supabase.from('task_submissions' as any).select('user_id, points_awarded, status, user_display_name').eq('status', 'approved').limit(5000),
+        supabase.from('profiles').select('id, full_name, firebase_uid').limit(2000)
       ]);
       const submissionsData = userSubsRes.data;
 

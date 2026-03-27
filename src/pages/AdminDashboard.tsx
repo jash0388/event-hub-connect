@@ -474,7 +474,8 @@ const AdminDashboard = () => {
       const { data, error } = await supabase
         .from('projects')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(100);
 
       if (error) throw error;
       setProjects(data || []);
@@ -493,7 +494,8 @@ const AdminDashboard = () => {
       const { data, error } = await (supabase as any)
         .from('internships')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(100);
 
       if (error) {
         console.error('Error fetching internships:', error);
@@ -583,10 +585,10 @@ const AdminDashboard = () => {
         { data: profiles },
         { data: userRegistrations }
       ] = await Promise.all([
-        supabase.from('task_submissions' as any).select('*').order('submitted_at', { ascending: false }),
-        supabase.from('coding_tasks' as any).select('id, title'),
-        supabase.from('profiles').select('id, full_name, email, firebase_uid, is_firebase_user'),
-        supabase.from('user_registrations').select('user_id, full_name, email, year, section, department, college, phone')
+        supabase.from('task_submissions' as any).select('*').order('submitted_at', { ascending: false }).limit(2000),
+        supabase.from('coding_tasks' as any).select('id, title').limit(100),
+        supabase.from('profiles').select('id, full_name, email, firebase_uid, is_firebase_user').limit(2000),
+        supabase.from('user_registrations').select('user_id, full_name, email, year, section, department, college, phone').limit(2000)
       ]);
 
       // 4. Calculate total points per user
@@ -684,9 +686,9 @@ const AdminDashboard = () => {
         { data: userRegistrations },
         { data: submissionsData }
       ] = await Promise.all([
-        supabase.from('profiles').select('*').order('created_at', { ascending: false }),
-        supabase.from('user_registrations').select('*'),
-        supabase.from('task_submissions').select('user_id, points_awarded, status')
+        supabase.from('profiles').select('*').order('created_at', { ascending: false }).limit(2000),
+        supabase.from('user_registrations').select('*').limit(2000),
+        supabase.from('task_submissions').select('user_id, points_awarded, status').limit(2000)
       ]);
 
       // Calculate total points per user
@@ -752,7 +754,8 @@ const AdminDashboard = () => {
       const { data, error } = await supabase
         .from('event_registrations')
         .select('*, events(title)')
-        .order('scanned_at', { ascending: false, nullsFirst: false });
+        .order('scanned_at', { ascending: false, nullsFirst: false })
+        .limit(1000);
 
       if (error) throw error;
       setEventRegistrations(data || []);
