@@ -1892,9 +1892,14 @@ const AdminDashboard = () => {
                   <p className="text-slate-500 text-sm">{user?.email}</p>
                 </div>
               </div>
-              <Button onClick={handleLogout} variant="outline" className="rounded-xl border-slate-200 text-slate-600 hover:bg-slate-50 h-10 px-5">
-                <LogOut className="w-4 h-4 mr-2" /> Logout
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button onClick={() => fetchAllData()} variant="outline" className="rounded-xl border-slate-200 text-slate-600 hover:bg-slate-50 h-10 px-5">
+                  <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} /> Refresh
+                </Button>
+                <Button onClick={handleLogout} variant="outline" className="rounded-xl border-slate-200 text-slate-600 hover:bg-slate-50 h-10 px-5">
+                  <LogOut className="w-4 h-4 mr-2" /> Logout
+                </Button>
+              </div>
             </div>
 
             {/* Stats Cards */}

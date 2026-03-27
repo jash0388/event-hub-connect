@@ -9,7 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import {
   CheckCircle2, Clock, Trophy, Send, AlertCircle, Loader2, BookOpen, X, 
-  Play, Code2, Search, Brain, Timer, History, Filter, TerminalSquare
+  Play, Code2, Search, Brain, Timer, History, Filter, TerminalSquare, RefreshCw
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -381,7 +381,7 @@ export default function Tasks() {
   }, [userId, firebaseUser?.displayName, user?.user_metadata?.full_name, queryClient]);
 
   // Fetches Tasks & Leaderboard concurrently
-  const { data, isLoading: loading } = useQuery({
+  const { data, isLoading: loading, refetch } = useQuery({
     queryKey: ['coding_tasks_and_leaderboard', userId, filterDifficulty],
     queryFn: async () => {
       // Fetch Tasks
@@ -503,7 +503,12 @@ export default function Tasks() {
           {/* Top Dashboard Header */}
           <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-slate-900 mb-2">Code Arena</h1>
+              <div className="flex items-center gap-4 mb-2">
+                <h1 className="text-3xl font-bold text-slate-900">Code Arena</h1>
+                <Button onClick={() => refetch()} variant="outline" size="sm" className="h-8 rounded-lg">
+                  <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${loading ? 'animate-spin' : ''}`} /> Refresh
+                </Button>
+              </div>
               <p className="text-slate-600">Solve algorithms, run them live in the browser, and climb the leaderboard.</p>
             </div>
             
