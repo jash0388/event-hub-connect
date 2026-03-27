@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { motion } from 'framer-motion';
 import {
   Dialog,
   DialogContent,
@@ -1868,42 +1869,75 @@ const AdminDashboard = () => {
     }
   };
 
+  // Compute live stats for header
+  const pendingCount = taskSubmissions.filter(s => s.status === 'pending').length;
+  const approvedCount = taskSubmissions.filter(s => s.status === 'approved').length;
+  const totalUsersCount = allUsers.length;
+  const totalEventsCount = events.length;
+
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-[#f0f2f5] flex flex-col">
       <Header />
       <main className="flex-1 pt-28 pb-16">
         <div className="container mx-auto px-6 max-w-7xl">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-foreground rounded-2xl flex items-center justify-center">
-                <LayoutDashboard className="w-7 h-7 text-background" />
+          {/* Admin Header - Clean & Compact */}
+          <div className="mb-6">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center">
+                  <LayoutDashboard className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold text-slate-900">Admin Dashboard</h1>
+                  <p className="text-slate-500 text-sm">{user?.email}</p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-3xl font-extrabold pb-1 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-500 to-sky-400">Admin HUB Connect</h1>
-                <p className="text-muted-foreground text-sm font-medium">{user?.email} — <span className="text-blue-600">Verified System Administrator</span></p>
-              </div>
+              <Button onClick={handleLogout} variant="outline" className="rounded-xl border-slate-200 text-slate-600 hover:bg-slate-50 h-10 px-5">
+                <LogOut className="w-4 h-4 mr-2" /> Logout
+              </Button>
             </div>
 
-            <Button variant="outline" onClick={handleLogout} className="rounded-xl border-border px-6 hover:bg-secondary h-12">
-              <LogOut className="w-4 h-4 mr-2" />
-              Logout
-            </Button>
+            {/* Stats Cards */}
+            <div className="grid grid-cols-4 gap-3">
+              {[
+                { label: 'Users', value: totalUsersCount, icon: Users, color: 'bg-blue-500' },
+                { label: 'Events', value: totalEventsCount, icon: Calendar, color: 'bg-violet-500' },
+                { label: 'Pending', value: pendingCount, icon: FileText, color: 'bg-amber-500' },
+                { label: 'Approved', value: approvedCount, icon: CheckCircle, color: 'bg-emerald-500' },
+              ].map((stat) => (
+                <div key={stat.label} className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex items-center gap-3">
+                  <div className={`w-9 h-9 ${stat.color} rounded-lg flex items-center justify-center flex-shrink-0`}>
+                    <stat.icon className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-xl font-bold text-slate-900">{stat.value}</p>
+                    <p className="text-[11px] text-slate-400 font-medium uppercase tracking-wide">{stat.label}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-8">
-            <div className="overflow-x-auto pb-4 mb-4 -mx-6 px-6 no-scrollbar">
-              <TabsList className="inline-flex w-max min-w-full md:grid md:w-full md:grid-cols-6 lg:grid-cols-12 gap-2 bg-secondary/30 p-1.5 rounded-2xl">
-                <TabsTrigger value="events" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md">Events</TabsTrigger>
-                <TabsTrigger value="projects" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md">Projects</TabsTrigger>
-                <TabsTrigger value="internships" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md">Internships</TabsTrigger>
-                <TabsTrigger value="social" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md">Social</TabsTrigger>
-                <TabsTrigger value="submissions" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md">Submissions</TabsTrigger>
-                <TabsTrigger value="tasks" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md text-blue-600">Tasks</TabsTrigger>
-                <TabsTrigger value="users" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md">Users</TabsTrigger>
-                <TabsTrigger value="admins" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md">Admins</TabsTrigger>
-                <TabsTrigger value="qrscan" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md">QR Scan</TabsTrigger>
-                <TabsTrigger value="attendance" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md">Attendance</TabsTrigger>
-                <TabsTrigger value="messages" className="rounded-xl px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-md">Messages</TabsTrigger>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-6">
+            <div className="overflow-x-auto no-scrollbar -mx-6 px-6">
+              <TabsList className="inline-flex gap-1 bg-transparent p-0 h-auto">
+                {[
+                  { value: 'events', label: 'Events' },
+                  { value: 'projects', label: 'Projects' },
+                  { value: 'internships', label: 'Internships' },
+                  { value: 'social', label: 'Social' },
+                  { value: 'submissions', label: 'Reviews' },
+                  { value: 'tasks', label: 'Tasks' },
+                  { value: 'users', label: 'Users' },
+                  { value: 'admins', label: 'Admins' },
+                  { value: 'qrscan', label: 'QR Scan' },
+                  { value: 'attendance', label: 'Attendance' },
+                  { value: 'messages', label: 'Messages' },
+                ].map((tab) => (
+                  <TabsTrigger key={tab.value} value={tab.value} className="rounded-full px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-900 hover:bg-white data-[state=active]:bg-slate-900 data-[state=active]:text-white data-[state=active]:shadow-md transition-all whitespace-nowrap">
+                    {tab.label}
+                  </TabsTrigger>
+                ))}
               </TabsList>
             </div>
 
@@ -2110,55 +2144,68 @@ const AdminDashboard = () => {
 
             <TabsContent value="submissions" className="mt-0">
               <div>
-                <div className="mb-6">
-                  <h2 className="text-2xl font-bold">Submissions</h2>
-                  <p className="text-sm text-muted-foreground">Review student responses and award points.</p>
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h2 className="text-2xl font-bold text-slate-900">Code Reviews</h2>
+                    <p className="text-sm text-slate-500">Review student solutions and award points.</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-xs font-semibold"><span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />{pendingCount} Pending</span>
+                    <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-50 border border-green-200 text-green-700 text-xs font-semibold"><span className="w-2 h-2 rounded-full bg-green-400" />{approvedCount} Approved</span>
+                  </div>
                 </div>
-                <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+                <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
                   <Table>
-                    <TableHeader className="bg-secondary/20">
+                    <TableHeader className="bg-slate-50">
                       <TableRow>
-                        <TableHead className="font-bold">Student</TableHead>
-                        <TableHead className="font-bold">Task</TableHead>
-                        <TableHead className="font-bold">Status</TableHead>
-                        <TableHead className="font-bold text-right">Review</TableHead>
+                        <TableHead className="font-semibold text-slate-600">Student</TableHead>
+                        <TableHead className="font-semibold text-slate-600">Challenge</TableHead>
+                        <TableHead className="font-semibold text-slate-600">Status</TableHead>
+                        <TableHead className="font-semibold text-slate-600 text-right">Action</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {taskSubmissions.length === 0 ? (
-                        <TableRow><TableCell colSpan={4} className="text-center py-10 text-muted-foreground">No submissions found.</TableCell></TableRow>
-                      ) : taskSubmissions.map((sub) => (
-                        <TableRow key={sub.id}>
+                        <TableRow><TableCell colSpan={4} className="text-center py-16 text-slate-400"><FileText className="w-8 h-8 mx-auto mb-2 opacity-30" />No submissions yet.</TableCell></TableRow>
+                      ) : taskSubmissions.map((sub, idx) => {
+                        const name = (sub.profiles as any)?.full_name || 'Unknown';
+                        const initials = name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
+                        const colors = ['bg-blue-500', 'bg-violet-500', 'bg-emerald-500', 'bg-rose-500', 'bg-amber-500', 'bg-cyan-500'];
+                        return (
+                        <TableRow key={sub.id} className="hover:bg-slate-50/80 transition-colors">
                           <TableCell>
-                            <div className="font-medium">
-                              {(sub.profiles as any)?.full_name || 'Student (No Profile)'}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {(sub.profiles as any)?.email || sub.user_id}
+                            <div className="flex items-center gap-3">
+                              <div className={`w-9 h-9 ${colors[idx % colors.length]} rounded-xl flex items-center justify-center text-white text-xs font-bold shadow-sm`}>{initials}</div>
+                              <div>
+                                <p className="font-semibold text-slate-900 text-sm">{name}</p>
+                                <p className="text-xs text-slate-400">{(sub.profiles as any)?.email || sub.user_id}</p>
+                              </div>
                             </div>
                           </TableCell>
-                          <TableCell className="font-medium">{(sub.coding_tasks as any)?.title || 'Deleted Task'}</TableCell>
+                          <TableCell className="text-sm text-slate-700 font-medium max-w-[300px] truncate">{(sub.coding_tasks as any)?.title || 'Deleted Task'}</TableCell>
                           <TableCell>
-                            <Badge className={
-                              sub.status === 'approved' ? 'bg-green-100 text-green-700' :
-                                sub.status === 'denied' ? 'bg-red-100 text-red-700' :
-                                  'bg-amber-100 text-amber-700'
-                            }>
-                              {sub.status.toUpperCase()}
-                            </Badge>
+                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                              sub.status === 'approved' ? 'bg-green-50 text-green-700 border border-green-200' :
+                              sub.status === 'denied' ? 'bg-red-50 text-red-600 border border-red-200' :
+                              'bg-amber-50 text-amber-700 border border-amber-200'
+                            }`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${sub.status === 'approved' ? 'bg-green-500' : sub.status === 'denied' ? 'bg-red-500' : 'bg-amber-500'}`} />
+                              {sub.status === 'approved' ? 'Approved' : sub.status === 'denied' ? 'Rejected' : 'Pending'}
+                            </span>
                           </TableCell>
                           <TableCell className="text-right">
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={() => handleReviewDialog(sub)}
-                              className="rounded-xl border-blue-200 text-blue-600 hover:bg-blue-50"
+                              className="rounded-xl border-slate-200 text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200 transition-colors text-xs h-8 px-3"
                             >
-                              View & Review
+                              Review →
                             </Button>
                           </TableCell>
                         </TableRow>
-                      ))}
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>
@@ -2682,73 +2729,62 @@ const AdminDashboard = () => {
               </DialogContent>
             </Dialog>
 
-            {/* Submission Review Dialog */}
+            {/* Submission Review Dialog - Premium */}
             <Dialog open={reviewDialogOpen} onOpenChange={setReviewDialogOpen}>
-              <DialogContent className="sm:max-w-2xl rounded-2xl">
-                <DialogHeader>
-                  <DialogTitle className="text-2xl font-bold text-blue-700">Review Protocol</DialogTitle>
-                </DialogHeader>
+              <DialogContent className="sm:max-w-2xl rounded-3xl p-0 overflow-hidden border-0 shadow-2xl">
+                {/* Dialog Header with gradient */}
+                <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 px-8 py-6">
+                  <DialogHeader>
+                    <DialogTitle className="text-xl font-bold text-white flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-indigo-500/30 flex items-center justify-center"><FileText className="w-4 h-4 text-indigo-300" /></div>
+                      Submission Review
+                    </DialogTitle>
+                  </DialogHeader>
+                </div>
                 {selectedSubmission && (
-                  <div className="space-y-6 mt-4">
+                  <div className="p-8 space-y-6">
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="p-4 bg-secondary/20 rounded-xl border border-border">
-                        <p className="text-[10px] font-black uppercase text-muted-foreground mb-1">Student Node</p>
-                        <p className="font-bold">{(selectedSubmission.profiles as any)?.full_name}</p>
-                        <p className="text-xs text-muted-foreground">{(selectedSubmission.profiles as any)?.email}</p>
-                        <p className="text-xs font-bold text-blue-600 mt-2">Total Points: {(selectedSubmission as any).total_user_points || 0}</p>
-                        {/* Registration Details */}
+                      <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100">
+                        <p className="text-[10px] font-bold uppercase text-slate-400 tracking-wider mb-2">Student</p>
+                        <p className="font-bold text-slate-900">{(selectedSubmission.profiles as any)?.full_name}</p>
+                        <p className="text-xs text-slate-500">{(selectedSubmission.profiles as any)?.email}</p>
+                        <div className="mt-3 flex items-center gap-2">
+                          <span className="px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-700 text-xs font-bold">{(selectedSubmission as any).total_user_points || 0} XP Total</span>
+                        </div>
                         {((selectedSubmission.profiles as any)?.year || (selectedSubmission.profiles as any)?.department) && (
-                          <div className="mt-3 pt-3 border-t border-border/50">
-                            <p className="text-[10px] font-black uppercase text-muted-foreground mb-1">Registration Details</p>
-                            {(selectedSubmission.profiles as any)?.year && <p className="text-xs">📚 {(selectedSubmission.profiles as any)?.year}</p>}
-                            {(selectedSubmission.profiles as any)?.section && <p className="text-xs">Section: {(selectedSubmission.profiles as any)?.section}</p>}
-                            {(selectedSubmission.profiles as any)?.department && <p className="text-xs">🏛️ {(selectedSubmission.profiles as any)?.department}</p>}
-                            {(selectedSubmission.profiles as any)?.college && <p className="text-xs">🎓 {(selectedSubmission.profiles as any)?.college}</p>}
-                            {(selectedSubmission.profiles as any)?.phone && <p className="text-xs">📱 {(selectedSubmission.profiles as any)?.phone}</p>}
+                          <div className="mt-3 pt-3 border-t border-slate-200 space-y-1">
+                            {(selectedSubmission.profiles as any)?.year && <p className="text-xs text-slate-500">📚 {(selectedSubmission.profiles as any)?.year}</p>}
+                            {(selectedSubmission.profiles as any)?.section && <p className="text-xs text-slate-500">Section: {(selectedSubmission.profiles as any)?.section}</p>}
+                            {(selectedSubmission.profiles as any)?.department && <p className="text-xs text-slate-500">🏛️ {(selectedSubmission.profiles as any)?.department}</p>}
+                            {(selectedSubmission.profiles as any)?.college && <p className="text-xs text-slate-500">🎓 {(selectedSubmission.profiles as any)?.college}</p>}
+                            {(selectedSubmission.profiles as any)?.phone && <p className="text-xs text-slate-500">📱 {(selectedSubmission.profiles as any)?.phone}</p>}
                           </div>
                         )}
                       </div>
-                      <div className="p-4 bg-secondary/20 rounded-xl border border-border">
-                        <p className="text-[10px] font-black uppercase text-muted-foreground mb-1">Target Challenge</p>
-                        <p className="font-bold">{(selectedSubmission.coding_tasks as any)?.title}</p>
-                        <p className="text-xs text-muted-foreground">Submitted: {new Date(selectedSubmission.submitted_at).toLocaleString()}</p>
+                      <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100">
+                        <p className="text-[10px] font-bold uppercase text-slate-400 tracking-wider mb-2">Challenge</p>
+                        <p className="font-bold text-slate-900">{(selectedSubmission.coding_tasks as any)?.title}</p>
+                        <p className="text-xs text-slate-500 mt-1">{new Date(selectedSubmission.submitted_at).toLocaleString()}</p>
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Student's Solution</Label>
-                      <div className="p-6 bg-slate-950 text-emerald-400 font-mono text-sm rounded-2xl border border-white/5 overflow-auto max-h-[300px] whitespace-pre-wrap">
+                      <p className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Solution Code</p>
+                      <div className="p-5 bg-[#0d1117] text-[#7ee787] font-mono text-sm rounded-2xl border border-[#30363d] overflow-auto max-h-[280px] whitespace-pre-wrap leading-relaxed">
                         {selectedSubmission.answer}
                       </div>
                     </div>
 
-                    <div className="flex justify-between items-center pt-4 border-t border-border">
-                      <div className="flex gap-2">
-                        <Button
-                          variant="ghost"
-                          onClick={deleteSubmission}
-                          disabled={isSaving}
-                          className="rounded-xl text-red-500 hover:bg-red-50 hover:text-red-600 h-12 px-4"
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" /> Delete Answer
-                        </Button>
-                        <p className="text-xs text-muted-foreground italic self-center">Decision finalizes the score synchronization for this node.</p>
-                      </div>
+                    <div className="flex justify-between items-center pt-4 border-t border-slate-100">
+                      <Button variant="ghost" onClick={deleteSubmission} disabled={isSaving} className="rounded-xl text-red-500 hover:bg-red-50 h-10 px-4 text-sm">
+                        <Trash2 className="w-3.5 h-3.5 mr-1.5" /> Delete
+                      </Button>
                       <div className="flex gap-3">
-                        <Button
-                          variant="outline"
-                          onClick={() => reviewSubmission('denied')}
-                          disabled={isSaving}
-                          className="rounded-xl border-red-200 text-red-600 hover:bg-red-50 h-12 px-6"
-                        >
-                          <XCircle className="w-4 h-4 mr-2" /> Deny Access
+                        <Button variant="outline" onClick={() => reviewSubmission('denied')} disabled={isSaving} className="rounded-xl border-red-200 text-red-600 hover:bg-red-50 h-10 px-5 text-sm">
+                          <XCircle className="w-3.5 h-3.5 mr-1.5" /> Reject
                         </Button>
-                        <Button
-                          onClick={() => reviewSubmission('approved')}
-                          disabled={isSaving}
-                          className="rounded-xl bg-green-600 hover:bg-green-700 text-white h-12 px-6"
-                        >
-                          <CheckCircle className="w-4 h-4 mr-2" /> Approve & Sync
+                        <Button onClick={() => reviewSubmission('approved')} disabled={isSaving} className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white h-10 px-5 text-sm shadow-lg shadow-emerald-500/20">
+                          <CheckCircle className="w-3.5 h-3.5 mr-1.5" /> Approve
                         </Button>
                       </div>
                     </div>
