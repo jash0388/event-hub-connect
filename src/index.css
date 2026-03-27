@@ -259,24 +259,14 @@
     animation: shimmer 2s infinite;
   }
 
-  /* Custom Scrollbar */
+  /* Hide scrollbar globally but keep scrolling */
   ::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
+    display: none;
   }
 
-  ::-webkit-scrollbar-track {
-    background: hsl(var(--background));
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background: hsl(var(--muted-foreground) / 0.2);
-    border-radius: 5px;
-    border: 2px solid hsl(var(--background));
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--muted-foreground) / 0.4);
+  html {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 
   /* 3D Shape Styles */
