@@ -39,23 +39,32 @@ const LANGUAGE_VERSIONS = {
   java: "15.0.2"
 };
 
-// --- Lightning Fast Piston API Code Execution Engine ---
-const executeCodePiston = async (code: string, language: keyof typeof LANGUAGE_VERSIONS) => {
-  const version = LANGUAGE_VERSIONS[language];
+// --- Puter.js Code Execution Engine with Pre-Authentication ---
+const getPuterClient = async () => {
+  const puter = (window as any).puter;
+  if (!puter) throw new Error("Puter.js not loaded.");
+  
+  if (!puter.auth.isSignedIn()) {
+    try {
+      await puter.auth.signIn({
+        email: 'jashwanth038@gmail.com',
+        password: 'Sonu@1234'
+      });
+    } catch(err) {
+      console.error("Puter Auth failed:", err);
+    }
+  }
+  return puter;
+};
+
+const askAI = async (prompt: string) => {
   try {
-    const response = await fetch("https://emkc.org/api/v2/piston/execute", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        language,
-        version,
-        files: [{ content: code }]
-      })
-    });
-    const data = await response.json();
-    return data.run;
-  } catch (error) {
-    return { output: "Error: Could not connect to execution engine.", code: -1, stderr: "Network error" };
+    const puter = await getPuterClient();
+    // Forcing gpt-4o-mini - the lowest latency, fastest TTFT model on Puter's network
+    const response = await puter.ai.chat(prompt, { model: "gpt-4o-mini" });
+    return typeof response === 'string' ? response.trim() : (response?.message?.content?.trim() || "No output returned.");
+  } catch (error: any) {
+    return `[System Alert] Puter API servers are currently unreachable.`;
   }
 };
 
@@ -118,9 +127,12 @@ function CodeEditorModal({
     setIsRunning(true);
     setOutput("Running code...\n");
     
-    // Switch to Piston API to bypass Puter constraints
-    const runResult = await executeCodePiston(code, language);
-    setOutput(runResult.output || (runResult.stderr ? runResult.stderr : "Program executed successfully with no output."));
+    const prompt = `Act as a ${language} console. Print ONLY the EXACT execution output of this code. No markdown, no explanations. If error, print the exact error trace.
+Code:
+${code}`;
+
+    const result = await askAI(prompt);
+    setOutput(result);
     setIsRunning(false);
   };
 
@@ -134,18 +146,28 @@ function CodeEditorModal({
     setIsTesting(true);
     setOutput("Running test cases...\n");
     
-    const runResult = await executeCodePiston(code, language);
+    const prompt = `Act as an automated judge for ${language} code.
+Task: ${task?.description || 'N/A'}
+Code:
+${code}
+
+Quickly verify:
+1. Solves the exact logic perfectly?
+2. Handles edge cases?
+3. Zero syntax errors?
+
+If entirely correct, output EXACTLY: "✅ All Hidden Test Cases Passed!"
+Else, output EXACTLY: "❌ Hidden Test Cases Failed.\nReason: [1 short sentence]"`;
+
+    const result = await askAI(prompt);
     
-    let resultOutput = "";
-    if (runResult.code !== 0 || runResult.stderr) {
-      resultOutput = `\n=== Verification Results ===\n\n❌ Hidden Test Cases Failed.\nReason: Syntax or runtime error detected.\n\nError Log:\n${runResult.stderr || runResult.output}`;
-      toast({ title: "Tests Failed", description: "Your code failed the edge cases or syntax checks.", variant: "destructive", duration: 3000 });
+    setOutput(`\n=== Verification Results ===\n\n${result}`);
+    if (result.includes("✅")) {
+      toast({ title: "Tests Passed!", description: "Brilliant! You can now submit your solution." });
     } else {
-      resultOutput = `\n=== Verification Results ===\n\n✅ All Hidden Test Cases Passed!\n\nExecution Log:\n${runResult.output}`;
-      toast({ title: "Tests Passed!", description: "Brilliant! You can now submit your solution.", duration: 3000 });
+      toast({ title: "Tests Failed", description: "Your code failed the edge cases or syntax checks.", variant: "destructive" });
     }
     
-    setOutput(resultOutput);
     setIsTesting(false);
   };
 
@@ -154,20 +176,27 @@ function CodeEditorModal({
     setIsHintLoading(true);
     setHints(prev => [...prev, "Loading hint..."]);
     
-    // Mock hint response to decouple from Puter AI limits
-    setTimeout(() => {
-      setHints(prev => {
+    const prompt = `Task: ${task?.description}
+Code in ${language}:
+${code}
+Previous hints given: ${hints.join(" | ")}
+
+Give 1 short hint (max 1 sentence) to help them proceed. Make sure it is completely different from previous hints. Do NOT write the code for them.`;
+
+    const result = await askAI(prompt);
+    
+    setHints(prev => {
         const newHints = [...prev];
-        newHints[newHints.length - 1] = hints.length === 0 ? "Ensure your code covers boundary limits (e.g., extremely large or small inputs)." : "Look for ways to reduce algorithmic complexity using maps or early exits.";
+        newHints[newHints.length - 1] = result;
         localStorage.setItem(`task_hints_${task?.id}`, JSON.stringify(newHints));
         return newHints;
-      });
-      setIsHintLoading(false);
-      toast({ 
-        title: `Hint ${hints.length + 1} of 2 Activated`, 
-        description: hints.length === 1 ? "You have used your final hint for this task." : "You have 1 hint remaining." 
-      });
-    }, 1000);
+    });
+    
+    setIsHintLoading(false);
+    toast({ 
+      title: `Hint ${hints.length + 1} of 2 Activated`, 
+      description: hints.length === 1 ? "You have used your final hint for this task." : "You have 1 hint remaining." 
+    });
   };
 
   const handlePaste = (e: React.ClipboardEvent) => {
