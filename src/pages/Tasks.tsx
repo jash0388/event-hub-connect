@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import MiniGames from "@/components/games/MiniGames";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -506,18 +507,21 @@ export default function Tasks() {
               <p className="text-slate-600">Solve algorithms, run them live in the browser, and climb the leaderboard.</p>
             </div>
             
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <Button onClick={() => setFilterDifficulty('All')} variant={filterDifficulty === 'All' ? 'default' : 'outline'} className={filterDifficulty === 'All' ? 'bg-slate-900 text-white' : ''}>All Tasks</Button>
               <Button onClick={() => setFilterDifficulty('Easy')} variant={filterDifficulty === 'Easy' ? 'default' : 'outline'} className={filterDifficulty === 'Easy' ? 'bg-green-600 text-white border-green-600 hover:bg-green-700' : 'text-green-600 border-green-200'}>Easy</Button>
               <Button onClick={() => setFilterDifficulty('Medium')} variant={filterDifficulty === 'Medium' ? 'default' : 'outline'} className={filterDifficulty === 'Medium' ? 'bg-amber-500 text-white border-amber-500 hover:bg-amber-600' : 'text-amber-500 border-amber-200'}>Medium</Button>
               <Button onClick={() => setFilterDifficulty('Hard')} variant={filterDifficulty === 'Hard' ? 'default' : 'outline'} className={filterDifficulty === 'Hard' ? 'bg-red-500 text-white border-red-500 hover:bg-red-600' : 'text-red-500 border-red-200'}>Hard</Button>
+              <Button onClick={() => setFilterDifficulty('Games')} variant={filterDifficulty === 'Games' ? 'default' : 'outline'} className={filterDifficulty === 'Games' ? 'bg-violet-600 text-white border-violet-600 hover:bg-violet-700' : 'text-violet-600 border-violet-200'}>🎮 Mini Games</Button>
             </div>
           </div>
 
           <div className="flex flex-col lg:flex-row gap-8">
-            {/* Left Column: Tasks List */}
+            {/* Left Column: Tasks List OR Mini Games */}
             <div className="flex-[3] space-y-4">
-              {loading ? (
+              {filterDifficulty === 'Games' ? (
+                <MiniGames />
+              ) : loading ? (
                 <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-slate-200"><Loader2 className="w-8 h-8 animate-spin text-indigo-600" /></div>
               ) : tasks.length === 0 ? (
                 <div className="text-center py-20 bg-white rounded-2xl border border-slate-200 shadow-sm">
@@ -568,14 +572,18 @@ export default function Tasks() {
               {/* Personal Stats */}
               <div className="bg-gradient-to-br from-indigo-900 to-slate-900 rounded-2xl p-6 text-white shadow-xl">
                 <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-indigo-100"><Trophy className="w-5 h-5 text-amber-400" /> Your Stats</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-white/10 rounded-xl p-4 border border-white/5">
-                    <p className="text-indigo-200 text-xs uppercase tracking-wider mb-1">Total Points</p>
-                    <p className="text-3xl font-black text-white">{totalPoints}</p>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="bg-white/10 rounded-xl p-3 border border-white/5">
+                    <p className="text-indigo-200 text-[10px] uppercase tracking-wider mb-1">Task XP</p>
+                    <p className="text-2xl font-black text-white">{totalPoints}</p>
                   </div>
-                  <div className="bg-white/10 rounded-xl p-4 border border-white/5">
-                    <p className="text-indigo-200 text-xs uppercase tracking-wider mb-1">Solved</p>
-                    <p className="text-3xl font-black text-white">{completedCount}</p>
+                  <div className="bg-white/10 rounded-xl p-3 border border-white/5">
+                    <p className="text-violet-300 text-[10px] uppercase tracking-wider mb-1">Game XP</p>
+                    <p className="text-2xl font-black text-violet-300">{(() => { try { return parseInt(localStorage.getItem('mini_xp') || '0'); } catch { return 0; } })()}</p>
+                  </div>
+                  <div className="bg-white/10 rounded-xl p-3 border border-white/5">
+                    <p className="text-indigo-200 text-[10px] uppercase tracking-wider mb-1">Solved</p>
+                    <p className="text-2xl font-black text-white">{completedCount}</p>
                   </div>
                 </div>
               </div>
