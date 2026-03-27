@@ -18,8 +18,8 @@ const platformData = {
     altLabel: 'Download for Windows',
     icon: Apple,
     altIcon: Monitor,
-    url: 'https://github.com/jash0388/event-hub-connect/releases/latest/download/DataNauts-HUB.dmg',
-    altUrl: 'https://github.com/jash0388/event-hub-connect/releases/latest/download/DataNauts-HUB-Setup.exe',
+    url: 'https://github.com/jash0388/event-hub-connect/releases/download/v1.0.0/DataNauts.HUB-1.0.0-arm64.dmg',
+    altUrl: 'https://github.com/jash0388/event-hub-connect/releases/download/v1.0.0/DataNauts-HUB-Setup.exe',
     altPlatform: 'windows' as Platform,
   },
   windows: {
@@ -27,8 +27,8 @@ const platformData = {
     altLabel: 'Download for macOS',
     icon: Monitor,
     altIcon: Apple,
-    url: 'https://github.com/jash0388/event-hub-connect/releases/latest/download/DataNauts-HUB-Setup.exe',
-    altUrl: 'https://github.com/jash0388/event-hub-connect/releases/latest/download/DataNauts-HUB.dmg',
+    url: 'https://github.com/jash0388/event-hub-connect/releases/download/v1.0.0/DataNauts-HUB-Setup.exe',
+    altUrl: 'https://github.com/jash0388/event-hub-connect/releases/download/v1.0.0/DataNauts.HUB-1.0.0-arm64.dmg',
     altPlatform: 'mac' as Platform,
   },
 };
