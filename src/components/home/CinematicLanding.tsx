@@ -337,6 +337,12 @@ function HeroSection() {
                             {typeof navigator !== 'undefined' && navigator.userAgent.toLowerCase().includes('mac') ? 'Download for Mac' : 'Download for Windows'}
                         </a>
                     </div>
+                    {typeof navigator !== 'undefined' && !navigator.userAgent.toLowerCase().includes('mac') && (
+                        <p className="text-[10px] text-white/40 mt-3 font-body">
+                            *Note: If your browser says "isn't commonly downloaded", click the 3 dots → Keep.<br/>
+                            If Windows shows a blue warning, click "More info" → "Run anyway".
+                        </p>
+                    )}
                 </ScrollReveal>
             </div>
 
