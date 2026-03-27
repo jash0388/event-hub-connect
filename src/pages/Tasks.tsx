@@ -46,10 +46,7 @@ const getPuterClient = async () => {
   
   if (!puter.auth.isSignedIn()) {
     try {
-      await puter.auth.signIn({
-        email: 'jashwanth038@gmail.com',
-        password: 'Sonu@1234'
-      });
+      await puter.auth.signIn();
     } catch(err) {
       console.error("Puter Auth failed:", err);
     }
