@@ -327,6 +327,15 @@ function HeroSection() {
                             </div>
                             View Projects
                         </Link>
+                        <a
+                            href={typeof navigator !== 'undefined' && navigator.userAgent.toLowerCase().includes('mac')
+                                ? 'https://github.com/jash0388/event-hub-connect/releases/latest/download/DataNauts-HUB.dmg'
+                                : 'https://github.com/jash0388/event-hub-connect/releases/latest/download/DataNauts-HUB-Setup.exe'}
+                            className="font-body text-white/70 hover:text-white inline-flex items-center gap-2 px-6 py-4 rounded-full hover:bg-white/5 transition-all duration-300 border border-white/10"
+                        >
+                            <ArrowUpRight className="w-4 h-4" />
+                            {typeof navigator !== 'undefined' && navigator.userAgent.toLowerCase().includes('mac') ? 'Download for Mac' : 'Download for Windows'}
+                        </a>
                     </div>
                 </ScrollReveal>
             </div>
