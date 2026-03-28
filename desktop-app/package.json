@@ -2,6 +2,10 @@
   "name": "datanauts-desktop",
   "version": "1.0.0",
   "description": "DataNauts HUB - Desktop App",
+  "author": {
+    "name": "DataNauts",
+    "email": "support@datanauts.com"
+  },
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -12,12 +16,16 @@
   "build": {
     "appId": "com.datanauts.hub",
     "productName": "DataNauts HUB",
+    "copyright": "Copyright © 2026 DataNauts",
+    "artifactName": "DataNauts-HUB-Setup.${ext}",
     "directories": {
       "output": "dist"
     },
     "win": {
       "target": ["nsis"],
-      "icon": "icon.ico"
+      "icon": "icon.ico",
+      "requestedExecutionLevel": "asInvoker",
+      "verifyUpdateCodeSignature": false
     },
     "mac": {
       "target": ["dmg"],
@@ -25,9 +33,11 @@
     },
     "nsis": {
       "oneClick": false,
+      "perMachine": false,
       "allowToChangeInstallationDirectory": true,
       "installerIcon": "icon.ico",
-      "uninstallerIcon": "icon.ico"
+      "uninstallerIcon": "icon.ico",
+      "deleteAppDataOnUninstall": true
     }
   },
   "devDependencies": {

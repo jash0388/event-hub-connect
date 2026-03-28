@@ -44,13 +44,9 @@ const getPuterClient = async () => {
   const puter = (window as any).puter;
   if (!puter) throw new Error("Puter.js not loaded.");
   
-  if (!puter.auth.isSignedIn()) {
-    try {
-      await puter.auth.signIn();
-    } catch(err) {
-      console.error("Puter Auth failed:", err);
-    }
-  }
+  // Puter.js auth disabled to prevent blank page redirect issues.
+  // puter.ai.chat will use temporary anonymous usage if possible,
+  // or trigger native Puter popup.
   return puter;
 };
 
