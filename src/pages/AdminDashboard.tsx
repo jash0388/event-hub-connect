@@ -411,16 +411,56 @@ const AdminDashboard = () => {
   const [adminForm, setAdminForm] = useState({
     email: '',
     password: '',
-    role: 'admin' as 'admin' | 'moderator' | 'user',
+    role: 'admin_mentor' as string,
   });
 
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Track which tabs have already been loaded
+  const [loadedTabs, setLoadedTabs] = useState<Set<string>>(new Set());
+
+  // Fetch data for a specific tab
+  const fetchTabData = async (tab: string) => {
+    switch (tab) {
+      case 'events': await fetchEvents(); break;
+      case 'projects': await fetchProjects(); break;
+      case 'internships': await fetchInternships(); break;
+      case 'social': await Promise.all([fetchSocialLinks(), fetchPolls()]); break;
+      case 'submissions': await fetchTaskSubmissions(); break;
+      case 'tasks': await fetchCodingTasks(); break;
+      case 'users': await fetchUsers(); break;
+      case 'admins': await fetchAdminUsers(); break;
+      case 'attendance': await fetchRegistrations(); break;
+      case 'messages': await fetchMessages(); break;
+      case 'qrscan': await fetchRegistrations(); break;
+    }
+  };
+
+  // Initial load: only fetch data for the default active tab
   useEffect(() => {
-    fetchAllData();
+    const initLoad = async () => {
+      setIsLoading(true);
+      await fetchTabData(activeTab);
+      setLoadedTabs(new Set([activeTab]));
+      setIsLoading(false);
+    };
+    initLoad();
   }, []);
+
+  // Lazy load tab data when switching tabs
+  useEffect(() => {
+    if (!loadedTabs.has(activeTab) && loadedTabs.size > 0) {
+      const loadTab = async () => {
+        setIsLoading(true);
+        await fetchTabData(activeTab);
+        setLoadedTabs(prev => new Set([...prev, activeTab]));
+        setIsLoading(false);
+      };
+      loadTab();
+    }
+  }, [activeTab]);
 
   const fetchAllData = async () => {
     setIsLoading(true);
@@ -437,6 +477,7 @@ const AdminDashboard = () => {
       fetchUsers(),
       fetchRegistrations()
     ]);
+    setLoadedTabs(new Set(['events','projects','internships','social','submissions','tasks','users','admins','attendance','messages','qrscan']));
     setIsLoading(false);
   };
 
@@ -639,7 +680,7 @@ const AdminDashboard = () => {
         { data: rolesData, error: rolesError },
         { data: profilesData }
       ] = await Promise.all([
-        supabase.from('user_roles').select('*').in('role', ['admin']).order('created_at', { ascending: false }),
+        supabase.from('user_roles').select('*').in('role', ['admin', 'admin_mentor']).order('created_at', { ascending: false }),
         supabase.from('profiles').select('id, email, full_name')
       ]);
 
@@ -804,49 +845,109 @@ const AdminDashboard = () => {
     setIsSaving(true);
 
     try {
-      // Search precisely for the specified email in the already fetched user grid
-      const targetUser = allUsers.find(u => u.email === adminForm.email);
-
-      if (!targetUser) {
+      if (!adminForm.email || !adminForm.password) {
         toast({
-          title: "User Not Found",
-          description: "No registered user found with that email. The user must sign in to the platform at least once.",
+          title: "Missing Fields",
+          description: "Please provide both email and password.",
           variant: "destructive",
         });
         setIsSaving(false);
         return;
       }
 
-      // First check if user already has a role
+      if (adminForm.password.length < 6) {
+        toast({
+          title: "Weak Password",
+          description: "Password must be at least 6 characters.",
+          variant: "destructive",
+        });
+        setIsSaving(false);
+        return;
+      }
+
+      // First check if user already exists in our system
+      let targetUser = allUsers.find(u => u.email?.toLowerCase() === adminForm.email.toLowerCase());
+      let userId = targetUser?.id;
+
+      // If user doesn't exist, create them via supabaseAdmin
+      if (!targetUser) {
+        if (!supabaseAdmin) {
+          toast({
+            title: "Setup Required",
+            description: "To create new admin users, please add VITE_SUPABASE_SERVICE_ROLE_KEY to your .env",
+            variant: "destructive",
+          });
+          setIsSaving(false);
+          return;
+        }
+
+        // Create user in Supabase Auth
+        const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+          email: adminForm.email,
+          password: adminForm.password,
+          email_confirm: true,
+        });
+
+        if (createError) {
+          // If user already exists in auth but not in our profiles, get their ID
+          if (createError.message?.includes('already been registered') || createError.message?.includes('already exists')) {
+            // Try to find via admin API
+            const { data: listData } = await supabaseAdmin.auth.admin.listUsers();
+            const existingAuthUser = listData?.users?.find((u: any) => u.email?.toLowerCase() === adminForm.email.toLowerCase());
+            if (existingAuthUser) {
+              userId = existingAuthUser.id;
+            } else {
+              throw createError;
+            }
+          } else {
+            throw createError;
+          }
+        } else {
+          userId = newUser?.user?.id;
+        }
+
+        if (!userId) {
+          throw new Error('Failed to create or find user. Please try again.');
+        }
+
+        // Create profile for the new user
+        await supabase.from('profiles').upsert({
+          id: userId,
+          email: adminForm.email,
+          full_name: adminForm.email.split('@')[0],
+        }, { onConflict: 'id' });
+      }
+
+      // Now assign the admin_mentor role
       const { data: existingRole, error: fetchError } = await supabase
         .from('user_roles')
         .select('role')
-        .eq('user_id', targetUser.id)
+        .eq('user_id', userId)
         .maybeSingle();
 
       if (fetchError) throw fetchError;
 
-      // Add role to user_roles table
       let roleError = null;
       if (existingRole) {
         const result = await supabase
           .from('user_roles')
-          .update({ role: adminForm.role })
-          .eq('user_id', targetUser.id);
+          .update({ role: 'admin_mentor' })
+          .eq('user_id', userId);
         roleError = result.error;
       } else {
         const result = await supabase
           .from('user_roles')
-          .insert([{ user_id: targetUser.id, role: adminForm.role }]);
+          .insert([{ user_id: userId, role: 'admin_mentor' }]);
         roleError = result.error;
       }
 
       if (roleError) throw roleError;
 
-      toast({ title: "Success", description: `${targetUser.email} has been promoted to ${adminForm.role}` });
+      toast({ title: "Success", description: `${adminForm.email} has been added as admin_mentor` });
       setAdminDialogOpen(false);
-      setAdminForm({ email: '', password: '', role: 'admin' });
+      setAdminForm({ email: '', password: '', role: 'admin_mentor' });
       fetchAdminUsers();
+      fetchUsers();
     } catch (error: any) {
       toast({
         title: "Error",
@@ -2295,8 +2396,8 @@ const AdminDashboard = () => {
                   <h2 className="text-2xl font-bold">Privileged Team</h2>
                   <p className="text-sm text-muted-foreground">{adminUsers.length} active administrators</p>
                 </div>
-                <Button onClick={() => { setAdminForm({ email: '', password: '', role: 'admin' }); setAdminDialogOpen(true); }} className="rounded-xl">
-                  <UserPlus className="w-4 h-4 mr-2" /> Validate & Add Admin
+                <Button onClick={() => { setAdminForm({ email: '', password: '', role: 'admin_mentor' }); setAdminDialogOpen(true); }} className="rounded-xl">
+                  <UserPlus className="w-4 h-4 mr-2" /> Create Admin Mentor
                 </Button>
               </div>
               <div className="bg-card border border-border rounded-2xl overflow-x-auto shadow-sm">
@@ -2636,16 +2737,27 @@ const AdminDashboard = () => {
             <Dialog open={adminDialogOpen} onOpenChange={setAdminDialogOpen}>
               <DialogContent className="sm:max-w-md rounded-3xl p-8 shadow-2xl">
                 <DialogHeader>
-                  <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">Secure Admin Config</DialogTitle>
+                  <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">Create Admin Mentor</DialogTitle>
                 </DialogHeader>
-                <form onSubmit={handleCreateAdmin} className="space-y-4 mt-6">
+                <p className="text-sm text-muted-foreground -mt-2">Enter the email and password. If the user doesn't exist, they'll be created automatically.</p>
+                <form onSubmit={handleCreateAdmin} className="space-y-4 mt-4">
                   <div className="space-y-2">
-                    <Label>Identity (Email)</Label>
-                    <Input type="email" value={adminForm.email} onChange={e => setAdminForm({ ...adminForm, email: e.target.value })} required className="h-12 rounded-xl border-blue-100 focus:border-blue-300" />
+                    <Label>Email Address</Label>
+                    <Input type="email" value={adminForm.email} onChange={e => setAdminForm({ ...adminForm, email: e.target.value })} required placeholder="user@example.com" className="h-12 rounded-xl border-blue-100 focus:border-blue-300" />
                   </div>
-                  <div className="flex justify-end gap-3 pt-6 border-t border-border mt-4">
+                  <div className="space-y-2">
+                    <Label>Password</Label>
+                    <Input type="password" value={adminForm.password} onChange={e => setAdminForm({ ...adminForm, password: e.target.value })} required placeholder="Min 6 characters" minLength={6} className="h-12 rounded-xl border-blue-100 focus:border-blue-300" />
+                  </div>
+                  <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl">
+                    <p className="text-xs text-blue-700 font-medium">Role assigned: <span className="font-bold">admin_mentor</span></p>
+                  </div>
+                  <div className="flex justify-end gap-3 pt-4 border-t border-border mt-4">
                     <Button type="button" variant="ghost" onClick={() => setAdminDialogOpen(false)} className="rounded-xl h-11">Cancel</Button>
-                    <Button type="submit" disabled={isSaving} className="rounded-xl h-11 px-8 bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-200">Promote to Admin</Button>
+                    <Button type="submit" disabled={isSaving} className="rounded-xl h-11 px-8 bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-200">
+                      {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                      {isSaving ? 'Creating...' : 'Create Admin Mentor'}
+                    </Button>
                   </div>
                 </form>
               </DialogContent>

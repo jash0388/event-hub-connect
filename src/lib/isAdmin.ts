@@ -52,7 +52,7 @@ export async function isAdmin(userId?: string, forceRefresh: boolean = true): Pr
       .select('role')
       .eq('user_id', targetUserId);
 
-    if (!roleError && roleData?.some((entry: any) => entry.role === 'admin')) {
+    if (!roleError && roleData?.some((entry: any) => entry.role === 'admin' || entry.role === 'admin_mentor')) {
       console.log('[isAdmin] User has admin role in user_roles:', targetUserId);
       return true;
     }
