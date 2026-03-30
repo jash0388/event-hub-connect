@@ -199,6 +199,19 @@ Give 1 short hint (max 1 sentence) to help them proceed. Make sure it is complet
     }
   };
 
+  const handleDrop = (e: React.DragEvent) => {
+    if (!isReadOnly) {
+      e.preventDefault();
+      toast({ title: "Drag & Drop Disabled", description: "Please type your solution manually.", variant: "destructive" });
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    if (!isReadOnly) {
+      e.preventDefault();
+    }
+  };
+
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60).toString().padStart(2, '0');
     const s = (seconds % 60).toString().padStart(2, '0');
@@ -324,6 +337,8 @@ Give 1 short hint (max 1 sentence) to help them proceed. Make sure it is complet
                   value={code}
                   onChange={(e) => setCode(e.target.value)}
                   onPaste={handlePaste}
+                  onDrop={handleDrop}
+                  onDragOver={handleDragOver}
                   placeholder={isReadOnly ? "// Read only mode" : "// Write your code here..."}
                   className="w-full h-full p-6 bg-transparent text-slate-800 font-mono text-[14px] leading-[1.7] resize-none focus:outline-none placeholder:text-slate-400"
                   spellCheck={false}
