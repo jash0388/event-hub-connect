@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import MiniGames from "@/components/games/MiniGames";
@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import {
-  CheckCircle2, Clock, Trophy, Send, AlertCircle, Loader2, BookOpen, X, 
+  CheckCircle2, Clock, Trophy, Send, AlertCircle, Loader2, BookOpen, X,
   Play, Code2, Search, Brain, Timer, History, Filter, TerminalSquare, RefreshCw
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -43,7 +43,7 @@ const LANGUAGE_VERSIONS = {
 const getPuterClient = async () => {
   const puter = (window as any).puter;
   if (!puter) throw new Error("Puter.js not loaded.");
-  
+
   // Puter.js auth disabled to prevent blank page redirect issues.
   // puter.ai.chat will use temporary anonymous usage if possible,
   // or trigger native Puter popup.
@@ -119,7 +119,7 @@ function CodeEditorModal({
     if (isReadOnly) return;
     setIsRunning(true);
     setOutput("Running code...\n");
-    
+
     const prompt = `Act as a ${language} console. Print ONLY the EXACT execution output of this code. No markdown, no explanations. If error, print the exact error trace.
 Code:
 ${code}`;
@@ -138,7 +138,7 @@ ${code}`;
 
     setIsTesting(true);
     setOutput("Running test cases...\n");
-    
+
     const prompt = `Act as an automated judge for ${language} code.
 Task: ${task?.description || 'N/A'}
 Code:
@@ -153,14 +153,14 @@ If entirely correct, output EXACTLY: "✅ All Hidden Test Cases Passed!"
 Else, output EXACTLY: "❌ Hidden Test Cases Failed.\nReason: [1 short sentence]"`;
 
     const result = await askAI(prompt);
-    
+
     setOutput(`\n=== Verification Results ===\n\n${result}`);
     if (result.includes("✅")) {
       toast({ title: "Tests Passed!", description: "Brilliant! You can now submit your solution." });
     } else {
       toast({ title: "Tests Failed", description: "Your code failed the edge cases or syntax checks.", variant: "destructive" });
     }
-    
+
     setIsTesting(false);
   };
 
@@ -168,7 +168,7 @@ Else, output EXACTLY: "❌ Hidden Test Cases Failed.\nReason: [1 short sentence]
     if (isReadOnly || hints.length >= 2 || isHintLoading) return;
     setIsHintLoading(true);
     setHints(prev => [...prev, "Loading hint..."]);
-    
+
     const prompt = `Task: ${task?.description}
 Code in ${language}:
 ${code}
@@ -177,18 +177,18 @@ Previous hints given: ${hints.join(" | ")}
 Give 1 short hint (max 1 sentence) to help them proceed. Make sure it is completely different from previous hints. Do NOT write the code for them.`;
 
     const result = await askAI(prompt);
-    
+
     setHints(prev => {
-        const newHints = [...prev];
-        newHints[newHints.length - 1] = result;
-        localStorage.setItem(`task_hints_${task?.id}`, JSON.stringify(newHints));
-        return newHints;
+      const newHints = [...prev];
+      newHints[newHints.length - 1] = result;
+      localStorage.setItem(`task_hints_${task?.id}`, JSON.stringify(newHints));
+      return newHints;
     });
-    
+
     setIsHintLoading(false);
-    toast({ 
-      title: `Hint ${hints.length + 1} of 2 Activated`, 
-      description: hints.length === 1 ? "You have used your final hint for this task." : "You have 1 hint remaining." 
+    toast({
+      title: `Hint ${hints.length + 1} of 2 Activated`,
+      description: hints.length === 1 ? "You have used your final hint for this task." : "You have 1 hint remaining."
     });
   };
 
@@ -203,6 +203,21 @@ Give 1 short hint (max 1 sentence) to help them proceed. Make sure it is complet
     if (!isReadOnly) {
       e.preventDefault();
       toast({ title: "Drag & Drop Disabled", description: "Please type your solution manually.", variant: "destructive" });
+    }
+  };
+
+  const handleTab = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Tab' && !isReadOnly) {
+      e.preventDefault();
+      const target = e.target as HTMLTextAreaElement;
+      const start = target.selectionStart;
+      const end = target.selectionEnd;
+      const newCode = code.substring(0, start) + '  ' + code.substring(end);
+      setCode(newCode);
+      // Restore cursor position after state update
+      requestAnimationFrame(() => {
+        target.selectionStart = target.selectionEnd = start + 2;
+      });
     }
   };
 
@@ -226,12 +241,12 @@ Give 1 short hint (max 1 sentence) to help them proceed. Make sure it is complet
     <AnimatePresence>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 md:p-6" onClick={onClose}>
         <motion.div initial={{ scale: 0.95, opacity: 0, y: 10 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 10 }} className="w-[98vw] h-[95vh] bg-white rounded-2xl shadow-xl flex flex-col overflow-hidden text-slate-800" onClick={e => e.stopPropagation()}>
-          
+
           <div className="flex-1 flex flex-col md:flex-row overflow-hidden bg-white">
-            
+
             {/* LEFT SIDEBAR - Description & Details */}
             <div className="w-full md:w-[35%] lg:w-[30%] overflow-y-auto bg-slate-50 border-r border-slate-200 z-10 flex flex-col">
-              
+
               {/* Header Title & Badges */}
               <div className="p-6 border-b border-slate-200 bg-white">
                 <h3 className="font-bold text-xl text-slate-800 mb-4 leading-snug">{task.title}</h3>
@@ -255,7 +270,7 @@ Give 1 short hint (max 1 sentence) to help them proceed. Make sure it is complet
                     <p className="whitespace-pre-wrap font-sans text-[15px]">{task.description}</p>
                   </div>
                 </div>
-                
+
                 <div className="mt-auto pt-6 flex flex-col gap-4">
                   <AnimatePresence>
                     {hints.map((h, i) => (
@@ -267,15 +282,15 @@ Give 1 short hint (max 1 sentence) to help them proceed. Make sure it is complet
                       </motion.div>
                     ))}
                   </AnimatePresence>
-                  
+
                   {!isReadOnly && hints.length < 2 && (
-                    <Button 
-                      variant="outline" 
-                      className="w-full justify-center text-purple-600 border-purple-200 bg-purple-50 hover:bg-purple-100 hover:text-purple-700 transition-colors shadow-sm font-medium" 
+                    <Button
+                      variant="outline"
+                      className="w-full justify-center text-purple-600 border-purple-200 bg-purple-50 hover:bg-purple-100 hover:text-purple-700 transition-colors shadow-sm font-medium"
                       onClick={requestHint}
                       disabled={isHintLoading}
                     >
-                      {isHintLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Brain className="w-4 h-4 mr-2" />} 
+                      {isHintLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Brain className="w-4 h-4 mr-2" />}
                       Get AI Hint ({2 - hints.length} left)
                     </Button>
                   )}
@@ -285,7 +300,7 @@ Give 1 short hint (max 1 sentence) to help them proceed. Make sure it is complet
 
             {/* RIGHT WORKSPACE - Code Controls, Editor & Terminal */}
             <div className="flex-1 flex flex-col bg-white">
-              
+
               {/* Top Controls Action Bar */}
               <div className="flex items-center justify-between px-6 py-3 bg-white border-b border-slate-200">
                 <div className="flex items-center gap-4">
@@ -296,7 +311,7 @@ Give 1 short hint (max 1 sentence) to help them proceed. Make sure it is complet
                     </div>
                   )}
                 </div>
-                
+
                 <div className="flex items-center gap-3">
                   <select disabled={isReadOnly} value={language} onChange={(e) => setLanguage(e.target.value as any)} className="bg-slate-50 text-slate-700 text-sm font-medium px-4 py-2 rounded-lg border border-slate-200 focus:border-blue-500 focus:outline-none transition-colors cursor-pointer">
                     <option value="python">Python</option>
@@ -304,7 +319,7 @@ Give 1 short hint (max 1 sentence) to help them proceed. Make sure it is complet
                     <option value="cpp">C++</option>
                     <option value="java">Java</option>
                   </select>
-                  
+
                   {!isReadOnly && (
                     <div className="flex items-center gap-1 bg-slate-50 p-1 rounded-lg border border-slate-200">
                       <Button size="sm" variant="ghost" className="h-8 text-slate-600 hover:text-slate-900 hover:bg-slate-200 font-medium text-sm transition-colors" onClick={handleRunCode} disabled={isRunning || isTesting || !code.trim()}>
@@ -321,9 +336,9 @@ Give 1 short hint (max 1 sentence) to help them proceed. Make sure it is complet
                       {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />} Submit
                     </Button>
                   )}
-                  
+
                   <div className="w-px h-6 bg-slate-200 mx-1" />
-                  
+
                   <Button variant="ghost" size="icon" className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors" onClick={onClose}>
                     <X className="w-5 h-5" />
                   </Button>
@@ -339,12 +354,13 @@ Give 1 short hint (max 1 sentence) to help them proceed. Make sure it is complet
                   onPaste={handlePaste}
                   onDrop={handleDrop}
                   onDragOver={handleDragOver}
+                  onKeyDown={handleTab}
                   placeholder={isReadOnly ? "// Read only mode" : "// Write your code here..."}
                   className="w-full h-full p-6 bg-transparent text-slate-800 font-mono text-[14px] leading-[1.7] resize-none focus:outline-none placeholder:text-slate-400"
                   spellCheck={false}
                 />
               </div>
-              
+
               {/* Terminal Output */}
               <div className="h-[30%] bg-white flex flex-col relative border-t border-slate-200">
                 <div className="px-5 py-2.5 flex items-center justify-between bg-slate-50 border-b border-slate-200">
@@ -392,7 +408,6 @@ export default function Tasks() {
         .update({ user_display_name: displayName })
         .eq('user_id', userId)
         .is('user_display_name', null);
-      
       if (!error) {
         console.log("[Auth Sync] Backfilled display name on submissions for:", displayName);
         queryClient.invalidateQueries({ queryKey: ['coding_tasks_and_leaderboard'] });
@@ -407,7 +422,7 @@ export default function Tasks() {
     queryFn: async () => {
       try {
         const { data: tasksDataRaw } = await supabase.from('coding_tasks' as any).select('*').order('created_at', { ascending: false }).limit(200);
-        
+
         let submissionsData = null;
         if (userId) {
           const res = await supabase.from('task_submissions' as any).select('*').eq('user_id', userId).limit(500);
@@ -415,59 +430,60 @@ export default function Tasks() {
         }
 
         const { data: globalSubs } = await supabase.from('task_submissions' as any).select('user_id, points_awarded, status, user_display_name').eq('status', 'approved').limit(5000);
-        
+
         const { data: profiles } = await supabase.from('profiles').select('id, full_name, firebase_uid').limit(2000);
 
-      // Mock logic for difficulty/tags if missing in database
-      let tasksData = (tasksDataRaw || []).filter((t: any) => !t.title?.startsWith('[DELETED]')).map((t: any, i: number) => ({
-        ...t,
-        difficulty: t.difficulty || (i % 3 === 0 ? 'Hard' : i % 2 === 0 ? 'Medium' : 'Easy'),
-        tags: t.tags || ['Algorithm', 'Logic']
-      }));
+        // Mock logic for difficulty/tags if missing in database
+        let tasksData = (tasksDataRaw || []).filter((t: any) => !t.title?.startsWith('[DELETED]')).map((t: any, i: number) => ({
+          ...t,
+          difficulty: t.difficulty || (i % 3 === 0 ? 'Hard' : i % 2 === 0 ? 'Medium' : 'Easy'),
+          tags: t.tags || ['Algorithm', 'Logic']
+        }));
 
-      if (filterDifficulty !== "All") {
-        tasksData = tasksData.filter((t: any) => t.difficulty === filterDifficulty);
-      }
-
-      const submissionsMap: Record<string, Submission> = {};
-      
-      if (userId) {
-        (submissionsData || []).forEach((sub: any) => {
-          if (!submissionsMap[sub.task_id] || new Date(sub.submitted_at || 0) > new Date(submissionsMap[sub.task_id].submitted_at || 0)) {
-            submissionsMap[sub.task_id] = sub;
-          }
-        });
-      }
-
-      // Fetch Leaderboard logic
-      const lbMap: Record<string, number> = {};
-      const nameFromSubs: Record<string, string> = {};
-      (globalSubs || []).forEach((s: any) => {
-        if (s.status === 'approved') lbMap[s.user_id] = (lbMap[s.user_id] || 0) + (s.points_awarded || 0);
-        // Capture display names stored directly on submissions (our new reliable source)
-        if (s.user_display_name) nameFromSubs[s.user_id] = s.user_display_name;
-      });
-      
-      const leaderboard = Object.entries(lbMap).map(([uId, pts]) => {
-        const prof = profiles?.find(p => p.id === uId || p.firebase_uid === uId);
-        
-        // Priority: 1) profile name, 2) name saved on submission, 3) current user's live session, 4) fallback
-        let displayName = prof?.full_name || nameFromSubs[uId];
-        
-        if (!displayName && uId === userId) {
-          displayName = user?.user_metadata?.full_name || firebaseUser?.displayName || user?.email?.split('@')[0] || firebaseUser?.email?.split('@')[0];
+        if (filterDifficulty !== "All") {
+          tasksData = tasksData.filter((t: any) => t.difficulty === filterDifficulty);
         }
-        
-        return { name: displayName || `Coder_${uId.slice(0, 5)}`, points: pts, isMe: uId === userId };
-      }).sort((a, b) => b.points - a.points).slice(0, 5);
 
-      return { tasks: tasksData as Task[], submissions: submissionsMap, leaderboard };
+        const submissionsMap: Record<string, Submission> = {};
+
+        if (userId) {
+          (submissionsData || []).forEach((sub: any) => {
+            if (!submissionsMap[sub.task_id] || new Date(sub.submitted_at || 0) > new Date(submissionsMap[sub.task_id].submitted_at || 0)) {
+              submissionsMap[sub.task_id] = sub;
+            }
+          });
+        }
+
+        // Fetch Leaderboard logic
+        const lbMap: Record<string, number> = {};
+        const nameFromSubs: Record<string, string> = {};
+        (globalSubs || []).forEach((s: any) => {
+          if (s.status === 'approved') lbMap[s.user_id] = (lbMap[s.user_id] || 0) + (s.points_awarded || 0);
+          // Capture display names stored directly on submissions (our new reliable source)
+          if (s.user_display_name) nameFromSubs[s.user_id] = s.user_display_name;
+        });
+
+        const leaderboard = Object.entries(lbMap).map(([uId, pts]) => {
+          const prof = profiles?.find(p => p.id === uId || p.firebase_uid === uId);
+
+          // Priority: 1) profile name, 2) name saved on submission, 3) current user's live session, 4) fallback
+          let displayName = prof?.full_name || nameFromSubs[uId];
+
+          if (!displayName && uId === userId) {
+            displayName = user?.user_metadata?.full_name || firebaseUser?.displayName || user?.email?.split('@')[0] || firebaseUser?.email?.split('@')[0];
+          }
+
+          return { name: displayName || `Coder_${uId.slice(0, 5)}`, points: pts, isMe: uId === userId };
+        }).sort((a, b) => b.points - a.points).slice(0, 5);
+
+        return { tasks: tasksData as Task[], submissions: submissionsMap, leaderboard };
       } catch (error) {
         console.error("Error fetching tasks & leaderboard:", error);
         return { tasks: [], submissions: {}, leaderboard: [] };
       }
     },
     staleTime: 30000,
+    placeholderData: keepPreviousData,
   });
 
   const tasks = data?.tasks || [];
@@ -529,7 +545,7 @@ export default function Tasks() {
 
       <main className="flex-1 pt-28 pb-16 px-4 md:px-6">
         <div className="container mx-auto max-w-6xl">
-          
+
           {/* Top Dashboard Header */}
           <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
@@ -541,7 +557,7 @@ export default function Tasks() {
               </div>
               <p className="text-slate-600">Solve algorithms, run them live in the browser, and climb the leaderboard.</p>
             </div>
-            
+
             <div className="flex gap-2 flex-wrap">
               <Button onClick={() => setFilterDifficulty('All')} variant={filterDifficulty === 'All' ? 'default' : 'outline'} className={filterDifficulty === 'All' ? 'bg-slate-900 text-white' : ''}>All Tasks</Button>
               <Button onClick={() => setFilterDifficulty('Easy')} variant={filterDifficulty === 'Easy' ? 'default' : 'outline'} className={filterDifficulty === 'Easy' ? 'bg-green-600 text-white border-green-600 hover:bg-green-700' : 'text-green-600 border-green-200'}>Easy</Button>
@@ -576,7 +592,7 @@ export default function Tasks() {
                             <span className="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">{task.points} PTS</span>
                           </div>
                         </div>
-                        
+
                         {submission?.status === 'approved' ? (
                           <div className="flex flex-col items-end gap-2">
                             <div className="flex items-center gap-2 text-green-600 bg-green-50 px-3 py-1.5 rounded-full border border-green-200">
@@ -641,7 +657,7 @@ export default function Tasks() {
                 </div>
               </div>
             </div>
-            
+
           </div>
         </div>
       </main>
