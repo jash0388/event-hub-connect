@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
@@ -80,6 +80,7 @@ function CodeEditorModal({
   submissionCode?: string;
 }) {
   const [code, setCode] = useState(submissionCode);
+  const codeRef = useRef<HTMLTextAreaElement>(null);
   const [language, setLanguage] = useState<keyof typeof LANGUAGE_VERSIONS>("python");
   const [output, setOutput] = useState<string>("");
   const [isRunning, setIsRunning] = useState(false);
@@ -206,18 +207,84 @@ Give 1 short hint (max 1 sentence) to help them proceed. Make sure it is complet
     }
   };
 
-  const handleTab = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Tab' && !isReadOnly) {
+  const AUTO_CLOSE_PAIRS: Record<string, string> = {
+    '(': ')',
+    '{': '}',
+    '[': ']',
+    '"': '"',
+    "'": "'",
+    '`': '`',
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (isReadOnly) return;
+    const ta = codeRef.current;
+    if (!ta) return;
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+
+    // Tab key: insert 2 spaces
+    if (e.key === 'Tab') {
       e.preventDefault();
-      const target = e.target as HTMLTextAreaElement;
-      const start = target.selectionStart;
-      const end = target.selectionEnd;
-      const newCode = code.substring(0, start) + '  ' + code.substring(end);
-      setCode(newCode);
-      // Restore cursor position after state update
+      document.execCommand('insertText', false, '  ');
+      return;
+    }
+
+    // Auto-close brackets and quotes
+    if (AUTO_CLOSE_PAIRS[e.key]) {
+      const closing = AUTO_CLOSE_PAIRS[e.key];
+      // For quotes, don't auto-close if the char before cursor is a letter (mid-word)
+      if (e.key === '"' || e.key === "'" || e.key === '`') {
+        const charBefore = code[start - 1];
+        if (charBefore && /[a-zA-Z0-9]/.test(charBefore)) return;
+      }
+      e.preventDefault();
+      const selected = code.substring(start, end);
+      document.execCommand('insertText', false, e.key + selected + closing);
+      // Place cursor between the pair (or after selected text)
       requestAnimationFrame(() => {
-        target.selectionStart = target.selectionEnd = start + 2;
+        if (ta) ta.selectionStart = ta.selectionEnd = start + 1 + selected.length;
       });
+      return;
+    }
+
+    // Enter key: auto-indent
+    if (e.key === 'Enter') {
+      const lineStart = code.lastIndexOf('\n', start - 1) + 1;
+      const currentLine = code.substring(lineStart, start);
+      const indent = currentLine.match(/^(\s*)/)?.[1] || '';
+      const charBefore = code[start - 1];
+      const charAfter = code[start];
+
+      // If between { }, add extra indent and closing line  
+      if (charBefore === '{' && charAfter === '}') {
+        e.preventDefault();
+        document.execCommand('insertText', false, '\n' + indent + '  ' + '\n' + indent);
+        requestAnimationFrame(() => {
+          if (ta) ta.selectionStart = ta.selectionEnd = start + 1 + indent.length + 2;
+        });
+        return;
+      }
+
+      // Normal enter: match current indentation
+      if (indent.length > 0) {
+        e.preventDefault();
+        document.execCommand('insertText', false, '\n' + indent);
+        return;
+      }
+    }
+
+    // Backspace: delete matching pair if cursor is between them
+    if (e.key === 'Backspace' && start === end && start > 0) {
+      const charBefore = code[start - 1];
+      const charAfter = code[start];
+      if (AUTO_CLOSE_PAIRS[charBefore] === charAfter) {
+        e.preventDefault();
+        ta.selectionStart = start - 1;
+        ta.selectionEnd = start + 1;
+        document.execCommand('insertText', false, '');
+        return;
+      }
     }
   };
 
@@ -348,13 +415,14 @@ Give 1 short hint (max 1 sentence) to help them proceed. Make sure it is complet
               {/* Code Editor */}
               <div className="flex-[2] relative bg-slate-50">
                 <textarea
+                  ref={codeRef}
                   readOnly={isReadOnly}
                   value={code}
                   onChange={(e) => setCode(e.target.value)}
                   onPaste={handlePaste}
                   onDrop={handleDrop}
                   onDragOver={handleDragOver}
-                  onKeyDown={handleTab}
+                  onKeyDown={handleKeyDown}
                   placeholder={isReadOnly ? "// Read only mode" : "// Write your code here..."}
                   className="w-full h-full p-6 bg-transparent text-slate-800 font-mono text-[14px] leading-[1.7] resize-none focus:outline-none placeholder:text-slate-400"
                   spellCheck={false}
