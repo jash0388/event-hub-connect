@@ -60,7 +60,10 @@ import {
   FileText,
   Settings,
   Activity,
-  Download
+  Download,
+  ClipboardCheck,
+  Lock,
+  Unlock
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Html5Qrcode } from 'html5-qrcode';
@@ -88,6 +91,7 @@ interface Event {
   created_by?: string | null;
   created_at?: string;
   updated_at?: string;
+  is_sip?: boolean;
 }
 
 interface Project {
@@ -184,6 +188,9 @@ const AdminDashboard = () => {
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [eventRegistrations, setEventRegistrations] = useState<any[]>([]);
+  const [sipAttendanceRecords, setSipAttendanceRecords] = useState<any[]>([]);
+  const [sipEvents, setSipEvents] = useState<any[]>([]);
+  const [sipFilterEvent, setSipFilterEvent] = useState<string>('all');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('events');
@@ -367,6 +374,7 @@ const AdminDashboard = () => {
     registration_link: '',
     photos: '',
     videos: '',
+    is_sip: false,
   });
 
   const [projectForm, setProjectForm] = useState({
@@ -435,6 +443,7 @@ const AdminDashboard = () => {
       case 'attendance': await fetchRegistrations(); break;
       case 'messages': await fetchMessages(); break;
       case 'qrscan': await fetchRegistrations(); break;
+      case 'sip_attendance': await fetchSipAttendance(); break;
     }
   };
 
@@ -475,9 +484,10 @@ const AdminDashboard = () => {
       fetchTaskSubmissions(),
       fetchAdminUsers(),
       fetchUsers(),
-      fetchRegistrations()
+      fetchRegistrations(),
+      fetchSipAttendance()
     ]);
-    setLoadedTabs(new Set(['events','projects','internships','social','submissions','tasks','users','admins','attendance','messages','qrscan']));
+    setLoadedTabs(new Set(['events','projects','internships','social','submissions','tasks','users','admins','attendance','messages','qrscan','sip_attendance']));
     setIsLoading(false);
   };
 
@@ -798,10 +808,96 @@ const AdminDashboard = () => {
         .order('scanned_at', { ascending: false, nullsFirst: false })
         .limit(1000);
 
+
       if (error) throw error;
       setEventRegistrations(data || []);
     } catch (error: any) {
       console.error('Error fetching registrations:', error);
+    }
+  };
+
+  // SIP Attendance System
+  const fetchSipAttendance = async () => {
+    try {
+      // Fetch events marked as SIP
+      const { data: sipEventsData, error: sipError } = await (supabase as any)
+        .from('events')
+        .select('id, title, date')
+        .eq('is_sip', true)
+        .order('date', { ascending: false })
+        .limit(50);
+
+      if (sipError) {
+        console.warn('is_sip column might not exist yet:', sipError.message);
+        setSipEvents([]);
+        setSipAttendanceRecords([]);
+        return;
+      }
+
+      setSipEvents(sipEventsData || []);
+
+      if (!sipEventsData || sipEventsData.length === 0) {
+        setSipAttendanceRecords([]);
+        return;
+      }
+
+      const sipEventIds = sipEventsData.map((e: any) => e.id);
+
+      // Fetch registrations for SIP events
+      const { data: regs, error: regError } = await (supabase as any)
+        .from('event_registrations')
+        .select('*, events(title, date)')
+        .in('event_id', sipEventIds)
+        .order('created_at', { ascending: false })
+        .limit(2000);
+
+      if (regError) throw regError;
+      setSipAttendanceRecords(regs || []);
+    } catch (error: any) {
+      console.error('Error fetching SIP attendance:', error);
+      toast({ title: 'Error', description: 'Failed to load SIP attendance data', variant: 'destructive' });
+    }
+  };
+
+  const handleSipApprove = async (registrationId: string) => {
+    try {
+      setIsSaving(true);
+      const { error } = await (supabase as any)
+        .from('event_registrations')
+        .update({ sip_approved: true, sip_approved_at: new Date().toISOString() })
+        .eq('id', registrationId);
+
+      if (error) throw error;
+      toast({ title: 'Approved', description: 'SIP attendance approved permanently.' });
+      fetchSipAttendance();
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSipDeny = async (registrationId: string) => {
+    try {
+      // Check if already approved - approved records cannot be changed
+      const record = sipAttendanceRecords.find(r => r.id === registrationId);
+      if (record?.sip_approved) {
+        toast({ title: 'Cannot Modify', description: 'Approved SIP attendance is permanent and cannot be changed.', variant: 'destructive' });
+        return;
+      }
+      setIsSaving(true);
+      const { error } = await (supabase as any)
+        .from('event_registrations')
+        .update({ sip_denied: true })
+        .eq('id', registrationId);
+
+      if (error) throw error;
+      toast({ title: 'Denied', description: 'SIP attendance has been denied.' });
+      fetchSipAttendance();
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -1391,6 +1487,7 @@ const AdminDashboard = () => {
         registration_link: event.registration_link || '',
         photos: event.photos ? event.photos.join(', ') : '',
         videos: event.videos ? event.videos.join(', ') : '',
+        is_sip: event.is_sip || false,
       });
     } else {
       setEditingEvent(null);
@@ -1406,6 +1503,7 @@ const AdminDashboard = () => {
         registration_link: '',
         photos: '',
         videos: '',
+        is_sip: false,
       });
     }
     setEventDialogOpen(true);
@@ -1434,6 +1532,7 @@ const AdminDashboard = () => {
         photos: photosArray,
         videos: videosArray,
         created_by: user?.id,
+        is_sip: eventForm.is_sip || false,
       };
 
       if (editingEvent) {
@@ -2009,6 +2108,7 @@ const AdminDashboard = () => {
                   { value: 'admins', label: 'Admins' },
                   { value: 'qrscan', label: 'QR Scan' },
                   { value: 'attendance', label: 'Attendance' },
+                  { value: 'sip_attendance', label: '📋 SIP Attendance' },
                   { value: 'messages', label: 'Messages' },
                 ].map((tab) => (
                   <TabsTrigger key={tab.value} value={tab.value} className="rounded-full px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-900 hover:bg-white data-[state=active]:bg-slate-900 data-[state=active]:text-white data-[state=active]:shadow-md transition-all whitespace-nowrap">
@@ -2494,6 +2594,144 @@ const AdminDashboard = () => {
               </div>
             </TabsContent>
 
+            {/* SIP Attendance Tab */}
+            <TabsContent value="sip_attendance" className="mt-0">
+              <div className="flex flex-col gap-6">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <div>
+                    <h2 className="text-2xl font-bold flex items-center gap-2">
+                      <ClipboardCheck className="w-6 h-6 text-indigo-600" />
+                      SIP Attendance Management
+                    </h2>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {sipAttendanceRecords.filter(r => r.sip_approved).length} approved • {sipAttendanceRecords.filter(r => !r.sip_approved && !r.sip_denied).length} pending • {sipAttendanceRecords.filter(r => r.sip_denied).length} denied
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <select
+                      value={sipFilterEvent}
+                      onChange={e => setSipFilterEvent(e.target.value)}
+                      className="bg-white border border-slate-200 rounded-xl h-10 px-4 text-sm font-medium text-slate-700 focus:border-indigo-400 focus:outline-none"
+                    >
+                      <option value="all">All SIP Events</option>
+                      {sipEvents.map((ev: any) => (
+                        <option key={ev.id} value={ev.id}>{ev.title}</option>
+                      ))}
+                    </select>
+                    <Button variant="outline" className="rounded-xl" onClick={() => {
+                      const records = sipFilterEvent === 'all' ? sipAttendanceRecords : sipAttendanceRecords.filter(r => r.event_id === sipFilterEvent);
+                      const headers = ["Name", "Roll Number", "Year", "Event", "Status", "Approved At"];
+                      const rows = records.map((r: any) => [
+                        r.full_name,
+                        r.roll_number,
+                        r.year,
+                        r.events?.title || 'Unknown',
+                        r.sip_approved ? 'APPROVED' : r.sip_denied ? 'DENIED' : 'PENDING',
+                        r.sip_approved_at ? format(new Date(r.sip_approved_at), 'yyyy-MM-dd HH:mm') : '-'
+                      ]);
+                      const csvContent = [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
+                      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                      const url = URL.createObjectURL(blob);
+                      const link = document.createElement("a");
+                      link.setAttribute("href", url);
+                      link.setAttribute("download", `sip_attendance_${new Date().toISOString().split('T')[0]}.csv`);
+                      link.style.visibility = 'hidden';
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                    }}>
+                      <Download className="w-4 h-4 mr-2" /> Export SIP CSV
+                    </Button>
+                  </div>
+                </div>
+
+                {sipEvents.length === 0 ? (
+                  <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center shadow-sm">
+                    <ClipboardCheck className="w-12 h-12 mx-auto mb-4 text-slate-300" />
+                    <h3 className="text-lg font-bold text-slate-700 mb-2">No SIP Events Found</h3>
+                    <p className="text-sm text-slate-500">Create an event and mark it as a SIP event to start tracking SIP attendance.</p>
+                  </div>
+                ) : (
+                  <div className="bg-white border border-slate-200 rounded-2xl overflow-x-auto shadow-sm">
+                    <Table>
+                      <TableHeader className="bg-indigo-50/50">
+                        <TableRow>
+                          <TableHead className="font-bold text-indigo-900">Student Name</TableHead>
+                          <TableHead className="font-bold text-indigo-900">Roll Number</TableHead>
+                          <TableHead className="font-bold text-indigo-900">Year</TableHead>
+                          <TableHead className="font-bold text-indigo-900">SIP Event</TableHead>
+                          <TableHead className="font-bold text-indigo-900">Registered</TableHead>
+                          <TableHead className="font-bold text-indigo-900 text-center">Status</TableHead>
+                          <TableHead className="font-bold text-indigo-900 text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {(sipFilterEvent === 'all' ? sipAttendanceRecords : sipAttendanceRecords.filter(r => r.event_id === sipFilterEvent)).length === 0 ? (
+                          <TableRow><TableCell colSpan={7} className="text-center py-12 text-slate-400">No registrations for this SIP event yet.</TableCell></TableRow>
+                        ) : (sipFilterEvent === 'all' ? sipAttendanceRecords : sipAttendanceRecords.filter(r => r.event_id === sipFilterEvent)).map((reg: any) => (
+                          <TableRow key={reg.id} className={`hover:bg-slate-50/80 transition-colors ${reg.sip_approved ? 'bg-green-50/30' : reg.sip_denied ? 'bg-red-50/30' : ''}`}>
+                            <TableCell className="font-semibold text-slate-900">{reg.full_name || 'N/A'}</TableCell>
+                            <TableCell className="font-mono text-xs text-slate-600">{reg.roll_number || 'N/A'}</TableCell>
+                            <TableCell className="text-slate-600">{reg.year || 'N/A'}</TableCell>
+                            <TableCell className="text-indigo-600 font-medium">{reg.events?.title || 'Unknown'}</TableCell>
+                            <TableCell className="text-xs text-slate-500">{reg.created_at ? format(new Date(reg.created_at), 'PP') : '-'}</TableCell>
+                            <TableCell className="text-center">
+                              {reg.sip_approved ? (
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-800 border border-green-200">
+                                  <Lock className="w-3 h-3" /> Approved (Permanent)
+                                </span>
+                              ) : reg.sip_denied ? (
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-200">
+                                  <XCircle className="w-3 h-3" /> Denied
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-700 border border-amber-200">
+                                  <Unlock className="w-3 h-3" /> Pending
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {reg.sip_approved ? (
+                                <span className="text-xs font-semibold text-green-600 bg-green-50 px-3 py-1.5 rounded-lg border border-green-200 inline-flex items-center gap-1">
+                                  <Lock className="w-3 h-3" /> Locked
+                                </span>
+                              ) : (
+                                <div className="flex items-center justify-end gap-2">
+                                  <Button
+                                    size="sm"
+                                    className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white h-8 px-4 text-xs shadow-sm"
+                                    onClick={() => {
+                                      if (confirm('Approve this SIP attendance? This action is PERMANENT and cannot be undone.')) {
+                                        handleSipApprove(reg.id);
+                                      }
+                                    }}
+                                    disabled={isSaving}
+                                  >
+                                    <CheckCircle className="w-3.5 h-3.5 mr-1" /> Approve
+                                  </Button>
+                                  {!reg.sip_denied && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="rounded-xl border-red-200 text-red-600 hover:bg-red-50 h-8 px-4 text-xs"
+                                      onClick={() => handleSipDeny(reg.id)}
+                                      disabled={isSaving}
+                                    >
+                                      <XCircle className="w-3.5 h-3.5 mr-1" /> Deny
+                                    </Button>
+                                  )}
+                                </div>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+
             <TabsContent value="qrscan" className="mt-0">
               <div className="flex flex-col gap-6">
                 <div className="flex items-center gap-3">
@@ -2589,6 +2827,21 @@ const AdminDashboard = () => {
                   <div className="space-y-2">
                     <Label>Image URL</Label>
                     <Input value={eventForm.image_url} onChange={e => setEventForm({ ...eventForm, image_url: e.target.value })} className="rounded-xl h-12" placeholder="https://..." />
+                  </div>
+                  {/* SIP Event Toggle */}
+                  <div className="flex items-center gap-3 p-4 bg-indigo-50 border border-indigo-200 rounded-xl">
+                    <input
+                      type="checkbox"
+                      id="is_sip"
+                      checked={eventForm.is_sip}
+                      onChange={e => setEventForm({ ...eventForm, is_sip: e.target.checked })}
+                      className="w-5 h-5 rounded border-indigo-300 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <Label htmlFor="is_sip" className="text-indigo-800 font-semibold cursor-pointer flex items-center gap-2">
+                      <ClipboardCheck className="w-4 h-4" />
+                      Mark as SIP Event
+                    </Label>
+                    <span className="text-xs text-indigo-500 ml-auto">Enables SIP Attendance tracking</span>
                   </div>
                   <div className="flex justify-end gap-3 pt-4">
                     <Button type="button" variant="outline" onClick={() => setEventDialogOpen(false)} className="rounded-xl h-12 px-8">Cancel</Button>

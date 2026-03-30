@@ -90,12 +90,38 @@ function CodeEditorModal({
   const [timeLeft, setTimeLeft] = useState(1800);
   const { toast } = useToast();
 
+  // Persist code to localStorage on every change so it survives page refresh
+  const updateCode = (newCode: string) => {
+    setCode(newCode);
+    if (!isReadOnly && task?.id) {
+      try {
+        localStorage.setItem(`task_code_${task.id}`, newCode);
+      } catch { /* quota exceeded - ignore */ }
+    }
+  };
+
+  // Persist language selection too
+  const updateLanguage = (newLang: keyof typeof LANGUAGE_VERSIONS) => {
+    setLanguage(newLang);
+    if (!isReadOnly && task?.id) {
+      try {
+        localStorage.setItem(`task_lang_${task.id}`, newLang);
+      } catch { /* ignore */ }
+    }
+  };
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
       if (!isReadOnly && !submissionCode) {
-        setCode("");
-        setOutput("");
+        // Restore saved code from localStorage if it exists (persists across refresh)
+        const savedCode = task?.id ? localStorage.getItem(`task_code_${task.id}`) : null;
+        const savedLang = task?.id ? localStorage.getItem(`task_lang_${task.id}`) : null;
+        setCode(savedCode || "");
+        if (savedLang && savedLang in LANGUAGE_VERSIONS) {
+          setLanguage(savedLang as keyof typeof LANGUAGE_VERSIONS);
+        }
+        setOutput(savedCode ? "📝 Restored your saved code from last session." : "");
         const savedHints = localStorage.getItem(`task_hints_${task?.id}`);
         setHints(savedHints ? JSON.parse(savedHints) : []);
         setIsHintLoading(false);
@@ -380,7 +406,7 @@ Give 1 short hint (max 1 sentence) to help them proceed. Make sure it is complet
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <select disabled={isReadOnly} value={language} onChange={(e) => setLanguage(e.target.value as any)} className="bg-slate-50 text-slate-700 text-sm font-medium px-4 py-2 rounded-lg border border-slate-200 focus:border-blue-500 focus:outline-none transition-colors cursor-pointer">
+                  <select disabled={isReadOnly} value={language} onChange={(e) => updateLanguage(e.target.value as any)} className="bg-slate-50 text-slate-700 text-sm font-medium px-4 py-2 rounded-lg border border-slate-200 focus:border-blue-500 focus:outline-none transition-colors cursor-pointer">
                     <option value="python">Python</option>
                     <option value="javascript">JavaScript</option>
                     <option value="cpp">C++</option>
@@ -418,7 +444,7 @@ Give 1 short hint (max 1 sentence) to help them proceed. Make sure it is complet
                   ref={codeRef}
                   readOnly={isReadOnly}
                   value={code}
-                  onChange={(e) => setCode(e.target.value)}
+                  onChange={(e) => updateCode(e.target.value)}
                   onPaste={handlePaste}
                   onDrop={handleDrop}
                   onDragOver={handleDragOver}
@@ -592,6 +618,12 @@ export default function Tasks() {
       });
 
       setIsModalOpen(false);
+      // Clear saved code from localStorage after successful submission
+      try {
+        localStorage.removeItem(`task_code_${taskId}`);
+        localStorage.removeItem(`task_lang_${taskId}`);
+        localStorage.removeItem(`task_hints_${taskId}`);
+      } catch { /* ignore */ }
       queryClient.invalidateQueries({ queryKey: ['coding_tasks_and_leaderboard'] });
     } catch (error: any) {
       toast({ title: "Submission Failed", description: error.message, variant: "destructive" });
