@@ -345,16 +345,17 @@ export function useAuth() {
       } else {
         // No Firebase config - explicitly check supabase one last time to avoid hanging
         if (!supabaseChecked) {
-          const { data: { session } } = await supabase.auth.getSession();
+          const { data: { session } } = await (supabase.auth as any).getSession();
           supabaseChecked = true;
           if (session?.user) {
-            const isAdmin = await getAdminStatus(session.user.id);
-            setGlobalState({
-              user: session.user,
-              session,
-              isAdmin,
-              loading: false,
-              isFirebaseUser: false,
+            getAdminStatus(session.user.id).then(isAdmin => {
+              setGlobalState({
+                user: session.user,
+                session,
+                isAdmin,
+                loading: false,
+                isFirebaseUser: false,
+              });
             });
           } else {
             setGlobalState({ loading: false });

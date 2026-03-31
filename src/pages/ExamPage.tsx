@@ -605,6 +605,10 @@ function ResultsScreen({
   );
 }
 
+// Cache for instant loading upon navigation/refresh
+let globalExamsCache: any[] | null = null;
+let globalCompletedCache: Set<string> | null = null;
+
 // ============================================================
 // MAIN EXAM PAGE
 // ============================================================
@@ -614,11 +618,11 @@ export default function ExamPage() {
   const { toast } = useToast();
 
   const [phase, setPhase] = useState<'select' | 'info' | 'exam' | 'results'>('select');
-  const [exams, setExams] = useState<Exam[]>([]);
-  const [completedExamIds, setCompletedExamIds] = useState<Set<string>>(new Set());
+  const [exams, setExams] = useState<Exam[]>(globalExamsCache || []);
+  const [completedExamIds, setCompletedExamIds] = useState<Set<string>>(globalCompletedCache || new Set());
   const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
   const [questions, setQuestions] = useState<ExamQuestion[]>([]);
-  const [loadingExams, setLoadingExams] = useState(true);
+  const [loadingExams, setLoadingExams] = useState(!globalExamsCache);
   const [loadingQuestions, setLoadingQuestions] = useState(false);
 
   const [studentName, setStudentName] = useState('');
@@ -657,7 +661,7 @@ export default function ExamPage() {
     let mounted = true;
     const fetchPortalData = async () => {
       if (!userId) return;
-      setLoadingExams(true);
+      if (!globalExamsCache) setLoadingExams(true);
       try {
         const [examsRes, subsRes] = await Promise.all([
           (supabase as any).from('exams').select('*').eq('is_active', true).order('created_at', { ascending: false }),
@@ -667,7 +671,9 @@ export default function ExamPage() {
         if (!mounted) return;
 
         if (examsRes.error) throw examsRes.error;
-        setExams(examsRes.data || []);
+        const freshExams = examsRes.data || [];
+        setExams(freshExams);
+        globalExamsCache = freshExams;
 
         const ids = new Set<string>();
         
@@ -683,6 +689,7 @@ export default function ExamPage() {
         } catch (e) {}
 
         setCompletedExamIds(ids);
+        globalCompletedCache = ids;
       } catch (err: any) {
         console.error('Error fetching portal data:', err);
         if (mounted) setExams([]);
