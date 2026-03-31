@@ -30,9 +30,15 @@ export function useExamSecurity(options: ExamSecurityOptions = {}) {
   const devtoolsCheckInterval = useRef<ReturnType<typeof setInterval> | null>(null);
   const violationCountRef = useRef(0);
   const isGracePeriodRef = useRef(true);
+  const lastViolationTimeRef = useRef<number>(0);
 
   const addViolation = useCallback((type: Violation['type'], message: string) => {
-    if (isGracePeriodRef.current) return; // Ignore violations during setup/transition
+    if (isGracePeriodRef.current) return;
+    
+    // Cooldown: Prevent multiple violations within 1 second (e.g., blur + visibilitychange)
+    const now = Date.now();
+    if (now - lastViolationTimeRef.current < 1000) return;
+    lastViolationTimeRef.current = now;
     
     const violation: Violation = { type, timestamp: new Date(), message };
     
@@ -48,7 +54,8 @@ export function useExamSecurity(options: ExamSecurityOptions = {}) {
 
     onViolation?.(violation);
 
-    if (violationCountRef.current + 1 >= maxViolations) {
+    // FIX: Threshold should be exactly equal or greater than maxViolations
+    if (violationCountRef.current >= maxViolations) {
       onMaxViolationsReached?.();
     }
   }, [maxViolations, onMaxViolationsReached, onViolation]);
