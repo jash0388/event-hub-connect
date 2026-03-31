@@ -97,7 +97,7 @@ function TestSelectionScreen({
             animate={{ opacity: 1, scale: 1 }}
             className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-bold uppercase tracking-widest mb-6"
           >
-            <Zap className="w-3 h-3" /> CMR TECHNICAL CAMPUS | SECURE EXAM
+            <Zap className="w-3 h-3" /> SPHOORTHY ENGINEERING COLLEGE | SECURE EXAM
           </motion.div>
           <motion.h2
             initial={{ opacity: 0, y: 10 }}
