@@ -669,9 +669,20 @@ export default function ExamPage() {
         if (examsRes.error) throw examsRes.error;
         setExams(examsRes.data || []);
 
+        const ids = new Set<string>();
+        
+        // 1. Check database submissions
         if (subsRes.data) {
-          setCompletedExamIds(new Set(subsRes.data.map((s: any) => s.exam_id)));
+          subsRes.data.forEach((s: any) => ids.add(s.exam_id));
         }
+        
+        // 2. Check local persistence (Hard Lock)
+        try {
+          const localKeys = Object.keys(localStorage).filter(k => k.startsWith('completed_'));
+          localKeys.forEach(k => ids.add(k.replace('completed_', '')));
+        } catch (e) {}
+
+        setCompletedExamIds(ids);
       } catch (err: any) {
         console.error('Error fetching portal data:', err);
         if (mounted) setExams([]);
@@ -802,12 +813,13 @@ export default function ExamPage() {
           status: isAutoSubmit ? 'auto_submitted' : 'completed',
         });
 
-        // LOCK OUT: Immediately mark as completed in local state to prevent "double start" glitch
+        // LOCK OUT: Immediately mark as completed in local state & localStorage to prevent "double start" glitch
         setCompletedExamIds(prev => {
           const next = new Set(prev);
           next.add(selectedExam.id);
           return next;
         });
+        localStorage.setItem(`completed_${selectedExam.id}`, 'true');
       } catch (err) {
         console.error('Error saving submission:', err);
       }
