@@ -84,7 +84,7 @@ function TestSelectionScreen({
             <div className="w-9 h-9 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
               <Shield className="w-4 h-4 text-white" />
             </div>
-            <h1 className="text-xl font-bold text-white tracking-tight">DataNauts <span className="text-indigo-400">Proctor</span></h1>
+            <h1 className="text-xl font-bold text-white tracking-tight">SPHOORTHY <span className="text-indigo-400">Proctor</span></h1>
           </div>
           <div className="w-24" />
         </div>
