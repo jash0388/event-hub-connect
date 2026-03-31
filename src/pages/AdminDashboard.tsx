@@ -461,10 +461,85 @@ const AdminDashboard = () => {
 
   const fetchExamSubmissions = async () => {
     try {
-      const { data, error } = await (supabase as any).from('exam_submissions').select('*, exams(title)').order('submitted_at', { ascending: false });
+      const { data, error } = await supabase
+        .from('exam_submissions')
+        .select('*, exams(title)')
+        .order('submitted_at', { ascending: false });
       if (error) throw error;
       setExamSubmissions(data || []);
-    } catch (e: any) { console.error('Error fetching exam submissions:', e); setExamSubmissions([]); }
+    } catch (err) {
+      console.error('Error fetching submissions:', err);
+    }
+  };
+
+  const handleDeleteExamSubmission = async (id: string) => {
+    if (!confirm('Are you sure you want to allow a retest for this student? This will delete their current record permanently.')) return;
+    try {
+      const { error } = await supabase.from('exam_submissions').delete().eq('id', id);
+      if (error) throw error;
+      toast({ title: "Retest Enabled", description: "Submission record removed successfully." });
+      fetchExamSubmissions();
+    } catch (err) {
+      console.error('Error deleting submission:', err);
+      toast({ title: "Error", description: "Failed to remove submission.", variant: "destructive" });
+    }
+  };
+
+  const exportResultsToCSV = () => {
+    const filtered = examSubmissions.filter((s: any) => examResultsFilter === 'all' || s.exam_id === examResultsFilter);
+    if (filtered.length === 0) {
+      toast({ title: "No data", description: "Nothing to export based on current filter.", variant: "destructive" });
+      return;
+    }
+
+    // Helper to escape values for CSV (handles commas and quotes)
+    const escapeCSV = (val: any) => {
+      let str = String(val ?? "");
+      if (str.includes(",") || str.includes("\"") || str.includes("\n") || str.includes("\r")) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
+
+    const headers = [
+      "Student Name", 
+      "Roll Number", 
+      "Exam Title", 
+      "Score Obtained", 
+      "Total Possible", 
+      "Percentage", 
+      "Total Violations", 
+      "Time Spent", 
+      "Status", 
+      "Submission Date"
+    ];
+
+    const rows = filtered.map((s: any) => [
+      escapeCSV(s.student_name),
+      escapeCSV(s.roll_number),
+      escapeCSV(s.exams?.title || 'Unknown'),
+      escapeCSV(s.score),
+      escapeCSV(s.total_marks),
+      escapeCSV(s.total_marks > 0 ? `${Math.round((s.score / s.total_marks) * 100)}%` : '0%'),
+      escapeCSV(s.violations),
+      escapeCSV(`${Math.floor((s.time_used_seconds || 0) / 60)}m ${(s.time_used_seconds || 0) % 60}s`),
+      escapeCSV(s.status),
+      escapeCSV(s.submitted_at ? format(new Date(s.submitted_at), 'PP p') : '-')
+    ]);
+
+    // Add UTF-8 BOM for Excel compatibility
+    const BOM = "\ufeff";
+    const csvContent = BOM + [headers.map(escapeCSV), ...rows].map(r => r.join(',')).join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `Exam_Results_${format(new Date(), 'yyyy-MM-dd')}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast({ title: "Export Success", description: "Professional report has been generated and downloaded." });
   };
 
   const handleSaveExam = async () => {
@@ -961,7 +1036,7 @@ const AdminDashboard = () => {
         .order('created_at', { ascending: false })
         .limit(2000);
 
-      if (regError) throw regError;
+      if (regError) regError;
       setSipAttendanceRecords(regs || []);
     } catch (error: any) {
       console.error('Error fetching SIP attendance:', error);
@@ -1372,8 +1447,7 @@ const AdminDashboard = () => {
     try {
       const { error } = await supabase
         .from('task_submissions' as any)
-        .delete()
-        .eq('id', selectedSubmission.id);
+        .delete().eq('id', selectedSubmission.id);
 
       if (error) throw error;
       toast({ title: 'Submission Deleted', description: 'The answer has been permanently deleted' });
@@ -3518,10 +3592,13 @@ const AdminDashboard = () => {
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold">Test Results</h2>
                 <div className="flex gap-2 items-center">
-                  <select value={examResultsFilter} onChange={e => setExamResultsFilter(e.target.value)} className="p-2 border rounded-lg text-sm">
+                  <select value={examResultsFilter} onChange={e => setExamResultsFilter(e.target.value)} className="p-2 border rounded-lg text-sm bg-white">
                     <option value="all">All Exams</option>
                     {examsList.map((exam: any) => (<option key={exam.id} value={exam.id}>{exam.title}</option>))}
                   </select>
+                  <Button size="sm" variant="outline" className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100" onClick={exportResultsToCSV}>
+                    <Download className="w-3 h-3 mr-1" /> Export CSV (Excel)
+                  </Button>
                   <Button size="sm" variant="outline" onClick={() => fetchExamSubmissions()}><RefreshCw className="w-3 h-3 mr-1" /> Refresh</Button>
                 </div>
               </div>
@@ -3538,6 +3615,7 @@ const AdminDashboard = () => {
                       <TableHead>Time Used</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Date</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -3564,10 +3642,15 @@ const AdminDashboard = () => {
                             </Badge>
                           </TableCell>
                           <TableCell className="text-xs text-muted-foreground">{sub.submitted_at ? format(new Date(sub.submitted_at), 'PP p') : '-'}</TableCell>
+                          <TableCell className="text-right">
+                            <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-700 hover:bg-red-50" onClick={() => handleDeleteExamSubmission(sub.id)}>
+                              <RefreshCw className="w-3 h-3 mr-1" /> Allow Retest
+                            </Button>
+                          </TableCell>
                         </TableRow>
                       ))}
                     {examSubmissions.filter((s: any) => examResultsFilter === 'all' || s.exam_id === examResultsFilter).length === 0 && (
-                      <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No submissions yet.</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">No submissions yet.</TableCell></TableRow>
                     )}
                   </TableBody>
                 </Table>

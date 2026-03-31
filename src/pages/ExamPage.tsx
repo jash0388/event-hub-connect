@@ -9,11 +9,12 @@ import {
   Shield, AlertTriangle, Clock, Send, ChevronLeft, ChevronRight, X,
   CheckCircle2, Loader2, Lock, Maximize, Flag,
   BookOpen, FileText, CircleDot, Square, CheckSquare,
-  TriangleAlert, ShieldAlert, Monitor, Zap, ClipboardList,
-  ArrowLeft, User, Hash
+  TriangleAlert, ShieldAlert, ShieldOff, Monitor, Zap, ClipboardList,
+  ArrowLeft, User, Hash, Users
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 
 // ============================================================
 // TYPES
@@ -67,98 +68,139 @@ function TestSelectionScreen({
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950">
+    <div className="min-h-screen bg-[#05060b] relative overflow-hidden">
+      {/* Mesh Background Accents */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-600/10 blur-[120px] rounded-full" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600/10 blur-[120px] rounded-full" />
+      
       {/* Header */}
-      <div className="border-b border-slate-800/50 bg-slate-900/50 backdrop-blur-sm">
+      <div className="sticky top-0 z-50 border-b border-white/5 bg-slate-950/50 backdrop-blur-md">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors">
-            <ArrowLeft className="w-5 h-5" />
-            <span className="text-sm font-medium">Back</span>
+          <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-slate-400 hover:text-white transition-all group">
+            <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+            <span className="text-sm font-medium">Exit Portal</span>
           </button>
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-indigo-500/20 rounded-lg flex items-center justify-center border border-indigo-500/30">
-              <Shield className="w-4 h-4 text-indigo-400" />
+            <div className="w-9 h-9 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
+              <Shield className="w-4 h-4 text-white" />
             </div>
-            <h1 className="text-xl font-bold text-white">Exam Portal</h1>
+            <h1 className="text-xl font-bold text-white tracking-tight">DataNauts <span className="text-indigo-400">Proctor</span></h1>
           </div>
-          <div className="w-20" />
+          <div className="w-24" />
         </div>
       </div>
 
-      <div className="container mx-auto px-6 py-12 max-w-4xl">
-        <div className="text-center mb-12">
+      <div className="container mx-auto px-6 py-16 max-w-5xl relative z-10">
+        <div className="text-center mb-16">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-bold uppercase tracking-widest mb-6"
+          >
+            <Zap className="w-3 h-3" /> Secure Examination Environment
+          </motion.div>
           <motion.h2
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-3xl md:text-4xl font-bold text-white mb-3"
+            className="text-4xl md:text-5xl font-extrabold text-white mb-4 tracking-tight"
           >
-            Available Tests
+            Select Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">Examination</span>
           </motion.h2>
-          <p className="text-slate-400 max-w-lg mx-auto">
-            Select a test to begin. Each test is timed and proctored. Make sure you're ready before starting.
+          <p className="text-slate-400 max-w-xl mx-auto text-lg leading-relaxed">
+            Choose an active test to begin. Once started, you will enter a secured environment with mandatory proctoring rules.
           </p>
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-20">
-            <Loader2 className="w-8 h-8 animate-spin text-indigo-400" />
+          <div className="flex flex-col items-center justify-center py-24 gap-4">
+            <Loader2 className="w-12 h-12 animate-spin text-indigo-500" />
+            <p className="text-slate-500 font-medium animate-pulse">Syncing with secure server...</p>
           </div>
         ) : exams.length === 0 ? (
-          <div className="text-center py-20 bg-slate-900/50 rounded-2xl border border-slate-800/50">
-            <ClipboardList className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-white mb-2">No Tests Available</h3>
-            <p className="text-slate-500">Check back later for upcoming tests.</p>
+          <div className="text-center py-24 bg-slate-900/20 rounded-[32px] border border-white/5 backdrop-blur-sm">
+            <div className="w-20 h-20 bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-6 border border-white/10">
+              <ClipboardList className="w-10 h-10 text-slate-600" />
+            </div>
+            <h3 className="text-2xl font-bold text-white mb-2">No Active Tests</h3>
+            <p className="text-slate-500">There are no scheduled examinations available for you right now.</p>
           </div>
         ) : (
-          <div className="grid gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {exams.map((exam, idx) => {
               const isCompleted = completedExamIds.has(exam.id);
               return (
                 <motion.div
                   key={exam.id}
-                  initial={{ opacity: 0, y: 15 }}
+                  initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.08 }}
+                  transition={{ delay: idx * 0.1 }}
                 >
                   <button
                     onClick={() => !isCompleted && onSelectExam(exam)}
                     disabled={isCompleted}
-                    className={`w-full text-left p-6 rounded-2xl border transition-all duration-200 group ${
+                    className={`w-full group relative overflow-hidden text-left p-8 rounded-[32px] border transition-all duration-500 ${
                       isCompleted
-                        ? 'bg-slate-800/30 border-slate-700/20 cursor-not-allowed opacity-60'
-                        : 'bg-slate-900/50 border-slate-700/30 hover:bg-slate-800/50 hover:border-indigo-500/30 hover:shadow-lg hover:shadow-indigo-500/5'
+                        ? 'bg-slate-900/20 border-white/5 cursor-not-allowed grayscale'
+                        : 'bg-slate-900/40 border-white/10 hover:border-indigo-500/50 hover:bg-slate-900/60'
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <span className="bg-indigo-500/20 text-indigo-400 px-3 py-1 rounded-lg text-xs font-bold border border-indigo-500/20">
-                            Test {idx + 1}
-                          </span>
-                          {isCompleted && (
-                            <span className="bg-green-500/20 text-green-400 px-3 py-1 rounded-lg text-xs font-bold border border-green-500/20 flex items-center gap-1">
-                              <CheckCircle2 className="w-3 h-3" /> Ended
-                            </span>
-                          )}
+                    {!isCompleted && (
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 blur-[50px] group-hover:bg-indigo-500/10 transition-colors duration-500" />
+                    )}
+                    
+                    <div className="relative flex flex-col h-full">
+                      <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border transition-all duration-500 ${
+                            isCompleted ? 'bg-slate-800/50 border-white/5' : 'bg-indigo-500/10 border-indigo-500/20 group-hover:bg-indigo-500 group-hover:scale-110'
+                          }`}>
+                            <FileText className={`w-6 h-6 transition-colors duration-500 ${isCompleted ? 'text-slate-600' : 'text-indigo-400 group-hover:text-white'}`} />
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Assignment {idx + 1}</span>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              {isCompleted ? (
+                                <Badge variant="secondary" className="bg-slate-800/80 text-slate-400 border-none px-2 py-0 h-5 text-[10px] uppercase font-black">Completed</Badge>
+                              ) : (
+                                <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 px-2 py-0 h-5 text-[10px] uppercase font-black">Live Now</Badge>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                        <h3 className="text-lg font-semibold text-white mb-1 group-hover:text-indigo-300 transition-colors">
-                          {exam.title}
-                        </h3>
-                        {exam.description && (
-                          <p className="text-slate-400 text-sm line-clamp-2">{exam.description}</p>
-                        )}
+                        <div className="text-right">
+                          <div className="text-xl font-black text-white/90 group-hover:text-white transition-colors">{exam.duration_minutes}m</div>
+                          <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Duration</div>
+                        </div>
                       </div>
-                      <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                        <div className="flex items-center gap-1.5 text-slate-400 text-sm">
-                          <Clock className="w-4 h-4" />
-                          <span>{exam.duration_minutes} min</span>
+
+                      <h3 className="text-2xl font-bold text-white mb-3 tracking-tight group-hover:translate-x-1 transition-transform duration-300">
+                        {exam.title}
+                      </h3>
+                      <p className="text-slate-400 text-sm line-clamp-2 leading-relaxed mb-8 flex-1">
+                        {exam.description || "No description provided for this examination."}
+                      </p>
+
+                      <div className="flex items-center justify-between pt-6 border-t border-white/5 mt-auto">
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-1.5">
+                            <ShieldAlert className="w-4 h-4 text-slate-500" />
+                            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">{exam.max_violations} MAX</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <Users className="w-4 h-4 text-slate-500" />
+                            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Timed</span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1.5 text-slate-400 text-sm">
-                          <ShieldAlert className="w-4 h-4" />
-                          <span>Max {exam.max_violations} violations</span>
-                        </div>
+                        
                         {!isCompleted && (
-                          <ChevronRight className="w-5 h-5 text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity mt-2" />
+                          <div className="flex items-center gap-2 text-indigo-400 font-bold text-sm group-hover:gap-3 transition-all">
+                            Start Quiz <ChevronRight className="w-4 h-4" />
+                          </div>
+                        )}
+                        {isCompleted && (
+                          <div className="flex items-center gap-2 text-slate-600 font-bold text-sm">
+                            Ended <CheckCircle2 className="w-4 h-4" />
+                          </div>
                         )}
                       </div>
                     </div>
@@ -200,122 +242,152 @@ function StudentInfoForm({
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[#05060b] flex items-center justify-center p-4 relative overflow-hidden font-sans">
+      {/* Background Orbs */}
+      <div className="absolute top-[10%] left-[5%] w-[30%] h-[30%] bg-indigo-600/10 blur-[100px] rounded-full pointer-events-none" />
+      <div className="absolute bottom-[10%] right-[5%] w-[30%] h-[30%] bg-purple-600/10 blur-[100px] rounded-full pointer-events-none" />
+
       <motion.div
-        initial={{ opacity: 0, y: 30, scale: 0.97 }}
+        initial={{ opacity: 0, y: 30, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.6 }}
-        className="w-full max-w-3xl"
+        transition={{ duration: 0.8, ease: "circOut" }}
+        className="w-full max-w-4xl relative z-10"
       >
-        {/* Header */}
-        <div className="bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 rounded-t-2xl p-8 relative overflow-hidden">
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDEwIEwgNDAgMTAgTSAxMCAwIEwgMTAgNDAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjA1KSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-50" />
-          <div className="relative">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/10">
-                <Shield className="w-6 h-6 text-white" />
+        <div className="bg-slate-900/40 backdrop-blur-2xl border border-white/10 rounded-[40px] overflow-hidden shadow-2xl shadow-black/50">
+          <div className="flex flex-col md:flex-row h-full">
+            
+            {/* Left Column: Details & Instructions */}
+            <div className="w-full md:w-[45%] bg-indigo-600 p-8 md:p-12 flex flex-col relative overflow-hidden order-1">
+              <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 via-violet-600 to-purple-800" />
+              <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDEwIEwgNDAgMTAgTSAxMCAwIEwgMTAgNDAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjA4KSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-20" />
+              
+              <div className="relative">
+                <div className="flex items-center gap-3 mb-8">
+                  <div className="w-14 h-14 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/20 shadow-xl">
+                    <Shield className="w-7 h-7 text-white" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/60">Examination Portal</span>
+                    <h1 className="text-3xl font-black text-white leading-tight mt-1">Verification</h1>
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-white text-xl font-bold mb-2">{exam.title}</h2>
+                    <p className="text-indigo-100/70 text-sm leading-relaxed line-clamp-3">{exam.description || "Secure digital assessment environment."}</p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-white/10 backdrop-blur-md px-4 py-3 rounded-2xl border border-white/10">
+                      <div className="flex items-center gap-2 text-white/50 mb-1">
+                        <Clock className="w-3 h-3" /> <span className="text-[10px] font-bold uppercase tracking-widest">Time</span>
+                      </div>
+                      <div className="text-white font-bold">{exam.duration_minutes}m</div>
+                    </div>
+                    <div className="bg-white/10 backdrop-blur-md px-4 py-3 rounded-2xl border border-white/10">
+                      <div className="flex items-center gap-2 text-white/50 mb-1">
+                        <ShieldAlert className="w-3 h-3" /> <span className="text-[10px] font-bold uppercase tracking-widest">Limit</span>
+                      </div>
+                      <div className="text-white font-bold">{exam.max_violations}x</div>
+                    </div>
+                  </div>
+
+                  <div className="pt-8">
+                    <h3 className="text-white font-black text-xs uppercase tracking-[0.2em] mb-4 flex items-center gap-2">Protocol Check</h3>
+                    <div className="space-y-4">
+                      {instructions.slice(0, 5).map((instr, i) => (
+                        <div key={i} className="flex items-start gap-3">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-400 mt-0.5 flex-shrink-0" />
+                          <span className="text-white/80 text-xs leading-relaxed font-medium">{instr}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </div>
+            </div>
+
+            {/* Right Column: Form & Start */}
+            <div className="flex-1 p-8 md:p-12 order-2 flex flex-col justify-between bg-slate-900/40">
               <div>
-                <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">{exam.title}</h1>
-                {exam.description && <p className="text-indigo-100 text-sm mt-1">{exam.description}</p>}
+                <h3 className="text-white font-black text-[10px] uppercase tracking-[0.3em] mb-8 flex items-center gap-2">
+                  <span className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse" /> Candidate Credentials
+                </h3>
+
+                <div className="space-y-6 mb-10">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Full Name</label>
+                    <div className="relative group">
+                      <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-indigo-400 transition-colors" />
+                      <Input
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="Enter your full name"
+                        className="bg-slate-950/30 border-white/5 focus:border-indigo-500/50 text-white pl-12 h-14 rounded-2xl transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Roll Number / ID</label>
+                    <div className="relative group">
+                      <Hash className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-indigo-400 transition-colors" />
+                      <Input
+                        value={rollNumber}
+                        onChange={(e) => setRollNumber(e.target.value)}
+                        placeholder="Enter your roll number"
+                        className="bg-slate-950/30 border-white/5 focus:border-indigo-500/50 text-white pl-12 h-14 rounded-2xl transition-all"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-6 bg-red-500/5 border border-red-500/10 rounded-3xl mb-8">
+                  <div className="flex gap-4">
+                    <div className="w-10 h-10 rounded-2xl bg-red-500/10 flex items-center justify-center flex-shrink-0">
+                      <AlertTriangle className="w-5 h-5 text-red-400" />
+                    </div>
+                    <div>
+                      <h4 className="text-red-400 font-bold text-sm mb-1">Strict Proctoring Active</h4>
+                      <p className="text-slate-500 text-xs leading-relaxed font-medium">
+                        Tab switching and exiting fullscreen is prohibited. System will auto-submit after {exam.max_violations} alerts.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <label className="flex items-start gap-4 cursor-pointer group" onClick={() => setAgreedToTerms(!agreedToTerms)}>
+                  <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-all duration-300 ${agreedToTerms ? 'bg-indigo-500 border-indigo-500 rotate-0' : 'border-white/10 group-hover:border-indigo-500/50'}`}>
+                    {agreedToTerms && <CheckCircle2 className="w-4 h-4 text-white" />}
+                  </div>
+                  <span className="text-slate-400 text-xs font-medium leading-relaxed group-hover:text-slate-300 transition-colors">
+                    I acknowledge that I am entering a secure exam environment. I agree to comply with all rules.
+                  </span>
+                </label>
+
+                <Button
+                  disabled={!canStart}
+                  onClick={() => onStart(name.trim(), rollNumber.trim())}
+                  className={`w-full h-16 rounded-[20px] text-lg font-black uppercase tracking-widest transition-all duration-500 group relative overflow-hidden ${
+                    canStart
+                      ? 'bg-white text-slate-950 hover:bg-white shadow-[0_0_40px_rgba(255,255,255,0.1)] active:scale-[0.98]'
+                      : 'bg-slate-800/50 text-slate-600 border border-white/5'
+                  }`}
+                >
+                  {canStart && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-indigo-200/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+                  )}
+                  <span className="relative flex items-center justify-center gap-3">
+                    {canStart ? <Zap className="w-5 h-5 text-indigo-600" /> : <Lock className="w-5 h-5" />}
+                    Initiate Sequence
+                  </span>
+                </Button>
               </div>
             </div>
-            <div className="flex flex-wrap gap-3 mt-6">
-              <div className="bg-white/10 backdrop-blur-sm px-4 py-2 rounded-lg border border-white/10 flex items-center gap-2">
-                <Clock className="w-4 h-4 text-indigo-200" />
-                <span className="text-white text-sm font-medium">{exam.duration_minutes} Minutes</span>
-              </div>
-              <div className="bg-white/10 backdrop-blur-sm px-4 py-2 rounded-lg border border-white/10 flex items-center gap-2">
-                <ShieldAlert className="w-4 h-4 text-red-300" />
-                <span className="text-white text-sm font-medium">Max {exam.max_violations} Violations</span>
-              </div>
-            </div>
-          </div>
-        </div>
 
-        {/* Body */}
-        <div className="bg-slate-900/90 backdrop-blur-xl border border-slate-700/50 rounded-b-2xl p-8">
-          {/* Student Info Form */}
-          <div className="mb-8">
-            <h3 className="text-white font-semibold text-lg mb-4 flex items-center gap-2">
-              <User className="w-5 h-5 text-indigo-400" />
-              Student Information
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-2 block">Full Name *</label>
-                <Input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Enter your full name"
-                  className="bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-600 rounded-xl h-12"
-                />
-              </div>
-              <div>
-                <label className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-2 block">Roll Number *</label>
-                <Input
-                  value={rollNumber}
-                  onChange={(e) => setRollNumber(e.target.value)}
-                  placeholder="Enter your roll number"
-                  className="bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-600 rounded-xl h-12"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Instructions */}
-          <div className="mb-8">
-            <h3 className="text-white font-semibold text-lg mb-4 flex items-center gap-2">
-              <BookOpen className="w-5 h-5 text-indigo-400" />
-              Exam Instructions
-            </h3>
-            <div className="space-y-3">
-              {instructions.map((instruction, i) => (
-                <motion.div key={i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }} className="flex items-start gap-3 text-sm">
-                  <span className="flex-shrink-0 w-6 h-6 bg-indigo-500/20 rounded-full flex items-center justify-center text-indigo-400 font-bold text-xs border border-indigo-500/30">{i + 1}</span>
-                  <span className="text-slate-300 leading-relaxed">{instruction}</span>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-
-          {/* Security Notice */}
-          <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-8">
-            <div className="flex items-start gap-3">
-              <TriangleAlert className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-red-300 font-semibold text-sm">Security Notice</p>
-                <p className="text-red-200/70 text-xs mt-1 leading-relaxed">
-                  This exam uses advanced proctoring. Tab switches, clipboard usage, and developer tools are monitored.
-                  The exam auto-submits after {exam.max_violations} violations.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Agreement & Start */}
-          <div className="space-y-4">
-            <label className="flex items-start gap-3 cursor-pointer group" onClick={() => setAgreedToTerms(!agreedToTerms)}>
-              <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-all ${agreedToTerms ? 'bg-indigo-500 border-indigo-500' : 'border-slate-600 group-hover:border-indigo-400'}`}>
-                {agreedToTerms && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
-              </div>
-              <span className="text-slate-300 text-sm leading-relaxed">
-                I have read and understood all instructions. I agree to follow the exam rules and understand that any violations will be recorded and the exam will auto-submit after {exam.max_violations} violations.
-              </span>
-            </label>
-
-            <Button
-              disabled={!canStart}
-              onClick={() => onStart(name.trim(), rollNumber.trim())}
-              className={`w-full h-14 text-lg font-semibold rounded-xl transition-all duration-300 ${
-                canStart
-                  ? 'bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500 hover:from-indigo-600 hover:via-violet-600 hover:to-purple-600 text-white shadow-lg shadow-indigo-500/25'
-                  : 'bg-slate-800 text-slate-500 cursor-not-allowed'
-              }`}
-            >
-              <Maximize className="w-5 h-5 mr-2" />
-              Enter Fullscreen & Start Exam
-            </Button>
           </div>
         </div>
       </motion.div>
@@ -434,67 +506,99 @@ function SubmitConfirmation({ show, onConfirm, onCancel, answeredCount, totalCou
 // ============================================================
 // RESULTS SCREEN
 // ============================================================
-function ResultsScreen({ score, totalMarks, answeredCount, totalQuestions, violations, timeUsed, examTitle, onExit }: {
-  score: number; totalMarks: number; answeredCount: number; totalQuestions: number;
-  violations: Violation[]; timeUsed: number; examTitle: string; onExit: () => void;
+function ResultsScreen({
+  score,
+  totalMarks,
+  answeredCount,
+  totalQuestions,
+  violations,
+  timeUsed,
+  examTitle,
+  onExit
+}: {
+  score: number;
+  totalMarks: number;
+  answeredCount: number;
+  totalQuestions: number;
+  violations: Violation[];
+  timeUsed: number;
+  examTitle: string;
+  onExit: () => void;
 }) {
   const percentage = totalMarks > 0 ? Math.round((score / totalMarks) * 100) : 0;
+  const isPassed = percentage >= 40;
   const formatTime = (s: number) => `${Math.floor(s / 60)}m ${s % 60}s`;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 flex items-center justify-center p-4">
-      <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-2xl">
-        <div className="bg-slate-900/90 backdrop-blur-xl border border-slate-700/50 rounded-2xl overflow-hidden">
-          <div className={`p-8 text-center relative overflow-hidden ${percentage >= 40 ? 'bg-gradient-to-r from-green-600 to-emerald-600' : 'bg-gradient-to-r from-red-600 to-rose-600'}`}>
-            <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", bounce: 0.5, delay: 0.2 }}
-              className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-white/20"
-            >
-              <CheckCircle2 className="w-10 h-10 text-white" />
-            </motion.div>
-            <h2 className="text-2xl font-bold text-white">Exam Submitted!</h2>
-            <p className="text-white/80 mt-2">{examTitle}</p>
+    <div className="min-h-screen bg-[#05060b] flex items-center justify-center p-4 relative overflow-hidden font-sans">
+      <div className="absolute top-[10%] left-[5%] w-[30%] h-[30%] bg-indigo-600/10 blur-[100px] rounded-full pointer-events-none" />
+      <div className="absolute bottom-[10%] right-[5%] w-[30%] h-[30%] bg-purple-600/10 blur-[100px] rounded-full pointer-events-none" />
+
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.8, ease: "circOut" }}
+        className="w-full max-w-3xl relative z-10"
+      >
+        <div className="bg-slate-900/40 backdrop-blur-2xl border border-white/10 rounded-[40px] overflow-hidden shadow-2xl shadow-black/50 p-8 md:p-12 text-center">
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: "spring", bounce: 0.5, delay: 0.2 }}
+            className={`w-28 h-28 rounded-[35px] flex items-center justify-center mx-auto mb-8 shadow-2xl ${
+              isPassed ? 'bg-emerald-500 shadow-emerald-500/20' : 'bg-rose-500 shadow-rose-500/20'
+            }`}
+          >
+            {isPassed ? <CheckCircle2 className="w-14 h-14 text-white" /> : <AlertTriangle className="w-14 h-14 text-white" />}
+          </motion.div>
+
+          <h2 className="text-4xl font-black text-white mb-2 tracking-tight">
+            {isPassed ? 'Assessment Finalized' : 'Assessment Completed'}
+          </h2>
+          <p className="text-slate-400 font-medium mb-12">{examTitle}</p>
+
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
+            <div className="bg-white/5 border border-white/10 rounded-[24px] p-5">
+              <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Score</div>
+              <div className="text-2xl font-black text-white">{score}/{totalMarks}</div>
+            </div>
+            <div className="bg-white/5 border border-white/10 rounded-[24px] p-5">
+              <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Accuracy</div>
+              <div className={`text-2xl font-black ${isPassed ? 'text-emerald-400' : 'text-rose-400'}`}>{percentage}%</div>
+            </div>
+            <div className="bg-white/5 border border-white/10 rounded-[24px] p-5">
+              <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Duration</div>
+              <div className="text-2xl font-black text-white tracking-tighter">{formatTime(timeUsed)}</div>
+            </div>
+            <div className="bg-white/5 border border-white/10 rounded-[24px] p-5">
+              <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Violations</div>
+              <div className={`text-2xl font-black ${violations.length > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>{violations.length}</div>
+            </div>
           </div>
 
-          <div className="p-8">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-              <div className="bg-slate-800/50 rounded-xl p-4 text-center border border-slate-700/30">
-                <p className="text-slate-400 text-xs uppercase tracking-wider mb-1">Score</p>
-                <p className="text-2xl font-bold text-white">{score}/{totalMarks}</p>
-              </div>
-              <div className="bg-slate-800/50 rounded-xl p-4 text-center border border-slate-700/30">
-                <p className="text-slate-400 text-xs uppercase tracking-wider mb-1">Percentage</p>
-                <p className={`text-2xl font-bold ${percentage >= 40 ? 'text-green-400' : 'text-red-400'}`}>{percentage}%</p>
-              </div>
-              <div className="bg-slate-800/50 rounded-xl p-4 text-center border border-slate-700/30">
-                <p className="text-slate-400 text-xs uppercase tracking-wider mb-1">Time Used</p>
-                <p className="text-2xl font-bold text-white">{formatTime(timeUsed)}</p>
-              </div>
-              <div className={`rounded-xl p-4 text-center border ${violations.length > 0 ? 'bg-red-950/30 border-red-500/20' : 'bg-green-950/30 border-green-500/20'}`}>
-                <p className="text-slate-400 text-xs uppercase tracking-wider mb-1">Violations</p>
-                <p className={`text-2xl font-bold ${violations.length > 0 ? 'text-red-400' : 'text-green-400'}`}>{violations.length}</p>
+          {violations.length > 0 && (
+            <div className="mb-10 text-left">
+              <h4 className="text-slate-500 font-black text-[10px] uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                <ShieldOff className="w-3 h-3" /> Security Log Summary
+              </h4>
+              <div className="space-y-3">
+                {violations.map((v, i) => (
+                  <div key={i} className="flex items-center gap-3 bg-red-500/5 border border-red-500/10 p-4 rounded-2xl">
+                    <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
+                    <span className="text-slate-300 text-xs font-medium">{v.message}</span>
+                    <span className="text-slate-600 text-[10px] font-bold ml-auto">{v.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                  </div>
+                ))}
               </div>
             </div>
+          )}
 
-            {violations.length > 0 && (
-              <div className="mb-8">
-                <h4 className="text-white font-semibold mb-3 flex items-center gap-2 text-sm">
-                  <AlertTriangle className="w-4 h-4 text-amber-400" /> Violation Log
-                </h4>
-                <div className="space-y-2 max-h-36 overflow-y-auto pr-2">
-                  {violations.map((v, i) => (
-                    <div key={i} className="bg-slate-800/50 rounded-lg p-3 border border-slate-700/30 flex items-start gap-3">
-                      <span className="text-xs text-slate-500 font-mono flex-shrink-0">{v.timestamp.toLocaleTimeString()}</span>
-                      <span className="text-slate-300 text-sm">{v.message}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <Button onClick={onExit} className="w-full h-12 bg-gradient-to-r from-indigo-500 to-violet-500 text-white rounded-xl font-medium">
-              Return to Test Portal
-            </Button>
-          </div>
+          <Button
+            onClick={onExit}
+            className="w-full h-16 rounded-[24px] bg-white text-slate-950 font-black uppercase tracking-widest hover:bg-slate-100 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-xl shadow-white/5"
+          >
+            Return to Learning Hub
+          </Button>
         </div>
       </motion.div>
     </div>
