@@ -652,30 +652,35 @@ export default function ExamPage() {
     },
   });
 
-  // Fetch available exams
+  // Fetch available exams & user status in parallel for speed
   useEffect(() => {
-    const fetchExams = async () => {
+    let mounted = true;
+    const fetchPortalData = async () => {
+      if (!userId) return;
       setLoadingExams(true);
       try {
-        const { data, error } = await (supabase as any).from('exams').select('*').eq('is_active', true).order('created_at', { ascending: false });
-        if (error) throw error;
-        setExams(data || []);
+        const [examsRes, subsRes] = await Promise.all([
+          (supabase as any).from('exams').select('*').eq('is_active', true).order('created_at', { ascending: false }),
+          (supabase as any).from('exam_submissions').select('exam_id').eq('user_id', userId)
+        ]);
 
-        // Fetch completed exams for this user
-        if (userId) {
-          const { data: subs } = await (supabase as any).from('exam_submissions').select('exam_id').eq('user_id', userId);
-          if (subs) {
-            setCompletedExamIds(new Set(subs.map((s: any) => s.exam_id)));
-          }
+        if (!mounted) return;
+
+        if (examsRes.error) throw examsRes.error;
+        setExams(examsRes.data || []);
+
+        if (subsRes.data) {
+          setCompletedExamIds(new Set(subsRes.data.map((s: any) => s.exam_id)));
         }
       } catch (err: any) {
-        console.error('Error fetching exams:', err);
-        // If table doesn't exist yet, show empty state
-        setExams([]);
+        console.error('Error fetching portal data:', err);
+        if (mounted) setExams([]);
+      } finally {
+        if (mounted) setLoadingExams(false);
       }
-      setLoadingExams(false);
     };
-    fetchExams();
+    fetchPortalData();
+    return () => { mounted = false; };
   }, [userId]);
 
   // Timer
@@ -696,6 +701,12 @@ export default function ExamPage() {
   }, [phase]);
 
   const handleSelectExam = async (exam: Exam) => {
+    // SECURITY: Double check against completed exams before select
+    if (completedExamIds.has(exam.id)) {
+      toast({ title: "Access Denied", description: "You have already completed this examination.", variant: "destructive" });
+      return;
+    }
+
     setSelectedExam(exam);
     setLoadingQuestions(true);
     try {
@@ -789,6 +800,13 @@ export default function ExamPage() {
           violations: security.violationCount,
           time_used_seconds: timeUsed,
           status: isAutoSubmit ? 'auto_submitted' : 'completed',
+        });
+
+        // LOCK OUT: Immediately mark as completed in local state to prevent "double start" glitch
+        setCompletedExamIds(prev => {
+          const next = new Set(prev);
+          next.add(selectedExam.id);
+          return next;
         });
       } catch (err) {
         console.error('Error saving submission:', err);
