@@ -81,6 +81,7 @@ function CodeEditorModal({
 }) {
   const [code, setCode] = useState(submissionCode);
   const codeRef = useRef<HTMLTextAreaElement>(null);
+  const codeIntegrityRef = useRef<string>(""); // Track code state for integrity checks
   const [language, setLanguage] = useState<keyof typeof LANGUAGE_VERSIONS>("python");
   const [output, setOutput] = useState<string>("");
   const [isRunning, setIsRunning] = useState(false);
@@ -93,6 +94,7 @@ function CodeEditorModal({
   // Persist code to localStorage on every change so it survives page refresh
   const updateCode = (newCode: string) => {
     setCode(newCode);
+    codeIntegrityRef.current = newCode; // Keep integrity ref in sync
     if (!isReadOnly && task?.id) {
       try {
         localStorage.setItem(`task_code_${task.id}`, newCode);
@@ -141,6 +143,130 @@ function CodeEditorModal({
     const timerId = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
     return () => clearInterval(timerId);
   }, [isOpen, isReadOnly, timeLeft]);
+
+  // === COMPREHENSIVE ANTI-CHEAT SECURITY LAYER ===
+  useEffect(() => {
+    if (!isOpen || isReadOnly) return;
+
+    // 1. Document-level clipboard blocking (catches Ctrl+C/V/X AND right-click menu actions)
+    const blockCopy = (e: ClipboardEvent) => { e.preventDefault(); e.stopPropagation(); };
+    const blockPaste = (e: ClipboardEvent) => { e.preventDefault(); e.stopPropagation(); };
+    const blockCut = (e: ClipboardEvent) => { e.preventDefault(); e.stopPropagation(); };
+    const blockDragStart = (e: DragEvent) => { e.preventDefault(); };
+    const blockDrop = (e: DragEvent) => { e.preventDefault(); };
+    const blockDragOver = (e: DragEvent) => { e.preventDefault(); };
+
+    // 2. Right-click context menu disabled
+    const blockContextMenu = (e: MouseEvent) => { e.preventDefault(); };
+
+    // 3. Block DevTools keyboard shortcuts
+    const blockDevToolsKeys = (e: KeyboardEvent) => {
+      // F12
+      if (e.key === 'F12') { e.preventDefault(); e.stopPropagation(); return; }
+      // Ctrl/Cmd + Shift + I (Inspect)
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'I' || e.key === 'i')) { e.preventDefault(); e.stopPropagation(); return; }
+      // Ctrl/Cmd + Shift + J (Console)
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'J' || e.key === 'j')) { e.preventDefault(); e.stopPropagation(); return; }
+      // Ctrl/Cmd + Shift + C (Element picker)
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'C' || e.key === 'c')) { e.preventDefault(); e.stopPropagation(); return; }
+      // Ctrl/Cmd + U (View source)
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.key === 'U')) { e.preventDefault(); e.stopPropagation(); return; }
+      // Ctrl/Cmd + S (Save page)
+      if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) { e.preventDefault(); e.stopPropagation(); return; }
+      // Ctrl/Cmd + P (Print)
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'p' || e.key === 'P')) { e.preventDefault(); e.stopPropagation(); return; }
+      // Block Ctrl+C / Ctrl+V / Ctrl+X globally (not just on textarea)
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && (e.key === 'c' || e.key === 'C')) { e.preventDefault(); e.stopPropagation(); return; }
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'v' || e.key === 'V')) { e.preventDefault(); e.stopPropagation(); return; }
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'x' || e.key === 'X')) { e.preventDefault(); e.stopPropagation(); return; }
+    };
+
+    // 4. Prevent text selection outside the code editor via CSS
+    const origUserSelect = document.body.style.userSelect;
+    const origWebkitUserSelect = document.body.style.webkitUserSelect;
+    document.body.style.userSelect = 'none';
+    document.body.style.webkitUserSelect = 'none';
+
+    // 5. MutationObserver to detect DOM tampering via DevTools
+    //    Watches the textarea for attribute/value changes injected externally
+    const observer = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        // If someone adds/removes nodes inside the modal, or changes element attributes
+        if (mutation.type === 'attributes' || mutation.type === 'childList') {
+          const ta = codeRef.current;
+          if (ta && ta.value !== codeIntegrityRef.current) {
+            // Someone changed the textarea value via DevTools - revert it!
+            ta.value = codeIntegrityRef.current;
+          }
+        }
+      }
+    });
+
+    // Observe the whole document body for attribute changes and child additions
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['value', 'readonly', 'disabled', 'style', 'class'] });
+
+    // 6. Periodic integrity check: verify textarea.value matches React state
+    //    This catches DevTools console injections like: document.querySelector('textarea').value = '...'
+    const integrityInterval = setInterval(() => {
+      const ta = codeRef.current;
+      if (ta && ta.value !== codeIntegrityRef.current) {
+        ta.value = codeIntegrityRef.current;
+      }
+      // Also ensure textarea is not set to readonly=false when it shouldn't be
+      if (ta && isReadOnly && !ta.readOnly) {
+        ta.readOnly = true;
+      }
+    }, 500);
+
+    // 7. DevTools size detection (window outer vs inner size gap)
+    let devToolsWarned = false;
+    const devToolsCheck = setInterval(() => {
+      const widthDiff = window.outerWidth - window.innerWidth > 160;
+      const heightDiff = window.outerHeight - window.innerHeight > 160;
+      if ((widthDiff || heightDiff) && !devToolsWarned) {
+        devToolsWarned = true;
+        toast({ title: "⚠️ Developer Tools Detected", description: "Close developer tools immediately. Any modifications will be reverted.", variant: "destructive" });
+      } else if (!widthDiff && !heightDiff) {
+        devToolsWarned = false;
+      }
+    }, 2000);
+
+    // 8. Block selection events on document
+    const blockSelectStart = (e: Event) => {
+      const target = e.target as HTMLElement;
+      // Allow selection only inside the code textarea
+      if (target.tagName === 'TEXTAREA' && target === codeRef.current) return;
+      e.preventDefault();
+    };
+
+    // Register all listeners at capture phase for maximum priority
+    document.addEventListener('copy', blockCopy, true);
+    document.addEventListener('paste', blockPaste, true);
+    document.addEventListener('cut', blockCut, true);
+    document.addEventListener('dragstart', blockDragStart, true);
+    document.addEventListener('drop', blockDrop, true);
+    document.addEventListener('dragover', blockDragOver, true);
+    document.addEventListener('contextmenu', blockContextMenu, true);
+    document.addEventListener('keydown', blockDevToolsKeys, true);
+    document.addEventListener('selectstart', blockSelectStart, true);
+
+    return () => {
+      document.removeEventListener('copy', blockCopy, true);
+      document.removeEventListener('paste', blockPaste, true);
+      document.removeEventListener('cut', blockCut, true);
+      document.removeEventListener('dragstart', blockDragStart, true);
+      document.removeEventListener('drop', blockDrop, true);
+      document.removeEventListener('dragover', blockDragOver, true);
+      document.removeEventListener('contextmenu', blockContextMenu, true);
+      document.removeEventListener('keydown', blockDevToolsKeys, true);
+      document.removeEventListener('selectstart', blockSelectStart, true);
+      observer.disconnect();
+      clearInterval(integrityInterval);
+      clearInterval(devToolsCheck);
+      document.body.style.userSelect = origUserSelect;
+      document.body.style.webkitUserSelect = origWebkitUserSelect;
+    };
+  }, [isOpen, isReadOnly, toast]);
 
   const handleRunCode = async () => {
     if (isReadOnly) return;
@@ -515,17 +641,20 @@ export default function Tasks() {
     queryKey: ['coding_tasks_and_leaderboard', userId, filterDifficulty],
     queryFn: async () => {
       try {
-        const { data: tasksDataRaw } = await supabase.from('coding_tasks' as any).select('*').order('created_at', { ascending: false }).limit(200);
+        // 🔥 Optimized Parallel Data Fetching
+        const [
+          { data: tasksDataRaw },
+          submissionsRes,
+          { data: globalSubs },
+          { data: profiles }
+        ] = await Promise.all([
+          supabase.from('coding_tasks' as any).select('*').order('created_at', { ascending: false }).limit(200),
+          userId ? supabase.from('task_submissions' as any).select('*').eq('user_id', userId).limit(500) : Promise.resolve({ data: null }),
+          supabase.from('task_submissions' as any).select('user_id, points_awarded, status, user_display_name').eq('status', 'approved').limit(2000),
+          supabase.from('profiles').select('id, full_name, firebase_uid').limit(2000)
+        ]);
 
-        let submissionsData = null;
-        if (userId) {
-          const res = await supabase.from('task_submissions' as any).select('*').eq('user_id', userId).limit(500);
-          submissionsData = res.data;
-        }
-
-        const { data: globalSubs } = await supabase.from('task_submissions' as any).select('user_id, points_awarded, status, user_display_name').eq('status', 'approved').limit(5000);
-
-        const { data: profiles } = await supabase.from('profiles').select('id, full_name, firebase_uid').limit(2000);
+        const submissionsData = submissionsRes?.data;
 
         // Mock logic for difficulty/tags if missing in database
         let tasksData = (tasksDataRaw || []).filter((t: any) => !t.title?.startsWith('[DELETED]')).map((t: any, i: number) => ({

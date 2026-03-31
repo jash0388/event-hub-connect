@@ -195,6 +195,18 @@ const AdminDashboard = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('events');
 
+  // === EXAM SYSTEM STATE ===
+  const [examsList, setExamsList] = useState<any[]>([]);
+  const [examQuestions, setExamQuestions] = useState<any[]>([]);
+  const [examSubmissions, setExamSubmissions] = useState<any[]>([]);
+  const [examDialogOpen, setExamDialogOpen] = useState(false);
+  const [examQuestionDialogOpen, setExamQuestionDialogOpen] = useState(false);
+  const [editingExam, setEditingExam] = useState<any>(null);
+  const [selectedExamForQuestions, setSelectedExamForQuestions] = useState<string>('');
+  const [examForm, setExamForm] = useState({ title: '', description: '', duration_minutes: 30, max_violations: 2 });
+  const [examQuestionForm, setExamQuestionForm] = useState({ question: '', question_type: 'mcq' as string, options: ['', '', '', ''], correct_answer: '', marks: 5 });
+  const [examResultsFilter, setExamResultsFilter] = useState<string>('all');
+
   const [eventDialogOpen, setEventDialogOpen] = useState(false);
   const [projectDialogOpen, setProjectDialogOpen] = useState(false);
   const [internshipDialogOpen, setInternshipDialogOpen] = useState(false);
@@ -430,6 +442,102 @@ const AdminDashboard = () => {
   const [loadedTabs, setLoadedTabs] = useState<Set<string>>(new Set());
 
   // Fetch data for a specific tab
+  // === EXAM FETCH FUNCTIONS ===
+  const fetchExamsList = async () => {
+    try {
+      const { data, error } = await (supabase as any).from('exams').select('*').order('created_at', { ascending: false });
+      if (error) throw error;
+      setExamsList(data || []);
+    } catch (e: any) { console.error('Error fetching exams:', e); setExamsList([]); }
+  };
+
+  const fetchExamQuestions = async () => {
+    try {
+      const { data, error } = await (supabase as any).from('exam_questions').select('*, exams(title)').order('created_at', { ascending: false });
+      if (error) throw error;
+      setExamQuestions(data || []);
+    } catch (e: any) { console.error('Error fetching exam questions:', e); setExamQuestions([]); }
+  };
+
+  const fetchExamSubmissions = async () => {
+    try {
+      const { data, error } = await (supabase as any).from('exam_submissions').select('*, exams(title)').order('submitted_at', { ascending: false });
+      if (error) throw error;
+      setExamSubmissions(data || []);
+    } catch (e: any) { console.error('Error fetching exam submissions:', e); setExamSubmissions([]); }
+  };
+
+  const handleSaveExam = async () => {
+    setIsSaving(true);
+    try {
+      if (editingExam) {
+        const { error } = await (supabase as any).from('exams').update({ ...examForm, updated_at: new Date().toISOString() }).eq('id', editingExam.id);
+        if (error) throw error;
+        toast({ title: 'Exam updated!' });
+      } else {
+        const { error } = await (supabase as any).from('exams').insert({ ...examForm, is_active: true });
+        if (error) throw error;
+        toast({ title: 'Exam created!' });
+      }
+      setExamDialogOpen(false);
+      setEditingExam(null);
+      setExamForm({ title: '', description: '', duration_minutes: 30, max_violations: 2 });
+      await fetchExamsList();
+    } catch (e: any) { toast({ title: 'Error', description: e.message, variant: 'destructive' }); }
+    setIsSaving(false);
+  };
+
+  const handleDeleteExam = async (id: string) => {
+    if (!confirm('Delete this exam and ALL its questions?')) return;
+    try {
+      const { error } = await (supabase as any).from('exams').delete().eq('id', id);
+      if (error) throw error;
+      toast({ title: 'Exam deleted' });
+      await fetchExamsList();
+    } catch (e: any) { toast({ title: 'Error', description: e.message, variant: 'destructive' }); }
+  };
+
+  const handleSaveExamQuestion = async () => {
+    if (!selectedExamForQuestions) { toast({ title: 'Select an exam first', variant: 'destructive' }); return; }
+    setIsSaving(true);
+    try {
+      const payload = {
+        exam_id: selectedExamForQuestions,
+        question: examQuestionForm.question,
+        question_type: examQuestionForm.question_type,
+        options: examQuestionForm.question_type === 'mcq' ? examQuestionForm.options.filter(o => o.trim()) : [],
+        correct_answer: examQuestionForm.question_type === 'mcq' ? examQuestionForm.correct_answer : null,
+        marks: examQuestionForm.marks,
+        sort_order: examQuestions.filter(q => q.exam_id === selectedExamForQuestions).length,
+      };
+      const { error } = await (supabase as any).from('exam_questions').insert(payload);
+      if (error) throw error;
+      toast({ title: 'Question added!' });
+      setExamQuestionDialogOpen(false);
+      setExamQuestionForm({ question: '', question_type: 'mcq', options: ['', '', '', ''], correct_answer: '', marks: 5 });
+      await fetchExamQuestions();
+    } catch (e: any) { toast({ title: 'Error', description: e.message, variant: 'destructive' }); }
+    setIsSaving(false);
+  };
+
+  const handleDeleteExamQuestion = async (id: string) => {
+    try {
+      const { error } = await (supabase as any).from('exam_questions').delete().eq('id', id);
+      if (error) throw error;
+      toast({ title: 'Question deleted' });
+      await fetchExamQuestions();
+    } catch (e: any) { toast({ title: 'Error', description: e.message, variant: 'destructive' }); }
+  };
+
+  const handleToggleExamActive = async (id: string, currentState: boolean) => {
+    try {
+      const { error } = await (supabase as any).from('exams').update({ is_active: !currentState }).eq('id', id);
+      if (error) throw error;
+      toast({ title: !currentState ? 'Exam activated' : 'Exam deactivated' });
+      await fetchExamsList();
+    } catch (e: any) { toast({ title: 'Error', description: e.message, variant: 'destructive' }); }
+  };
+
   const fetchTabData = async (tab: string) => {
     switch (tab) {
       case 'events': await fetchEvents(); break;
@@ -444,6 +552,8 @@ const AdminDashboard = () => {
       case 'messages': await fetchMessages(); break;
       case 'qrscan': await fetchRegistrations(); break;
       case 'sip_attendance': await fetchSipAttendance(); break;
+      case 'test_questions': await Promise.all([fetchExamsList(), fetchExamQuestions()]); break;
+      case 'test_results': await Promise.all([fetchExamsList(), fetchExamSubmissions()]); break;
     }
   };
 
@@ -2109,6 +2219,8 @@ const AdminDashboard = () => {
                   { value: 'qrscan', label: 'QR Scan' },
                   { value: 'attendance', label: 'Attendance' },
                   { value: 'sip_attendance', label: '📋 SIP Attendance' },
+                  { value: 'test_questions', label: '📝 Test Questions' },
+                  { value: 'test_results', label: '📊 Test Results' },
                   { value: 'messages', label: 'Messages' },
                 ].map((tab) => (
                   <TabsTrigger key={tab.value} value={tab.value} className="rounded-full px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-900 hover:bg-white data-[state=active]:bg-slate-900 data-[state=active]:text-white data-[state=active]:shadow-md transition-all whitespace-nowrap">
@@ -3234,6 +3346,219 @@ const AdminDashboard = () => {
                 )}
               </DialogContent>
             </Dialog>
+
+            {/* ==================== TEST QUESTIONS TAB ==================== */}
+            <TabsContent value="test_questions" className="mt-0">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold">Test Management</h2>
+                <div className="flex gap-2">
+                  <Button onClick={() => { setEditingExam(null); setExamForm({ title: '', description: '', duration_minutes: 30, max_violations: 2 }); setExamDialogOpen(true); }} className="rounded-xl">
+                    <Plus className="w-4 h-4 mr-2" /> Create Exam
+                  </Button>
+                </div>
+              </div>
+
+              {/* Exam List */}
+              <div className="space-y-4 mb-8">
+                {examsList.length === 0 ? (
+                  <div className="text-center py-12 bg-card border border-border rounded-2xl"><p className="text-muted-foreground">No exams created yet.</p></div>
+                ) : examsList.map((exam: any) => {
+                  const qCount = examQuestions.filter(q => q.exam_id === exam.id).length;
+                  return (
+                    <div key={exam.id} className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="text-lg font-bold">{exam.title}</h3>
+                            <Badge variant={exam.is_active ? 'default' : 'secondary'}>{exam.is_active ? 'Active' : 'Inactive'}</Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-2">{exam.description || 'No description'}</p>
+                          <div className="flex gap-4 text-xs text-muted-foreground">
+                            <span>⏱ {exam.duration_minutes} min</span>
+                            <span>⚠️ Max {exam.max_violations} violations</span>
+                            <span>📝 {qCount} questions</span>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="outline" onClick={() => handleToggleExamActive(exam.id, exam.is_active)}>
+                            {exam.is_active ? <Lock className="w-3 h-3 mr-1" /> : <Unlock className="w-3 h-3 mr-1" />}
+                            {exam.is_active ? 'Deactivate' : 'Activate'}
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => { setEditingExam(exam); setExamForm({ title: exam.title, description: exam.description || '', duration_minutes: exam.duration_minutes, max_violations: exam.max_violations }); setExamDialogOpen(true); }}>
+                            <Edit className="w-3 h-3" />
+                          </Button>
+                          <Button size="sm" variant="destructive" onClick={() => handleDeleteExam(exam.id)}>
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Questions for this exam */}
+                      {qCount > 0 && (
+                        <div className="mt-4 border-t pt-4 space-y-2">
+                          <h4 className="text-sm font-semibold mb-2">Questions:</h4>
+                          {examQuestions.filter(q => q.exam_id === exam.id).map((q: any, idx: number) => (
+                            <div key={q.id} className="flex items-start justify-between bg-slate-50 rounded-lg p-3 text-sm">
+                              <div className="flex-1">
+                                <span className="font-medium">Q{idx + 1}.</span> {q.question}
+                                <div className="flex gap-2 mt-1">
+                                  <Badge variant="outline" className="text-xs">{q.question_type === 'mcq' ? 'MCQ' : 'Paragraph'}</Badge>
+                                  <Badge variant="outline" className="text-xs">{q.marks} marks</Badge>
+                                  {q.question_type === 'mcq' && q.correct_answer && <Badge className="text-xs bg-green-100 text-green-700">Answer: {q.correct_answer}</Badge>}
+                                </div>
+                                {q.question_type === 'mcq' && q.options && (
+                                  <div className="mt-1 text-xs text-muted-foreground">
+                                    Options: {(typeof q.options === 'string' ? JSON.parse(q.options) : q.options).join(' | ')}
+                                  </div>
+                                )}
+                              </div>
+                              <Button size="sm" variant="ghost" onClick={() => handleDeleteExamQuestion(q.id)}>
+                                <Trash2 className="w-3 h-3 text-red-500" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      <Button size="sm" variant="outline" className="mt-4" onClick={() => { setSelectedExamForQuestions(exam.id); setExamQuestionForm({ question: '', question_type: 'mcq', options: ['', '', '', ''], correct_answer: '', marks: 5 }); setExamQuestionDialogOpen(true); }}>
+                        <Plus className="w-3 h-3 mr-1" /> Add Question
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Create/Edit Exam Dialog */}
+              <Dialog open={examDialogOpen} onOpenChange={setExamDialogOpen}>
+                <DialogContent className="max-w-lg">
+                  <DialogHeader><DialogTitle>{editingExam ? 'Edit Exam' : 'Create New Exam'}</DialogTitle></DialogHeader>
+                  <div className="space-y-4">
+                    <div><Label>Title *</Label><Input value={examForm.title} onChange={e => setExamForm({ ...examForm, title: e.target.value })} placeholder="e.g. Data Structures Test 1" /></div>
+                    <div><Label>Description</Label><Textarea value={examForm.description} onChange={e => setExamForm({ ...examForm, description: e.target.value })} placeholder="Brief description..." /></div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div><Label>Duration (minutes)</Label><Input type="number" value={examForm.duration_minutes} onChange={e => setExamForm({ ...examForm, duration_minutes: parseInt(e.target.value) || 30 })} /></div>
+                      <div><Label>Max Violations</Label><Input type="number" value={examForm.max_violations} onChange={e => setExamForm({ ...examForm, max_violations: parseInt(e.target.value) || 2 })} /></div>
+                    </div>
+                    <Button onClick={handleSaveExam} disabled={!examForm.title.trim() || isSaving} className="w-full">
+                      {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
+                      {editingExam ? 'Update Exam' : 'Create Exam'}
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+
+              {/* Add Question Dialog */}
+              <Dialog open={examQuestionDialogOpen} onOpenChange={setExamQuestionDialogOpen}>
+                <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+                  <DialogHeader><DialogTitle>Add Question</DialogTitle></DialogHeader>
+                  <div className="space-y-4">
+                    <div><Label>Question *</Label><Textarea value={examQuestionForm.question} onChange={e => setExamQuestionForm({ ...examQuestionForm, question: e.target.value })} placeholder="Enter the question..." /></div>
+                    <div>
+                      <Label>Type</Label>
+                      <select value={examQuestionForm.question_type} onChange={e => setExamQuestionForm({ ...examQuestionForm, question_type: e.target.value })} className="w-full p-2 border rounded-lg">
+                        <option value="mcq">Multiple Choice (Auto-graded)</option>
+                        <option value="paragraph">Paragraph Answer (Manual grading)</option>
+                      </select>
+                    </div>
+                    <div><Label>Marks</Label><Input type="number" value={examQuestionForm.marks} onChange={e => setExamQuestionForm({ ...examQuestionForm, marks: parseInt(e.target.value) || 5 })} /></div>
+
+                    {examQuestionForm.question_type === 'mcq' && (
+                      <>
+                        <div>
+                          <Label>Options</Label>
+                          {examQuestionForm.options.map((opt, idx) => (
+                            <div key={idx} className="flex gap-2 mt-2">
+                              <Input value={opt} onChange={e => { const newOpts = [...examQuestionForm.options]; newOpts[idx] = e.target.value; setExamQuestionForm({ ...examQuestionForm, options: newOpts }); }} placeholder={`Option ${String.fromCharCode(65 + idx)}`} />
+                              {idx >= 2 && <Button size="sm" variant="ghost" onClick={() => { const newOpts = examQuestionForm.options.filter((_, i) => i !== idx); setExamQuestionForm({ ...examQuestionForm, options: newOpts }); }}><Trash2 className="w-3 h-3" /></Button>}
+                            </div>
+                          ))}
+                          {examQuestionForm.options.length < 6 && (
+                            <Button size="sm" variant="outline" className="mt-2" onClick={() => setExamQuestionForm({ ...examQuestionForm, options: [...examQuestionForm.options, ''] })}>
+                              <Plus className="w-3 h-3 mr-1" /> Add Option
+                            </Button>
+                          )}
+                        </div>
+                        <div>
+                          <Label>Correct Answer *</Label>
+                          <select value={examQuestionForm.correct_answer} onChange={e => setExamQuestionForm({ ...examQuestionForm, correct_answer: e.target.value })} className="w-full p-2 border rounded-lg">
+                            <option value="">Select correct answer...</option>
+                            {examQuestionForm.options.filter(o => o.trim()).map((opt, idx) => (
+                              <option key={idx} value={opt}>{String.fromCharCode(65 + idx)}. {opt}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </>
+                    )}
+
+                    <Button onClick={handleSaveExamQuestion} disabled={!examQuestionForm.question.trim() || isSaving || (examQuestionForm.question_type === 'mcq' && !examQuestionForm.correct_answer)} className="w-full">
+                      {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
+                      Add Question
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </TabsContent>
+
+            {/* ==================== TEST RESULTS TAB ==================== */}
+            <TabsContent value="test_results" className="mt-0">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold">Test Results</h2>
+                <div className="flex gap-2 items-center">
+                  <select value={examResultsFilter} onChange={e => setExamResultsFilter(e.target.value)} className="p-2 border rounded-lg text-sm">
+                    <option value="all">All Exams</option>
+                    {examsList.map((exam: any) => (<option key={exam.id} value={exam.id}>{exam.title}</option>))}
+                  </select>
+                  <Button size="sm" variant="outline" onClick={() => fetchExamSubmissions()}><RefreshCw className="w-3 h-3 mr-1" /> Refresh</Button>
+                </div>
+              </div>
+
+              <div className="bg-card border border-border rounded-2xl overflow-x-auto shadow-sm">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Student Name</TableHead>
+                      <TableHead>Roll Number</TableHead>
+                      <TableHead>Exam</TableHead>
+                      <TableHead>Score</TableHead>
+                      <TableHead>Violations</TableHead>
+                      <TableHead>Time Used</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Date</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {examSubmissions
+                      .filter((s: any) => examResultsFilter === 'all' || s.exam_id === examResultsFilter)
+                      .map((sub: any) => (
+                        <TableRow key={sub.id}>
+                          <TableCell className="font-bold">{sub.student_name}</TableCell>
+                          <TableCell>{sub.roll_number}</TableCell>
+                          <TableCell>{sub.exams?.title || 'Unknown'}</TableCell>
+                          <TableCell>
+                            <span className={`font-bold ${sub.total_marks > 0 && (sub.score / sub.total_marks) >= 0.4 ? 'text-green-600' : 'text-red-600'}`}>
+                              {sub.score}/{sub.total_marks}
+                            </span>
+                            <span className="text-xs text-muted-foreground ml-1">({sub.total_marks > 0 ? Math.round((sub.score / sub.total_marks) * 100) : 0}%)</span>
+                          </TableCell>
+                          <TableCell>
+                            <span className={sub.violations > 0 ? 'text-red-600 font-bold' : 'text-green-600'}>{sub.violations}</span>
+                          </TableCell>
+                          <TableCell>{Math.floor((sub.time_used_seconds || 0) / 60)}m {(sub.time_used_seconds || 0) % 60}s</TableCell>
+                          <TableCell>
+                            <Badge variant={sub.status === 'auto_submitted' ? 'destructive' : 'default'}>
+                              {sub.status === 'auto_submitted' ? 'Auto-Submitted' : 'Completed'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{sub.submitted_at ? format(new Date(sub.submitted_at), 'PP p') : '-'}</TableCell>
+                        </TableRow>
+                      ))}
+                    {examSubmissions.filter((s: any) => examResultsFilter === 'all' || s.exam_id === examResultsFilter).length === 0 && (
+                      <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No submissions yet.</TableCell></TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </TabsContent>
 
           </Tabs>
 
