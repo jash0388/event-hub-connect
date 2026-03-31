@@ -60,12 +60,12 @@ export function Footer() {
               <div className="relative h-10 w-10 overflow-hidden rounded-full border border-border/50 bg-background/50 shadow-inner">
                 <img
                   src="/logo.png"
-                  alt="DataNauts"
+                  alt="Sphoorhty"
                   className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
                 />
               </div>
               <span className="text-2xl font-bold tracking-tight text-gradient">
-                DataNauts
+                Sphoorhty
               </span>
             </Link>
             <p className="text-muted-foreground max-w-sm mb-6 leading-relaxed">
@@ -158,11 +158,11 @@ export function Footer() {
         {/* Bottom */}
         <div className="mt-16 pt-8 border-t border-border flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground">
-            © 2026 DataNauts. All rights reserved.
+            © 2026 Sphoorhty. All rights reserved.
           </p>
           <p className="text-sm text-muted-foreground flex items-center gap-1">
             Made with <Heart className="w-4 h-4 text-[hsl(var(--accent))] fill-current" /> for
-            the students of SPHN
+            the students of SPHOORTHY ENGINEERING COLLEGE
           </p>
         </div>
       </div>
