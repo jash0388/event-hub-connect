@@ -340,16 +340,32 @@ export function useAuth() {
               displayName: firebaseUser.displayName,
               photoURL: firebaseUser.photoURL,
             });
-          } else {
-            await handleFirebaseUser(null);
           }
         });
       } else {
-        // No Firebase config - ensure loading is set to false
-        setGlobalState({ loading: false });
+        // No Firebase config - explicitly check supabase one last time to avoid hanging
+        if (!supabaseChecked) {
+          const { data: { session } } = await supabase.auth.getSession();
+          supabaseChecked = true;
+          if (session?.user) {
+            const isAdmin = await getAdminStatus(session.user.id);
+            setGlobalState({
+              user: session.user,
+              session,
+              isAdmin,
+              loading: false,
+              isFirebaseUser: false,
+            });
+          } else {
+            setGlobalState({ loading: false });
+          }
+        } else {
+          setGlobalState({ loading: false });
+        }
       }
     } catch (err: any) {
       console.error('[useAuth] Auth Init Error:', err);
+      // Ensure we don't get stuck in loading state on critical failure
       setGlobalState({ loading: false, error: err });
     }
   };

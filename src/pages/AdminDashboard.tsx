@@ -453,6 +453,7 @@ const AdminDashboard = () => {
 
   const fetchExamQuestions = async () => {
     try {
+      // Fetch only if needed or keep it efficient
       const { data, error } = await (supabase as any).from('exam_questions').select('*, exams(title)').order('created_at', { ascending: false });
       if (error) throw error;
       setExamQuestions(data || []);
@@ -581,17 +582,36 @@ const AdminDashboard = () => {
         question: examQuestionForm.question,
         question_type: examQuestionForm.question_type,
         options: examQuestionForm.question_type === 'mcq' ? examQuestionForm.options.filter(o => o.trim()) : [],
-        correct_answer: examQuestionForm.question_type === 'mcq' ? examQuestionForm.correct_answer : null,
+        // FIX: Always save correct_answer if provided (needed for paragraph/code auto-grading)
+        correct_answer: examQuestionForm.correct_answer || null,
         marks: examQuestionForm.marks,
         sort_order: examQuestions.filter(q => q.exam_id === selectedExamForQuestions).length,
       };
-      const { error } = await (supabase as any).from('exam_questions').insert(payload);
+      
+      const { data, error } = await (supabase as any)
+        .from('exam_questions')
+        .insert(payload)
+        .select('*, exams(title)')
+        .single();
+        
       if (error) throw error;
+      
       toast({ title: 'Question added!' });
+      
+      // OPTIMISTIC UPDATE: Add to local state instead of full re-fetch
+      if (data) {
+        setExamQuestions(prev => [data, ...prev]);
+      }
+      
       setExamQuestionDialogOpen(false);
       setExamQuestionForm({ question: '', question_type: 'mcq', options: ['', '', '', ''], correct_answer: '', marks: 5 });
-      await fetchExamQuestions();
-    } catch (e: any) { toast({ title: 'Error', description: e.message, variant: 'destructive' }); }
+      
+      // Explicitly refresh exams list to update question counts in UI
+      await fetchExamsList();
+    } catch (e: any) { 
+      console.error('Save error:', e);
+      toast({ title: 'Error', description: e.message, variant: 'destructive' }); 
+    }
     setIsSaving(false);
   };
 
