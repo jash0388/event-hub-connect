@@ -60,7 +60,7 @@ export function Header() {
               />
             </div>
             <span className="text-2xl font-bold tracking-tight text-gradient">
-              DataNauts
+              Sphoorhty
             </span>
           </Link>
 

@@ -574,8 +574,20 @@ const AdminDashboard = () => {
   };
 
   const handleSaveExamQuestion = async () => {
-    if (!selectedExamForQuestions) { toast({ title: 'Select an exam first', variant: 'destructive' }); return; }
+    if (!selectedExamForQuestions) { 
+      toast({ title: 'Select an exam first', variant: 'destructive' }); 
+      return; 
+    }
+    
     setIsSaving(true);
+    
+    // Safety timeout: reset button after 20 seconds if DB hangs for any reason
+    const safetyTimeout = setTimeout(() => {
+      setIsSaving(false);
+      console.warn('[AdminDashboard] Saving question timed out');
+      toast({ title: 'Sync Timeout', description: 'Database response took too long. Check your connection.', variant: 'destructive' });
+    }, 20000);
+
     try {
       const payload = {
         exam_id: selectedExamForQuestions,
@@ -585,8 +597,10 @@ const AdminDashboard = () => {
         // FIX: Always save correct_answer if provided (needed for paragraph/code auto-grading)
         correct_answer: examQuestionForm.correct_answer || null,
         marks: examQuestionForm.marks,
-        sort_order: examQuestions.filter(q => q.exam_id === selectedExamForQuestions).length,
+        sort_order: (examQuestions || []).filter(q => q.exam_id === selectedExamForQuestions).length,
       };
+      
+      console.log('[AdminDashboard] Attempting to save question:', payload);
       
       const { data, error } = await (supabase as any)
         .from('exam_questions')
@@ -600,25 +614,24 @@ const AdminDashboard = () => {
       
       // OPTIMISTIC UPDATE: Add to local state
       if (data) {
-        // Find the exam title from the existing exams list for the local state
-        const currentExam = examsList.find(e => e.id === selectedExamForQuestions);
-        const dataWithExam = {
+        setExamQuestions(prev => [{
           ...data,
-          exams: { title: currentExam?.title || 'Unknown Exam' }
-        };
-        setExamQuestions(prev => [dataWithExam, ...prev]);
+          exams: { title: (examsList || []).find(e => e.id === selectedExamForQuestions)?.title || 'Exam' }
+        }, ...prev]);
       }
       
       setExamQuestionDialogOpen(false);
       setExamQuestionForm({ question: '', question_type: 'mcq', options: ['', '', '', ''], correct_answer: '', marks: 5 });
       
-      // Refresh list to update question counts
+      // Refresh list to update question counts in the background
       fetchExamsList();
     } catch (e: any) { 
-      console.error('Save error details:', e);
-      toast({ title: 'Error Saving Question', description: e.message || "Is the database connected?", variant: 'destructive' }); 
+      console.error('[AdminDashboard] Save error details:', e);
+      toast({ title: 'Error Saving Question', description: e.message || "Failed to save question to database", variant: 'destructive' }); 
+    } finally {
+      clearTimeout(safetyTimeout);
+      setIsSaving(false);
     }
-    setIsSaving(false);
   };
 
   const handleDeleteExamQuestion = async (id: string) => {
@@ -2948,7 +2961,9 @@ const AdminDashboard = () => {
               <div className="flex flex-col gap-6">
                 <div className="flex items-center gap-3">
                   <QrCode className="w-8 h-8 text-blue-600" />
-                  <h2 className="text-2xl font-bold">Check-in Terminal</h2>
+                  <span className="text-2xl font-bold tracking-tight text-gradient">
+                    Sphoorhty
+                  </span>
                 </div>
                 <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-lg min-h-[350px] md:min-h-[450px] flex items-center justify-center relative">
                   {scannedQRResult ? (
