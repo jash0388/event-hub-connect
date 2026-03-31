@@ -22,7 +22,7 @@ interface ExamQuestion {
   id: string;
   question: string;
   options: string[];
-  question_type: 'mcq' | 'paragraph';
+  question_type: 'mcq' | 'paragraph' | 'code';
   correct_answer: string | null;
   marks: number;
   sort_order: number;
@@ -634,17 +634,37 @@ export default function ExamPage() {
 
     const timeUsed = Math.floor((Date.now() - startTime) / 1000);
 
-    // Auto-grade MCQ questions
+    // Improved Auto-grading
     let score = 0;
     let totalMarks = 0;
     questions.forEach(q => {
       totalMarks += q.marks;
-      if (q.question_type === 'mcq' && q.correct_answer) {
-        if (answers[q.id]?.trim().toLowerCase() === q.correct_answer.trim().toLowerCase()) {
+      const userAnswer = (answers[q.id] || '').trim().toLowerCase();
+      const correctAnswer = (q.correct_answer || '').trim().toLowerCase();
+
+      if (!correctAnswer) return; // Skip if no answer key provided by admin
+
+      if (q.question_type === 'mcq') {
+        if (userAnswer === correctAnswer) {
+          score += q.marks;
+        }
+      } else if (q.question_type === 'paragraph' || q.question_type === 'code') {
+        // Support Keyword matching: If admin provides comma-separated keywords
+        if (correctAnswer.includes(',')) {
+          const keywords = correctAnswer.split(',').map(k => k.trim().toLowerCase());
+          const foundKeywords = keywords.filter(k => userAnswer.includes(k));
+          // If all keywords found, give full marks
+          if (foundKeywords.length === keywords.length) {
+            score += q.marks;
+          } else if (foundKeywords.length > 0) {
+            // Partial marks logic
+            score += Math.floor((foundKeywords.length / keywords.length) * q.marks);
+          }
+        } else if (userAnswer === correctAnswer || userAnswer.includes(correctAnswer)) {
+          // Exact match or contains for single-answer paragraph/code
           score += q.marks;
         }
       }
-      // Paragraph questions are graded manually by admin
     });
 
     setResultScore(score);

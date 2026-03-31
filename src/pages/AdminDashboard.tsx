@@ -3402,9 +3402,9 @@ const AdminDashboard = () => {
                               <div className="flex-1">
                                 <span className="font-medium">Q{idx + 1}.</span> {q.question}
                                 <div className="flex gap-2 mt-1">
-                                  <Badge variant="outline" className="text-xs">{q.question_type === 'mcq' ? 'MCQ' : 'Paragraph'}</Badge>
+                                  <Badge variant="outline" className="text-xs">{q.question_type === 'mcq' ? 'MCQ' : q.question_type === 'code' ? 'Code/Query' : 'Paragraph'}</Badge>
                                   <Badge variant="outline" className="text-xs">{q.marks} marks</Badge>
-                                  {q.question_type === 'mcq' && q.correct_answer && <Badge className="text-xs bg-green-100 text-green-700">Answer: {q.correct_answer}</Badge>}
+                                  {q.correct_answer && <Badge className="text-xs bg-green-100 text-green-700">Auto-grading: {q.correct_answer}</Badge>}
                                 </div>
                                 {q.question_type === 'mcq' && q.options && (
                                   <div className="mt-1 text-xs text-muted-foreground">
@@ -3456,13 +3456,14 @@ const AdminDashboard = () => {
                     <div>
                       <Label>Type</Label>
                       <select value={examQuestionForm.question_type} onChange={e => setExamQuestionForm({ ...examQuestionForm, question_type: e.target.value })} className="w-full p-2 border rounded-lg">
-                        <option value="mcq">Multiple Choice (Auto-graded)</option>
-                        <option value="paragraph">Paragraph Answer (Manual grading)</option>
+                        <option value="mcq">Multiple Choice</option>
+                        <option value="paragraph">Paragraph Answer</option>
+                        <option value="code">Query / Code Challenge</option>
                       </select>
                     </div>
                     <div><Label>Marks</Label><Input type="number" value={examQuestionForm.marks} onChange={e => setExamQuestionForm({ ...examQuestionForm, marks: parseInt(e.target.value) || 5 })} /></div>
 
-                    {examQuestionForm.question_type === 'mcq' && (
+                    {examQuestionForm.question_type === 'mcq' ? (
                       <>
                         <div>
                           <Label>Options</Label>
@@ -3488,6 +3489,19 @@ const AdminDashboard = () => {
                           </select>
                         </div>
                       </>
+                    ) : (
+                      <div>
+                        <Label>Correct Answer (Answer Key)</Label>
+                        <Input 
+                          value={examQuestionForm.correct_answer} 
+                          onChange={e => setExamQuestionForm({ ...examQuestionForm, correct_answer: e.target.value })}
+                          placeholder="e.g. O(n log n) or keyword1, keyword2, keyword3"
+                        />
+                        <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1">
+                          <Info className="w-3 h-3" />
+                          For paragraph/code, use comma-separated keywords to enable partial auto-grading.
+                        </p>
+                      </div>
                     )}
 
                     <Button onClick={handleSaveExamQuestion} disabled={!examQuestionForm.question.trim() || isSaving || (examQuestionForm.question_type === 'mcq' && !examQuestionForm.correct_answer)} className="w-full">
