@@ -726,10 +726,32 @@ export default function ExamPage() {
   }
 
   // === EXAM PHASE ===
-  const q = questions[currentQuestion];
-  if (!q) return null;
+  if (phase === 'exam') {
+    if (loadingQuestions) {
+      return (
+        <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+          <Loader2 className="w-10 h-10 animate-spin text-indigo-500" />
+        </div>
+      );
+    }
 
-  return (
+    if (questions.length === 0) {
+      return (
+        <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-center">
+          <div className="w-20 h-20 bg-amber-500/10 rounded-full flex items-center justify-center mb-6">
+            <ClipboardList className="w-10 h-10 text-amber-500" />
+          </div>
+          <h2 className="text-2xl font-bold text-white mb-2">No Questions Found</h2>
+          <p className="text-slate-400 max-w-md mb-8">This exam doesn't have any questions yet. Please contact the administrator.</p>
+          <Button onClick={() => setPhase('select')} className="bg-indigo-600">Back to Test Selection</Button>
+        </div>
+      );
+    }
+
+    const q = questions[currentQuestion];
+    if (!q) return null;
+
+    return (
     <div
       className="h-screen w-screen flex flex-col bg-slate-950 overflow-hidden select-none"
       style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
@@ -919,4 +941,7 @@ export default function ExamPage() {
       </div>
     </div>
   );
+ }
+
+ return null;
 }

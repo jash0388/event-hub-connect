@@ -29,8 +29,11 @@ export function useExamSecurity(options: ExamSecurityOptions = {}) {
   const [tabSwitchCount, setTabSwitchCount] = useState(0);
   const devtoolsCheckInterval = useRef<ReturnType<typeof setInterval> | null>(null);
   const violationCountRef = useRef(0);
+  const isGracePeriodRef = useRef(true);
 
   const addViolation = useCallback((type: Violation['type'], message: string) => {
+    if (isGracePeriodRef.current) return; // Ignore violations during setup/transition
+    
     const violation: Violation = { type, timestamp: new Date(), message };
     
     setViolations(prev => {
@@ -82,7 +85,15 @@ export function useExamSecurity(options: ExamSecurityOptions = {}) {
   }, []);
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled) {
+      isGracePeriodRef.current = true;
+      return;
+    }
+
+    // End grace period after 1.5 seconds to allow UI/Fullscreen transitions
+    const timer = setTimeout(() => {
+      isGracePeriodRef.current = false;
+    }, 1500);
 
     // === 1. Tab Switch / Visibility Detection ===
     const handleVisibilityChange = () => {
@@ -93,8 +104,10 @@ export function useExamSecurity(options: ExamSecurityOptions = {}) {
     };
 
     const handleBlur = () => {
-      // Window lost focus (clicking outside browser, switching apps)
-      addViolation('tab_switch', '⚠️ Window focus lost! Stay on the exam page.');
+      // Small safety check — some browsers fire blur on fullscreen transition
+      if (!isGracePeriodRef.current) {
+        addViolation('tab_switch', '⚠️ Window focus lost! Stay on the exam page.');
+      }
     };
 
     // === 2. Copy/Paste/Cut/Drag Prevention ===
