@@ -157,7 +157,11 @@ function CodeEditorModal({
     const blockDragOver = (e: DragEvent) => { e.preventDefault(); };
 
     // 2. Right-click context menu disabled
-    const blockContextMenu = (e: MouseEvent) => { e.preventDefault(); };
+    const blockContextMenu = (e: MouseEvent) => { 
+      e.preventDefault(); 
+      e.stopImmediatePropagation();
+      toast({ title: "Right-click Disabled", description: "Context menu is blocked for security.", variant: "destructive" });
+    };
 
     // 3. Block DevTools keyboard shortcuts
     const blockDevToolsKeys = (e: KeyboardEvent) => {
@@ -570,11 +574,23 @@ Give 1 short hint (max 1 sentence) to help them proceed. Make sure it is complet
                   ref={codeRef}
                   readOnly={isReadOnly}
                   value={code}
-                  onChange={(e) => updateCode(e.target.value)}
+                  onChange={(e) => {
+                    const newVal = e.target.value;
+                    // PASTE MONITOR: Detect sudden large injections (heuristic > 40 chars difference in 1 event)
+                    if (newVal.length - code.length > 40 && !isReadOnly) {
+                      e.target.value = code; // Revert textarea DOM value
+                      toast({ title: "🚨 Potential Paste Detected", description: "Large text injection blocked. Please type your code.", variant: "destructive" });
+                    } else {
+                      updateCode(newVal);
+                    }
+                  }}
                   onPaste={handlePaste}
                   onDrop={handleDrop}
                   onDragOver={handleDragOver}
                   onKeyDown={handleKeyDown}
+                  onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                  onCopy={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                  onCut={(e) => { e.preventDefault(); e.stopPropagation(); }}
                   placeholder={isReadOnly ? "// Read only mode" : "// Write your code here..."}
                   className="w-full h-full p-6 bg-transparent text-slate-800 font-mono text-[14px] leading-[1.7] resize-none focus:outline-none placeholder:text-slate-400"
                   spellCheck={false}
