@@ -1735,6 +1735,13 @@ const AdminDashboard = () => {
   const handleEventSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
+    
+    // Safety timeout: reset button after 20 seconds if DB hangs for any reason
+    const safetyTimeout = setTimeout(() => {
+      setIsSaving(false);
+      console.warn('[AdminDashboard] Event submission timed out');
+      toast({ title: 'Sync Timeout', description: 'Database response took too long. Check your connection.', variant: 'destructive' });
+    }, 20000);
 
     try {
       const dateISO = new Date(eventForm.datetime).toISOString();
@@ -1774,12 +1781,14 @@ const AdminDashboard = () => {
       setEventDialogOpen(false);
       fetchEvents();
     } catch (error: any) {
+      console.error('[AdminDashboard] Event save error:', error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Failed to save event. Check if the database columns exist.",
         variant: "destructive",
       });
     } finally {
+      clearTimeout(safetyTimeout);
       setIsSaving(false);
     }
   };
