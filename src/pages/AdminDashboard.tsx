@@ -591,26 +591,32 @@ const AdminDashboard = () => {
       const { data, error } = await (supabase as any)
         .from('exam_questions')
         .insert(payload)
-        .select('*, exams(title)')
+        .select()
         .single();
         
       if (error) throw error;
       
       toast({ title: 'Question added!' });
       
-      // OPTIMISTIC UPDATE: Add to local state instead of full re-fetch
+      // OPTIMISTIC UPDATE: Add to local state
       if (data) {
-        setExamQuestions(prev => [data, ...prev]);
+        // Find the exam title from the existing exams list for the local state
+        const currentExam = examsList.find(e => e.id === selectedExamForQuestions);
+        const dataWithExam = {
+          ...data,
+          exams: { title: currentExam?.title || 'Unknown Exam' }
+        };
+        setExamQuestions(prev => [dataWithExam, ...prev]);
       }
       
       setExamQuestionDialogOpen(false);
       setExamQuestionForm({ question: '', question_type: 'mcq', options: ['', '', '', ''], correct_answer: '', marks: 5 });
       
-      // Explicitly refresh exams list to update question counts in UI
-      await fetchExamsList();
+      // Refresh list to update question counts
+      fetchExamsList();
     } catch (e: any) { 
-      console.error('Save error:', e);
-      toast({ title: 'Error', description: e.message, variant: 'destructive' }); 
+      console.error('Save error details:', e);
+      toast({ title: 'Error Saving Question', description: e.message || "Is the database connected?", variant: 'destructive' }); 
     }
     setIsSaving(false);
   };

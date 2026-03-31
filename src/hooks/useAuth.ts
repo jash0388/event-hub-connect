@@ -55,7 +55,7 @@ const getSavedFirebaseUser = (): FirebaseUserData | null => {
 let globalAuthState: AuthState = {
   user: null,
   session: null,
-  isAdmin: false,
+  isAdmin: localStorage.getItem('is-admin') === 'true',
   loading: true,
   error: null,
   isFirebaseUser: false,
@@ -90,6 +90,9 @@ const notifyListeners = () => {
 };
 
 const setGlobalState = (newState: Partial<AuthState>) => {
+  if (newState.isAdmin !== undefined) {
+    localStorage.setItem('is-admin', String(newState.isAdmin));
+  }
   globalAuthState = { ...globalAuthState, ...newState };
   notifyListeners();
 };
