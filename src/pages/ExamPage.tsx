@@ -712,15 +712,33 @@ export default function ExamPage() {
   }, [phase]);
 
   const handleSelectExam = async (exam: Exam) => {
-    // SECURITY: Double check against completed exams before select
-    if (completedExamIds.has(exam.id)) {
+    // 1. Instant state/localStorage check
+    if (completedExamIds.has(exam.id) || localStorage.getItem(`completed_${exam.id}`)) {
       toast({ title: "Access Denied", description: "You have already completed this examination.", variant: "destructive" });
       return;
     }
 
-    setSelectedExam(exam);
     setLoadingQuestions(true);
     try {
+      // 2. BULLETPROOF SERVER CHECK: Hit DB again to ensure no sneaky dual-sessions
+      if (userId) {
+        const { data: existing } = await (supabase as any)
+          .from('exam_submissions')
+          .select('id')
+          .eq('exam_id', exam.id)
+          .eq('user_id', userId)
+          .limit(1);
+
+        if (existing && existing.length > 0) {
+          setCompletedExamIds(prev => new Set([...prev, exam.id]));
+          localStorage.setItem(`completed_${exam.id}`, 'true');
+          toast({ title: "Access Denied", description: "Server records show you have already completed this test.", variant: "destructive" });
+          setLoadingQuestions(false);
+          return;
+        }
+      }
+
+      setSelectedExam(exam);
       const { data, error } = await (supabase as any).from('exam_questions').select('*').eq('exam_id', exam.id).order('sort_order', { ascending: true });
       if (error) throw error;
 
