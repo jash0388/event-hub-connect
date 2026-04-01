@@ -61,21 +61,30 @@ export default function EventDetails() {
     const { user, loading: authLoading } = useAuth();
     const { toast } = useToast();
 
-    // Standardize client for database operations to ensure RLS bypass for Firebase users
+    // Use admin client if available (production bypass for Firebase users)
     const adminClient = useMemo(() => supabaseAdmin || supabase, []);
 
     // Fetch RSVP status
     useEffect(() => {
         const fetchRsvp = async () => {
             if (user && id) {
-                const { data } = await adminClient
-                    .from('event_registrations')
-                    .select('id')
-                    .eq('event_id', id)
-                    .eq('user_id', user.id)
-                    .maybeSingle();
-                if (data) setUserRsvp('going');
-                else setUserRsvp(null);
+                try {
+                    const { data, error } = await adminClient
+                        .from('event_registrations' as any)
+                        .select('id')
+                        .eq('event_id', id)
+                        .eq('user_id', user.id)
+                        .maybeSingle();
+                    
+                    if (data) {
+                        setUserRsvp('going');
+                    } else {
+                        setUserRsvp(null);
+                    }
+                } catch (err) {
+                    console.error("Error fetching RSVP:", err);
+                    setUserRsvp(null);
+                }
             } else {
                 setUserRsvp(null);
             }
@@ -87,17 +96,20 @@ export default function EventDetails() {
     useEffect(() => {
         const fetchAttendeeCount = async () => {
             if (!id) return;
-            const { count } = await adminClient
-                .from('event_registrations')
-                .select('*', { count: 'exact', head: true })
-                .eq('event_id', id);
-            setAttendeeCount(count || 0);
+            try {
+                const { count } = await adminClient
+                    .from('event_registrations' as any)
+                    .select('*', { count: 'exact', head: true })
+                    .eq('event_id', id);
+                setAttendeeCount(count || 0);
+            } catch (err) {
+                console.error("Error fetching count:", err);
+            }
         };
         fetchAttendeeCount();
     }, [id, adminClient]);
 
     const handleRsvp = async () => {
-        // AUTH PROTECTION: Redirect to login if not authenticated
         if (!user) {
             toast({ title: 'Login Required', description: 'Please login to register', variant: 'destructive' });
             navigate('/login', { state: { from: { pathname: window.location.pathname } } });
@@ -108,13 +120,20 @@ export default function EventDetails() {
             setIsRsvping(true);
             try {
                 const { error } = await adminClient
-                    .from('event_registrations')
+                    .from('event_registrations' as any)
                     .delete()
                     .eq('event_id', id)
                     .eq('user_id', user.id);
                 
                 if (error) throw error;
                 
+                // Also update event_attendees for robustness
+                await adminClient
+                    .from('event_attendees' as any)
+                    .delete()
+                    .eq('event_id', id)
+                    .eq('user_id', user.id);
+
                 setUserRsvp(null);
                 setAttendeeCount(prev => Math.max(0, prev - 1));
                 toast({ title: 'Registration Cancelled' });
@@ -138,49 +157,64 @@ export default function EventDetails() {
 
         if (!user) return;
         setIsRsvping(true);
+        
         try {
             const qrCode = `${id}-${user.id}-${Date.now()}`;
 
-            // Double check existing registration using admin client
+            // Check existing
             const { data: existing } = await adminClient
-                .from('event_registrations')
+                .from('event_registrations' as any)
                 .select('id')
                 .eq('event_id', id)
                 .eq('user_id', user.id)
                 .maybeSingle();
 
             if (existing) {
-                toast({ title: 'Already Registered', description: 'You are already registered for this event', variant: 'destructive' });
+                toast({ title: 'Already Registered' });
                 setIsRsvping(false);
                 setShowRegisterDialog(false);
                 setUserRsvp('going');
                 return;
             }
 
-            const { error } = await adminClient
-                .from('event_registrations')
-                .insert({
-                    event_id: id,
-                    user_id: user.id,
-                    qr_code: qrCode,
-                    full_name: registerForm.full_name,
-                    roll_number: registerForm.roll_number,
-                    year: registerForm.year,
-                    event_title: event?.title || 'Event',
-                    event_date: event?.date || new Date().toISOString(),
-                    status: 'going'
-                });
+            // Insert into event_registrations with basic fields only first, to check for success
+            const regPayload: any = {
+                event_id: id,
+                user_id: user.id,
+                qr_code: qrCode,
+                full_name: registerForm.full_name,
+                roll_number: registerForm.roll_number,
+                year: registerForm.year,
+                status: 'going'
+            };
 
-            if (error) {
-                console.error('Registration error details:', error);
-                throw error;
+            // Only add these if they exist in the event record
+            if (event?.title) regPayload.event_title = event.title;
+            if (event?.date) regPayload.event_date = event.date;
+
+            const { error: regError } = await adminClient
+                .from('event_registrations' as any)
+                .insert(regPayload);
+
+            if (regError) {
+                console.error('Core Registration Error:', regError);
+                throw regError;
             }
 
+            // Success! Proceed with UI updates and non-critical tasks
             setShowRegisterDialog(false);
             setUserRsvp('going');
             setAttendeeCount(prev => prev + 1);
 
-            // Add reminder for the event
+            // Parallel insert into legacy table for compatibility
+            adminClient.from('event_attendees' as any).insert({
+                event_id: id,
+                user_id: user.id,
+                rsvp_status: 'going'
+            }).then(({ error }) => {
+                if (error) console.warn("Legacy table insertion failed (non-critical):", error);
+            });
+
             if (event) {
                 addEventReminder({
                     eventId: id!,
@@ -193,28 +227,22 @@ export default function EventDetails() {
                 });
             }
 
-            // Request notification permission and show enhanced toast
             requestNotificationPermission();
 
             if (event) {
                 const timeUntil = getTimeUntilEvent(event.date, event.time);
                 const countdownText = formatCountdown(timeUntil);
-
                 toast({
                     title: '🎉 Registration Successful!',
-                    description: isEventToday(event.date)
-                        ? `You're all set! ${event.title} is happening today!`
-                        : isEventTomorrow(event.date)
-                            ? `You're all set! ${event.title} is tomorrow.`
-                            : `You're registered for ${event.title}. See you in ${countdownText}!`,
+                    description: `You're registered for ${event.title}.`,
                     duration: 5000,
                 });
             }
         } catch (error: any) {
-            console.error('Final Registration Error:', error);
+            console.error('Final Registration Failure:', error);
             toast({ 
-                title: 'Error', 
-                description: error.message || 'Failed to register. Please try again.', 
+                title: 'Registration Failed', 
+                description: error.message || 'There was a problem securing your spot. Please try again or contact support.', 
                 variant: 'destructive' 
             });
         } finally {
@@ -253,7 +281,7 @@ export default function EventDetails() {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-background flex flex-col">
+            <div className="min-h-screen bg-transparent flex flex-col">
                 <Header />
                 <main className="flex-1 flex items-center justify-center">
                     <Loader2 className="w-10 h-10 animate-spin text-foreground" />
@@ -265,7 +293,7 @@ export default function EventDetails() {
 
     if (!event) {
         return (
-            <div className="min-h-screen bg-background flex flex-col">
+            <div className="min-h-screen bg-transparent flex flex-col">
                 <Header />
                 <main className="flex-1 container mx-auto px-6 pt-28 text-center">
                     <h1 className="text-3xl font-bold text-foreground mb-6">Event Not Found</h1>
@@ -284,7 +312,7 @@ export default function EventDetails() {
     const isEventEnded = isBefore(eventStartDate, today);
 
     return (
-        <div className="min-h-screen bg-background flex flex-col">
+        <div className="min-h-screen bg-transparent flex flex-col">
             <Header />
             <main className="flex-1 pt-28 pb-20">
                 <div className="container mx-auto px-6 max-w-5xl">
@@ -294,7 +322,6 @@ export default function EventDetails() {
                     </Link>
 
                     <div className="bg-card rounded-3xl border border-border overflow-hidden animate-fade-in-up">
-                        {/* Hero Section */}
                         <div className="relative aspect-[21/9] bg-secondary">
                             {event.image || event.image_url ? (
                                 <img
@@ -311,7 +338,6 @@ export default function EventDetails() {
 
                         <div className="p-8 md:p-12">
                             <div className="flex flex-col lg:flex-row gap-12">
-                                {/* Left Column: Info */}
                                 <div className="flex-1 space-y-8">
                                     <div className="space-y-4">
                                         <span className="inline-block px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider bg-foreground text-background">
@@ -360,12 +386,11 @@ export default function EventDetails() {
                                     </div>
                                 </div>
 
-                                {/* Right Column: Registration Card */}
                                 <div className="lg:w-80 shrink-0">
                                     <div className="bg-secondary border border-border rounded-2xl p-8 sticky top-28 space-y-6">
                                         <div className="text-center pb-6 border-b border-border">
                                             <p className="text-3xl font-bold text-foreground">Free</p>
-                                            <p className="text-sm text-muted-foreground font-medium mt-1">Unlimited seats available</p>
+                                            <p className="text-sm text-muted-foreground font-medium mt-1">Limited seats available</p>
                                         </div>
 
                                         <div className="space-y-4">
@@ -411,7 +436,7 @@ export default function EventDetails() {
                                                                 title: event.title,
                                                                 text: `Check out this event: ${event.title}`,
                                                                 url: shareUrl
-                                                                });
+                                                            });
                                                         } else {
                                                             await navigator.clipboard.writeText(shareUrl);
                                                             toast({ title: "Link copied!", description: "Event link copied to clipboard" });
