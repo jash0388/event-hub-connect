@@ -14,6 +14,7 @@ import {
     DialogDescription,
     DialogFooter,
 } from "@/components/ui/dialog";
+import { useAuth } from "@/hooks/useAuth";
 import { Loader2, Calendar, MapPin, Clock, ArrowLeft, Users, Check, Heart, Share2 } from "lucide-react";
 import { format, isBefore, startOfDay, parseISO } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -57,12 +58,12 @@ export default function EventDetails() {
         roll_number: "",
         year: ""
     });
+    const { user, loading: authLoading } = useAuth();
     const { toast } = useToast();
 
-    // Check if user is logged in and fetch RSVP status
+    // Fetch RSVP status
     useEffect(() => {
-        const checkUserAndRsvp = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
+        const fetchRsvp = async () => {
             if (user && id) {
                 const { data } = await (supabase
                     .from('event_registrations' as any)
@@ -71,10 +72,12 @@ export default function EventDetails() {
                     .eq('user_id', user.id)
                     .maybeSingle());
                 if (data) setUserRsvp('going');
+            } else {
+                setUserRsvp(null);
             }
         };
-        checkUserAndRsvp();
-    }, [id]);
+        fetchRsvp();
+    }, [id, user]);
 
     // Fetch attendee count
     useEffect(() => {
@@ -90,15 +93,10 @@ export default function EventDetails() {
     }, [id]);
 
     const handleRsvp = async () => {
-        const { data: { user } } = await supabase.auth.getUser();
-
         // AUTH PROTECTION: Redirect to login if not authenticated
         if (!user) {
-            navigate('/login', { state: { message: 'Please login to register for events' } });
-            return;
-        }
-        if (!user) {
             toast({ title: 'Login Required', description: 'Please login to register', variant: 'destructive' });
+            navigate('/login', { state: { from: { pathname: window.location.pathname } } });
             return;
         }
 
@@ -130,10 +128,9 @@ export default function EventDetails() {
             return;
         }
 
+        if (!user) return;
         setIsRsvping(true);
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
 
             const qrCode = `${id}-${user.id}-${Date.now()}`;
 

@@ -652,7 +652,15 @@ Just type your question!`;
                             </div>
                         ) : (
                             <div className="bg-primary/10 p-4 rounded-lg mb-4">
-                                <p className="text-sm text-primary"><Link to="/login" className="underline">Login</Link> to pre-fill your details</p>
+                                <p className="text-sm text-primary">
+                                    <Link 
+                                        to="/login" 
+                                        state={{ from: { pathname: window.location.pathname } }} 
+                                        className="underline"
+                                    >
+                                        Login
+                                    </Link> to pre-fill your details
+                                </p>
                             </div>
                         )}
                         <div className="flex gap-3">

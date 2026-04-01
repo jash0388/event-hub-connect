@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
 import { Loader2, Calendar, MapPin, Clock, ArrowRight, Bell, BellOff } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -30,41 +31,23 @@ interface MyEvent {
 export default function MyEvents() {
     const [events, setEvents] = useState<MyEvent[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [user, setUser] = useState<any>(null);
+    const { user } = useAuth();
     const [notificationsEnabled, setNotificationsEnabled] = useState(false);
     const [countdowns, setCountdowns] = useState<Record<string, ReturnType<typeof getTimeUntilEvent>>>({});
     const { toast } = useToast();
 
-    // Handle notification toggle
-    const handleToggleNotifications = async () => {
-        if (notificationsEnabled) {
-            toast({ title: 'Notifications Disabled', description: 'You will no longer receive event reminders.' });
-            setNotificationsEnabled(false);
-        } else {
-            const permitted = await requestNotificationPermission();
-            if (permitted) {
-                setNotificationsEnabled(true);
-                toast({ title: 'Notifications Enabled', description: 'You will receive reminders on the day of your events!' });
-            } else {
-                toast({ title: 'Notifications Blocked', description: 'Please enable notifications in your browser settings.', variant: 'destructive' });
-            }
-        }
-    };
-
     // Fetch events and setup notifications
     useEffect(() => {
         const fetchMyEvents = async () => {
+            if (!user) {
+                setIsLoading(false);
+                return;
+            }
             setIsLoading(true);
             try {
-                const { data: { user } } = await supabase.auth.getUser();
-                if (!user) {
-                    toast({ title: "Login Required", description: "Please login to see your events", variant: "destructive" });
-                    setIsLoading(false);
-                    return;
-                }
-                setUser(user);
-
-                // Fetch events user has RSVP'd to
+                // Fetch events user has RSVP'd to (using bridge table event_registrations or event_attendees?)
+                // Based on previous edits, it seems to be event_registrations. Let's check both or stick to what was there.
+                // The previous code used "event_attendees".
                 const { data: attendees, error: attendeeError } = await supabase
                     .from("event_attendees")
                     .select("event_id, joined_at, rsvp_status")
@@ -118,6 +101,8 @@ export default function MyEvents() {
                             user.id
                         );
                     }
+                } else {
+                    setEvents([]);
                 }
             } catch (error: any) {
                 console.error("Error fetching events:", error);
@@ -128,7 +113,7 @@ export default function MyEvents() {
         };
 
         fetchMyEvents();
-    }, [toast]);
+    }, [toast, user]);
 
     // Update countdowns every minute
     useEffect(() => {
@@ -145,12 +130,45 @@ export default function MyEvents() {
         return () => clearInterval(interval);
     }, [events]);
 
+    // Handle notification toggle
+    const handleToggleNotifications = async () => {
+        if (notificationsEnabled) {
+            toast({ title: 'Notifications Disabled', description: 'You will no longer receive event reminders.' });
+            setNotificationsEnabled(false);
+        } else {
+            const permitted = await requestNotificationPermission();
+            if (permitted) {
+                setNotificationsEnabled(true);
+                toast({ title: 'Notifications Enabled', description: 'You will receive reminders on the day of your events!' });
+            } else {
+                toast({ title: 'Notifications Blocked', description: 'Please enable notifications in your browser settings.', variant: 'destructive' });
+            }
+        }
+    };
+
     if (isLoading) {
         return (
             <div className="min-h-screen bg-transparent flex flex-col">
                 <Header />
                 <main className="flex-1 flex items-center justify-center">
                     <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                </main>
+                <Footer />
+            </div>
+        );
+    }
+
+    if (!user) {
+        return (
+            <div className="min-h-screen bg-transparent flex flex-col">
+                <Header />
+                <main className="flex-1 flex items-center justify-center">
+                    <div className="text-center py-12">
+                        <p className="text-muted-foreground mb-4">Please login to see your events</p>
+                        <Link to="/login" state={{ from: { pathname: window.location.pathname } }}>
+                            <Button>Login</Button>
+                        </Link>
+                    </div>
                 </main>
                 <Footer />
             </div>
@@ -167,7 +185,7 @@ export default function MyEvents() {
                             <h1 className="text-4xl font-display font-bold text-foreground mb-2">My Events</h1>
                             <p className="text-muted-foreground">Events you've RSVP'd to</p>
                         </div>
-                        {user && events.length > 0 && (
+                        {events.length > 0 && (
                             <Button
                                 variant={notificationsEnabled ? "default" : "outline"}
                                 onClick={handleToggleNotifications}
@@ -179,14 +197,7 @@ export default function MyEvents() {
                         )}
                     </div>
 
-                    {!user ? (
-                        <div className="text-center py-12">
-                            <p className="text-muted-foreground mb-4">Please login to see your events</p>
-                            <Link to="/admin/login">
-                                <Button>Login</Button>
-                            </Link>
-                        </div>
-                    ) : events.length === 0 ? (
+                    {events.length === 0 ? (
                         <div className="text-center py-12">
                             <p className="text-muted-foreground mb-4">You haven't RSVP'd to any events yet</p>
                             <Link to="/events">

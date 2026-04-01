@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import { supabase, supabaseAdmin } from "@/integrations/supabase/client";
 import { signInWithGoogle, hasFirebaseConfig } from "@/integrations/firebase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,28 +37,17 @@ export default function UserAuth() {
   const [isRegistering, setIsRegistering] = useState(false);
 
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
+  const { user: authUser } = useAuth();
 
   useEffect(() => {
-    let isMounted = true;
-
-    const checkUser = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (isMounted && user) {
-          navigate("/", { replace: true });
-        }
-      } catch (error) {
-        // Ignore errors during check
-      }
-    };
-
-    checkUser();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [navigate]);
+    if (authUser) {
+      const from = (location.state as any)?.from?.pathname || "/";
+      console.log('[UserAuth] User already logged in, redirecting to:', from);
+      navigate(from, { replace: true });
+    }
+  }, [authUser, navigate, location]);
 
   const handleGoogleSignIn = async () => {
     setIsGoogleLoading(true);
@@ -120,7 +110,8 @@ export default function UserAuth() {
           setShowRegistration(true);
         } else {
           toast({ title: "Welcome back!", description: "Successfully signed in with Google" });
-          navigate("/", { replace: true });
+          const from = (location.state as any)?.from?.pathname || "/";
+          navigate(from, { replace: true });
         }
       }
     } catch (error: any) {
@@ -168,7 +159,8 @@ export default function UserAuth() {
         description: "Welcome to DataNauts HUB! Your account has been created."
       });
       setShowRegistration(false);
-      navigate("/", { replace: true });
+      const from = (location.state as any)?.from?.pathname || "/";
+      navigate(from, { replace: true });
     } catch (error: any) {
       toast({
         title: "Registration Error",
@@ -194,7 +186,8 @@ export default function UserAuth() {
 
         if (error) throw error;
         toast({ title: "Welcome back!", description: "Login successful" });
-        navigate("/", { replace: true });
+        const from = (location.state as any)?.from?.pathname || "/";
+        navigate(from, { replace: true });
       } else {
         // Sign up with Supabase - show registration popup
         const { data, error } = await supabase.auth.signUp({
