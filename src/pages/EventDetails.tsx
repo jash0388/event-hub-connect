@@ -69,7 +69,7 @@ export default function EventDetails() {
         const fetchRsvp = async () => {
             if (user && id) {
                 try {
-                    const { data, error } = await adminClient
+                    const { data } = await adminClient
                         .from('event_registrations' as any)
                         .select('id')
                         .eq('event_id', id)
@@ -177,20 +177,16 @@ export default function EventDetails() {
                 return;
             }
 
-            // Insert into event_registrations with basic fields only first, to check for success
+            // Minimal payload to avoid schema mismatches on production
+            // Specifically removed 'status', 'event_title', 'event_date' as they may not exist
             const regPayload: any = {
                 event_id: id,
                 user_id: user.id,
                 qr_code: qrCode,
                 full_name: registerForm.full_name,
                 roll_number: registerForm.roll_number,
-                year: registerForm.year,
-                status: 'going'
+                year: registerForm.year
             };
-
-            // Only add these if they exist in the event record
-            if (event?.title) regPayload.event_title = event.title;
-            if (event?.date) regPayload.event_date = event.date;
 
             const { error: regError } = await adminClient
                 .from('event_registrations' as any)
@@ -211,9 +207,7 @@ export default function EventDetails() {
                 event_id: id,
                 user_id: user.id,
                 rsvp_status: 'going'
-            }).then(({ error }) => {
-                if (error) console.warn("Legacy table insertion failed (non-critical):", error);
-            });
+            }).catch(e => console.warn("Legacy table failed:", e));
 
             if (event) {
                 addEventReminder({
@@ -230,8 +224,6 @@ export default function EventDetails() {
             requestNotificationPermission();
 
             if (event) {
-                const timeUntil = getTimeUntilEvent(event.date, event.time);
-                const countdownText = formatCountdown(timeUntil);
                 toast({
                     title: '🎉 Registration Successful!',
                     description: `You're registered for ${event.title}.`,
@@ -242,7 +234,7 @@ export default function EventDetails() {
             console.error('Final Registration Failure:', error);
             toast({ 
                 title: 'Registration Failed', 
-                description: error.message || 'There was a problem securing your spot. Please try again or contact support.', 
+                description: error.message || 'There was a problem. Please try again.', 
                 variant: 'destructive' 
             });
         } finally {
