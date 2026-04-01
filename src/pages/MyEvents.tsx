@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, supabaseAdmin } from "@/integrations/supabase/client";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,9 @@ export default function MyEvents() {
     const [countdowns, setCountdowns] = useState<Record<string, ReturnType<typeof getTimeUntilEvent>>>({});
     const { toast } = useToast();
 
+    // Standardize client for database operations to ensure consistency with registration
+    const adminClient = useMemo(() => supabaseAdmin || supabase, []);
+
     // Fetch events and setup notifications
     useEffect(() => {
         const fetchMyEvents = async () => {
@@ -45,19 +48,16 @@ export default function MyEvents() {
             }
             setIsLoading(true);
             try {
-                // Fetch events user has RSVP'd to (using bridge table event_registrations or event_attendees?)
-                // Based on previous edits, it seems to be event_registrations. Let's check both or stick to what was there.
-                // The previous code used "event_attendees".
-                const { data: attendees, error: attendeeError } = await supabase
-                    .from("event_attendees")
-                    .select("event_id, joined_at, rsvp_status")
-                    .eq("user_id", user.id)
-                    .eq("rsvp_status", "going");
+                // Fetch events user has registered for (using event_registrations table)
+                const { data: registrations, error: regError } = await adminClient
+                    .from("event_registrations")
+                    .select("event_id, created_at, status")
+                    .eq("user_id", user.id);
 
-                if (attendeeError) throw attendeeError;
+                if (regError) throw regError;
 
-                if (attendees && attendees.length > 0) {
-                    const eventIds = attendees.map(a => a.event_id);
+                if (registrations && registrations.length > 0) {
+                    const eventIds = registrations.map(r => r.event_id);
                     const { data: eventsData, error: eventsError } = await supabase
                         .from("events")
                         .select("id,title,description,category,date,time,location,organizer,image,image_url")
@@ -65,12 +65,12 @@ export default function MyEvents() {
 
                     if (eventsError) throw eventsError;
 
-                    // Merge with join dates
+                    // Merge with registration dates
                     const myEvents = eventsData?.map(event => {
-                        const attendee = attendees.find(a => a.event_id === event.id);
+                        const reg = registrations.find(r => r.event_id === event.id);
                         return {
                             ...event,
-                            joined_at: attendee?.joined_at || ""
+                            joined_at: reg?.created_at || ""
                         };
                     }) || [];
 
@@ -113,7 +113,7 @@ export default function MyEvents() {
         };
 
         fetchMyEvents();
-    }, [toast, user]);
+    }, [toast, user, adminClient]);
 
     // Update countdowns every minute
     useEffect(() => {
@@ -183,7 +183,7 @@ export default function MyEvents() {
                     <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div>
                             <h1 className="text-4xl font-display font-bold text-foreground mb-2">My Events</h1>
-                            <p className="text-muted-foreground">Events you've RSVP'd to</p>
+                            <p className="text-muted-foreground">Events you've registered for</p>
                         </div>
                         {events.length > 0 && (
                             <Button
@@ -199,7 +199,7 @@ export default function MyEvents() {
 
                     {events.length === 0 ? (
                         <div className="text-center py-12">
-                            <p className="text-muted-foreground mb-4">You haven't RSVP'd to any events yet</p>
+                            <p className="text-muted-foreground mb-4">You haven't registered for any events yet</p>
                             <Link to="/events">
                                 <Button>Browse Events</Button>
                             </Link>

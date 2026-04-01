@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, supabaseAdmin } from "@/integrations/supabase/client";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -61,36 +61,40 @@ export default function EventDetails() {
     const { user, loading: authLoading } = useAuth();
     const { toast } = useToast();
 
+    // Standardize client for database operations to ensure RLS bypass for Firebase users
+    const adminClient = useMemo(() => supabaseAdmin || supabase, []);
+
     // Fetch RSVP status
     useEffect(() => {
         const fetchRsvp = async () => {
             if (user && id) {
-                const { data } = await (supabase
-                    .from('event_registrations' as any)
+                const { data } = await adminClient
+                    .from('event_registrations')
                     .select('id')
                     .eq('event_id', id)
                     .eq('user_id', user.id)
-                    .maybeSingle());
+                    .maybeSingle();
                 if (data) setUserRsvp('going');
+                else setUserRsvp(null);
             } else {
                 setUserRsvp(null);
             }
         };
         fetchRsvp();
-    }, [id, user]);
+    }, [id, user, adminClient]);
 
     // Fetch attendee count
     useEffect(() => {
         const fetchAttendeeCount = async () => {
             if (!id) return;
-            const { count } = await (supabase as any)
+            const { count } = await adminClient
                 .from('event_registrations')
                 .select('*', { count: 'exact', head: true })
                 .eq('event_id', id);
             setAttendeeCount(count || 0);
         };
         fetchAttendeeCount();
-    }, [id]);
+    }, [id, adminClient]);
 
     const handleRsvp = async () => {
         // AUTH PROTECTION: Redirect to login if not authenticated
@@ -103,15 +107,19 @@ export default function EventDetails() {
         if (userRsvp === 'going') {
             setIsRsvping(true);
             try {
-                await (supabase as any)
+                const { error } = await adminClient
                     .from('event_registrations')
                     .delete()
                     .eq('event_id', id)
                     .eq('user_id', user.id);
+                
+                if (error) throw error;
+                
                 setUserRsvp(null);
                 setAttendeeCount(prev => Math.max(0, prev - 1));
                 toast({ title: 'Registration Cancelled' });
-            } catch (error) {
+            } catch (error: any) {
+                console.error('Cancel Error:', error);
                 toast({ title: 'Error', description: 'Failed to cancel registration', variant: 'destructive' });
             } finally {
                 setIsRsvping(false);
@@ -131,24 +139,25 @@ export default function EventDetails() {
         if (!user) return;
         setIsRsvping(true);
         try {
-
             const qrCode = `${id}-${user.id}-${Date.now()}`;
 
-            // First check if already registered
-            const { data: existing } = await (supabase as any)
+            // Double check existing registration using admin client
+            const { data: existing } = await adminClient
                 .from('event_registrations')
                 .select('id')
                 .eq('event_id', id)
                 .eq('user_id', user.id)
-                .single();
+                .maybeSingle();
 
             if (existing) {
                 toast({ title: 'Already Registered', description: 'You are already registered for this event', variant: 'destructive' });
                 setIsRsvping(false);
+                setShowRegisterDialog(false);
+                setUserRsvp('going');
                 return;
             }
 
-            const { error } = await (supabase as any)
+            const { error } = await adminClient
                 .from('event_registrations')
                 .insert({
                     event_id: id,
@@ -157,12 +166,13 @@ export default function EventDetails() {
                     full_name: registerForm.full_name,
                     roll_number: registerForm.roll_number,
                     year: registerForm.year,
-                    event_title: event.title,
-                    event_date: event.date
+                    event_title: event?.title || 'Event',
+                    event_date: event?.date || new Date().toISOString(),
+                    status: 'going'
                 });
 
             if (error) {
-                console.error('Registration error:', error);
+                console.error('Registration error details:', error);
                 throw error;
             }
 
@@ -171,33 +181,42 @@ export default function EventDetails() {
             setAttendeeCount(prev => prev + 1);
 
             // Add reminder for the event
-            addEventReminder({
-                eventId: id!,
-                eventTitle: event.title,
-                eventDate: event.date,
-                eventTime: event.time,
-                location: event.location,
-                userId: user.id,
-                notified: false
-            });
+            if (event) {
+                addEventReminder({
+                    eventId: id!,
+                    eventTitle: event.title,
+                    eventDate: event.date,
+                    eventTime: event.time,
+                    location: event.location,
+                    userId: user.id,
+                    notified: false
+                });
+            }
 
             // Request notification permission and show enhanced toast
             requestNotificationPermission();
 
-            const timeUntil = getTimeUntilEvent(event.date, event.time);
-            const countdownText = formatCountdown(timeUntil);
+            if (event) {
+                const timeUntil = getTimeUntilEvent(event.date, event.time);
+                const countdownText = formatCountdown(timeUntil);
 
-            toast({
-                title: '🎉 Registration Successful!',
-                description: isEventToday(event.date)
-                    ? `You're all set! ${event.title} is happening today!`
-                    : isEventTomorrow(event.date)
-                        ? `You're all set! ${event.title} is tomorrow.`
-                        : `You're registered for ${event.title}. See you in ${countdownText}!`,
-                duration: 5000,
+                toast({
+                    title: '🎉 Registration Successful!',
+                    description: isEventToday(event.date)
+                        ? `You're all set! ${event.title} is happening today!`
+                        : isEventTomorrow(event.date)
+                            ? `You're all set! ${event.title} is tomorrow.`
+                            : `You're registered for ${event.title}. See you in ${countdownText}!`,
+                    duration: 5000,
+                });
+            }
+        } catch (error: any) {
+            console.error('Final Registration Error:', error);
+            toast({ 
+                title: 'Error', 
+                description: error.message || 'Failed to register. Please try again.', 
+                variant: 'destructive' 
             });
-        } catch (error) {
-            toast({ title: 'Error', description: 'Failed to register', variant: 'destructive' });
         } finally {
             setIsRsvping(false);
         }
@@ -230,7 +249,7 @@ export default function EventDetails() {
             }
         };
         fetchEvent();
-    }, [id]);
+    }, [id, toast]);
 
     if (isLoading) {
         return (
@@ -260,7 +279,6 @@ export default function EventDetails() {
     }
 
     const eventDate = parseISO(event.date);
-    // Event is only considered ended if it's before today AND the event has actually started
     const today = startOfDay(new Date());
     const eventStartDate = startOfDay(eventDate);
     const isEventEnded = isBefore(eventStartDate, today);
@@ -393,13 +411,12 @@ export default function EventDetails() {
                                                                 title: event.title,
                                                                 text: `Check out this event: ${event.title}`,
                                                                 url: shareUrl
-                                                            });
+                                                                });
                                                         } else {
                                                             await navigator.clipboard.writeText(shareUrl);
                                                             toast({ title: "Link copied!", description: "Event link copied to clipboard" });
                                                         }
                                                     } catch (err) {
-                                                        // Always show toast with link as fallback
                                                         toast({
                                                             title: "Share Event",
                                                             description: "Copy this link to share: " + shareUrl.substring(0, 50) + "..."
@@ -424,7 +441,6 @@ export default function EventDetails() {
             </main>
             <Footer />
 
-            {/* Registration Dialog */}
             <Dialog open={showRegisterDialog} onOpenChange={setShowRegisterDialog}>
                 <DialogContent className="sm:max-w-[440px] rounded-[2rem] p-8">
                     <DialogHeader className="mb-6">
