@@ -1068,14 +1068,32 @@ const AdminDashboard = () => {
       const sipEventIds = sipEventsData.map((e: any) => e.id);
 
       // Fetch registrations for SIP events
+      // We explicitly select the new columns to avoid PostgREST schema cache issues with '*'
       const { data: regs, error: regError } = await (supabase as any)
         .from('event_registrations')
-        .select('*, events(title, date)')
+        .select(`
+          id, event_id, user_id, full_name, roll_number, year, created_at, 
+          sip_approved, sip_denied, sip_approved_at,
+          events(title, date)
+        `)
         .in('event_id', sipEventIds)
         .order('created_at', { ascending: false })
         .limit(2000);
 
-      if (regError) regError;
+      if (regError) {
+        if (regError.message.includes('column') || regError.code === 'PGRST100') {
+          console.warn('Schema cache might be stale, attempting fallback fetch');
+          // Fallback to * if explicit columns fail
+          const { data: fallbackRegs } = await (supabase as any)
+            .from('event_registrations')
+            .select('*, events(title, date)')
+            .in('event_id', sipEventIds)
+            .limit(2000);
+          setSipAttendanceRecords(fallbackRegs || []);
+          return;
+        }
+        throw regError;
+      }
       setSipAttendanceRecords(regs || []);
     } catch (error: any) {
       console.error('Error fetching SIP attendance:', error);
@@ -1092,6 +1110,12 @@ const AdminDashboard = () => {
         .eq('id', registrationId);
 
       if (error) throw error;
+      
+      // Optimistic update to reflect in UI immediately
+      setSipAttendanceRecords(prev => prev.map(r => 
+        r.id === registrationId ? { ...r, sip_approved: true, sip_approved_at: new Date().toISOString() } : r
+      ));
+      
       toast({ title: 'Approved', description: 'SIP attendance approved permanently.' });
       fetchSipAttendance();
     } catch (error: any) {
@@ -1116,6 +1140,12 @@ const AdminDashboard = () => {
         .eq('id', registrationId);
 
       if (error) throw error;
+      
+      // Optimistic update
+      setSipAttendanceRecords(prev => prev.map(r => 
+        r.id === registrationId ? { ...r, sip_denied: true } : r
+      ));
+      
       toast({ title: 'Denied', description: 'SIP attendance has been denied.' });
       fetchSipAttendance();
     } catch (error: any) {

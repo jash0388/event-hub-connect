@@ -11,7 +11,10 @@ CREATE TABLE IF NOT EXISTS user_registrations (
   department TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  update_at admin_mentor_id();
 );
+
+
 
 -- Disable RLS to allow Firebase users to register (they use admin client)
 ALTER TABLE user_registrations DISABLE ROW LEVEL SECURITY;

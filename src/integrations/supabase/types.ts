@@ -99,12 +99,65 @@ export type Database = {
           created_by?: string | null
           created_at?: string
           updated_at?: string
+          is_sip?: boolean
         }
         Relationships: [
           {
             foreignKeyName: "events_created_by_fkey"
             columns: ["created_by"]
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      event_registrations: {
+        Row: {
+          id: string
+          event_id: string
+          user_id: string
+          full_name: string
+          roll_number: string
+          year: string
+          created_at: string
+          qr_code: string | null
+          scanned_at: string | null
+          sip_approved: boolean
+          sip_approved_at: string | null
+          sip_denied: boolean
+        }
+        Insert: {
+          id?: string
+          event_id: string
+          user_id: string
+          full_name: string
+          roll_number: string
+          year: string
+          created_at?: string
+          qr_code?: string | null
+          scanned_at?: string | null
+          sip_approved?: boolean
+          sip_approved_at?: string | null
+          sip_denied?: boolean
+        }
+        Update: {
+          id?: string
+          event_id?: string
+          user_id?: string
+          full_name?: string
+          roll_number?: string
+          year?: string
+          created_at?: string
+          qr_code?: string | null
+          scanned_at?: string | null
+          sip_approved?: boolean
+          sip_approved_at?: string | null
+          sip_denied?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_registrations_event_id_fkey"
+            columns: ["event_id"]
+            referencedRelation: "events"
             referencedColumns: ["id"]
           }
         ]
