@@ -178,7 +178,6 @@ export default function EventDetails() {
             }
 
             // Minimal payload to avoid schema mismatches on production
-            // Specifically removed 'status', 'event_title', 'event_date' as they may not exist
             const regPayload: any = {
                 event_id: id,
                 user_id: user.id,
@@ -197,17 +196,21 @@ export default function EventDetails() {
                 throw regError;
             }
 
-            // Success! Proceed with UI updates and non-critical tasks
+            // UI updates
             setShowRegisterDialog(false);
             setUserRsvp('going');
             setAttendeeCount(prev => prev + 1);
 
-            // Parallel insert into legacy table for compatibility
-            adminClient.from('event_attendees' as any).insert({
-                event_id: id,
-                user_id: user.id,
-                rsvp_status: 'going'
-            }).catch(e => console.warn("Legacy table failed:", e));
+            // Parallel insert into legacy table with proper error handling
+            try {
+                await adminClient.from('event_attendees' as any).insert({
+                    event_id: id,
+                    user_id: user.id,
+                    rsvp_status: 'going'
+                });
+            } catch (legacyErr) {
+                console.warn("Legacy table logic skipped:", legacyErr);
+            }
 
             if (event) {
                 addEventReminder({
