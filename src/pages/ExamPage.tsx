@@ -836,6 +836,7 @@ export default function ExamPage() {
           violations: security.violationCount,
           time_used_seconds: timeUsed,
           status: isAutoSubmit ? 'auto_submitted' : 'completed',
+          exam_title: selectedExam.title
         });
 
         // LOCK OUT: Immediately mark as completed in local state & localStorage to prevent "double start" glitch

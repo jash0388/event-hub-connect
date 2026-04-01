@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
@@ -63,7 +62,8 @@ import {
   Download,
   ClipboardCheck,
   Lock,
-  Unlock
+  Unlock,
+  CaseLower
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Html5Qrcode } from 'html5-qrcode';
@@ -503,15 +503,15 @@ const AdminDashboard = () => {
     };
 
     const headers = [
-      "Student Name", 
-      "Roll Number", 
-      "Exam Title", 
-      "Score Obtained", 
-      "Total Possible", 
-      "Percentage", 
-      "Total Violations", 
-      "Time Spent", 
-      "Status", 
+      "Student Name",
+      "Roll Number",
+      "Exam Title",
+      "Score Obtained",
+      "Total Possible",
+      "Percentage",
+      "Total Violations",
+      "Time Spent",
+      "Status",
       "Submission Date"
     ];
 
@@ -531,7 +531,7 @@ const AdminDashboard = () => {
     // Add UTF-8 BOM for Excel compatibility
     const BOM = "\ufeff";
     const csvContent = BOM + [headers.map(escapeCSV), ...rows].map(r => r.join(',')).join('\n');
-    
+
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -574,13 +574,13 @@ const AdminDashboard = () => {
   };
 
   const handleSaveExamQuestion = async () => {
-    if (!selectedExamForQuestions) { 
-      toast({ title: 'Select an exam first', variant: 'destructive' }); 
-      return; 
+    if (!selectedExamForQuestions) {
+      toast({ title: 'Select an exam first', variant: 'destructive' });
+      return;
     }
-    
+
     setIsSaving(true);
-    
+
     // Safety timeout: reset button after 20 seconds if DB hangs for any reason
     const safetyTimeout = setTimeout(() => {
       setIsSaving(false);
@@ -599,19 +599,19 @@ const AdminDashboard = () => {
         marks: examQuestionForm.marks,
         sort_order: (examQuestions || []).filter(q => q.exam_id === selectedExamForQuestions).length,
       };
-      
+
       console.log('[AdminDashboard] Attempting to save question:', payload);
-      
+
       const { data, error } = await (supabase as any)
         .from('exam_questions')
         .insert(payload)
         .select()
         .single();
-        
+
       if (error) throw error;
-      
+
       toast({ title: 'Question added!' });
-      
+
       // OPTIMISTIC UPDATE: Add to local state
       if (data) {
         setExamQuestions(prev => [{
@@ -619,15 +619,15 @@ const AdminDashboard = () => {
           exams: { title: (examsList || []).find(e => e.id === selectedExamForQuestions)?.title || 'Exam' }
         }, ...prev]);
       }
-      
+
       setExamQuestionDialogOpen(false);
       setExamQuestionForm({ question: '', question_type: 'mcq', options: ['', '', '', ''], correct_answer: '', marks: 5 });
-      
+
       // Refresh list to update question counts in the background
       fetchExamsList();
-    } catch (e: any) { 
+    } catch (e: any) {
       console.error('[AdminDashboard] Save error details:', e);
-      toast({ title: 'Error Saving Question', description: e.message || "Failed to save question to database", variant: 'destructive' }); 
+      toast({ title: 'Error Saving Question', description: e.message || "Failed to save question to database", variant: 'destructive' });
     } finally {
       clearTimeout(safetyTimeout);
       setIsSaving(false);
@@ -711,7 +711,7 @@ const AdminDashboard = () => {
       fetchRegistrations(),
       fetchSipAttendance()
     ]);
-    setLoadedTabs(new Set(['events','projects','internships','social','submissions','tasks','users','admins','attendance','messages','qrscan','sip_attendance']));
+    setLoadedTabs(new Set(['events', 'projects', 'internships', 'social', 'submissions', 'tasks', 'users', 'admins', 'attendance', 'messages', 'qrscan', 'sip_attendance']));
     setIsLoading(false);
   };
 
@@ -1073,7 +1073,7 @@ const AdminDashboard = () => {
         .from('event_registrations')
         .select(`
           id, event_id, user_id, full_name, roll_number, year, created_at, 
-          sip_approved, sip_denied, sip_approved_at,
+          sip_approved, sip_approved_at, sip_denied, event_title, event_date,
           events(title, date)
         `)
         .in('event_id', sipEventIds)
@@ -1104,20 +1104,24 @@ const AdminDashboard = () => {
   const handleSipApprove = async (registrationId: string) => {
     try {
       setIsSaving(true);
-      const { error } = await (supabase as any)
+      const client = supabaseAdmin || supabase;
+      const { error } = await (client as any)
         .from('event_registrations')
-        .update({ sip_approved: true, sip_approved_at: new Date().toISOString() })
+        .update({ 
+          sip_approved: true, 
+          sip_denied: false, 
+          sip_approved_at: new Date().toISOString() 
+        })
         .eq('id', registrationId);
 
       if (error) throw error;
-      
-      // Optimistic update to reflect in UI immediately
-      setSipAttendanceRecords(prev => prev.map(r => 
-        r.id === registrationId ? { ...r, sip_approved: true, sip_approved_at: new Date().toISOString() } : r
-      ));
-      
+
+      const updateFn = (r: any) => r.id === registrationId ? { ...r, sip_approved: true, sip_denied: false, sip_approved_at: new Date().toISOString() } : r;
+      setSipAttendanceRecords(prev => prev.map(updateFn));
+      setEventRegistrations(prev => prev.map(updateFn));
+
       toast({ title: 'Approved', description: 'SIP attendance approved permanently.' });
-      fetchSipAttendance();
+      await Promise.all([fetchSipAttendance(), fetchRegistrations()]);
     } catch (error: any) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } finally {
@@ -1127,27 +1131,26 @@ const AdminDashboard = () => {
 
   const handleSipDeny = async (registrationId: string) => {
     try {
-      // Check if already approved - approved records cannot be changed
       const record = sipAttendanceRecords.find(r => r.id === registrationId);
       if (record?.sip_approved) {
         toast({ title: 'Cannot Modify', description: 'Approved SIP attendance is permanent and cannot be changed.', variant: 'destructive' });
         return;
       }
       setIsSaving(true);
-      const { error } = await (supabase as any)
+      const client = supabaseAdmin || supabase;
+      const { error } = await (client as any)
         .from('event_registrations')
-        .update({ sip_denied: true })
+        .update({ sip_denied: true, sip_approved: false })
         .eq('id', registrationId);
 
       if (error) throw error;
-      
-      // Optimistic update
-      setSipAttendanceRecords(prev => prev.map(r => 
-        r.id === registrationId ? { ...r, sip_denied: true } : r
-      ));
-      
+
+      const updateFn = (r: any) => r.id === registrationId ? { ...r, sip_denied: true, sip_approved: false } : r;
+      setSipAttendanceRecords(prev => prev.map(updateFn));
+      setEventRegistrations(prev => prev.map(updateFn));
+
       toast({ title: 'Denied', description: 'SIP attendance has been denied.' });
-      fetchSipAttendance();
+      await Promise.all([fetchSipAttendance(), fetchRegistrations()]);
     } catch (error: any) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } finally {
@@ -1765,7 +1768,7 @@ const AdminDashboard = () => {
   const handleEventSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
-    
+
     // Safety timeout: reset button after 20 seconds if DB hangs for any reason
     const safetyTimeout = setTimeout(() => {
       setIsSaving(false);
@@ -2613,38 +2616,37 @@ const AdminDashboard = () => {
                         const initials = name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
                         const colors = ['bg-blue-500', 'bg-violet-500', 'bg-emerald-500', 'bg-rose-500', 'bg-amber-500', 'bg-cyan-500'];
                         return (
-                        <TableRow key={sub.id} className="hover:bg-slate-50/80 transition-colors">
-                          <TableCell>
-                            <div className="flex items-center gap-3">
-                              <div className={`w-9 h-9 ${colors[idx % colors.length]} rounded-xl flex items-center justify-center text-white text-xs font-bold shadow-sm`}>{initials}</div>
-                              <div>
-                                <p className="font-semibold text-slate-900 text-sm">{name}</p>
-                                <p className="text-xs text-slate-400">{(sub.profiles as any)?.email || sub.user_id}</p>
+                          <TableRow key={sub.id} className="hover:bg-slate-50/80 transition-colors">
+                            <TableCell>
+                              <div className="flex items-center gap-3">
+                                <div className={`w-9 h-9 ${colors[idx % colors.length]} rounded-xl flex items-center justify-center text-white text-xs font-bold shadow-sm`}>{initials}</div>
+                                <div>
+                                  <p className="font-semibold text-slate-900 text-sm">{name}</p>
+                                  <p className="text-xs text-slate-400">{(sub.profiles as any)?.email || sub.user_id}</p>
+                                </div>
                               </div>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-sm text-slate-700 font-medium max-w-[300px] truncate">{(sub.coding_tasks as any)?.title || 'Deleted Task'}</TableCell>
-                          <TableCell>
-                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
-                              sub.status === 'approved' ? 'bg-green-50 text-green-700 border border-green-200' :
-                              sub.status === 'denied' ? 'bg-red-50 text-red-600 border border-red-200' :
-                              'bg-amber-50 text-amber-700 border border-amber-200'
-                            }`}>
-                              <span className={`w-1.5 h-1.5 rounded-full ${sub.status === 'approved' ? 'bg-green-500' : sub.status === 'denied' ? 'bg-red-500' : 'bg-amber-500'}`} />
-                              {sub.status === 'approved' ? 'Approved' : sub.status === 'denied' ? 'Rejected' : 'Pending'}
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleReviewDialog(sub)}
-                              className="rounded-xl border-slate-200 text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200 transition-colors text-xs h-8 px-3"
-                            >
-                              Review →
-                            </Button>
-                          </TableCell>
-                        </TableRow>
+                            </TableCell>
+                            <TableCell className="text-sm text-slate-700 font-medium max-w-[300px] truncate">{(sub.coding_tasks as any)?.title || 'Deleted Task'}</TableCell>
+                            <TableCell>
+                              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${sub.status === 'approved' ? 'bg-green-50 text-green-700 border border-green-200' :
+                                  sub.status === 'denied' ? 'bg-red-50 text-red-600 border border-red-200' :
+                                    'bg-amber-50 text-amber-700 border border-amber-200'
+                                }`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${sub.status === 'approved' ? 'bg-green-500' : sub.status === 'denied' ? 'bg-red-500' : 'bg-amber-500'}`} />
+                                {sub.status === 'approved' ? 'Approved' : sub.status === 'denied' ? 'Rejected' : 'Pending'}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleReviewDialog(sub)}
+                                className="rounded-xl border-slate-200 text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200 transition-colors text-xs h-8 px-3"
+                              >
+                                Review →
+                              </Button>
+                            </TableCell>
+                          </TableRow>
                         );
                       })}
                     </TableBody>
@@ -2794,7 +2796,7 @@ const AdminDashboard = () => {
               <div className="flex justify-between items-center mb-6">
                 <div>
                   <h2 className="text-2xl font-bold text-gradient">Live Attendance Log</h2>
-                  <p className="text-sm text-muted-foreground">{eventRegistrations.filter(r => r.scanned_at).length} students checked in so far</p>
+                  <p className="text-sm text-muted-foreground">{eventRegistrations.filter(r => r.scanned_at || r.sip_approved).length} students verified so far</p>
                 </div>
                 <Button variant="outline" className="rounded-xl" onClick={() => {
                   const headers = ["Name", "Roll Number", "Year", "Event", "Registered At", "Scanned At"];
@@ -2839,8 +2841,16 @@ const AdminDashboard = () => {
                         <TableCell className="text-blue-600 font-medium">{reg.events?.title}</TableCell>
                         <TableCell>
                           {reg.scanned_at ? (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-800">
                               <CheckCircle className="w-3 h-3 mr-1" /> Scanned
+                            </span>
+                          ) : reg.sip_approved ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-indigo-100 text-indigo-800">
+                              <Lock className="w-3 h-3 mr-1" /> SIP Approved
+                            </span>
+                          ) : reg.sip_denied ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-800">
+                              <XCircle className="w-3 h-3 mr-1" /> SIP Denied
                             </span>
                           ) : (
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-secondary text-muted-foreground font-mono">
@@ -3646,8 +3656,8 @@ const AdminDashboard = () => {
                     ) : (
                       <div>
                         <Label>Correct Answer (Answer Key)</Label>
-                        <Input 
-                          value={examQuestionForm.correct_answer} 
+                        <Input
+                          value={examQuestionForm.correct_answer}
                           onChange={e => setExamQuestionForm({ ...examQuestionForm, correct_answer: e.target.value })}
                           placeholder="e.g. O(n log n) or keyword1, keyword2, keyword3"
                         />

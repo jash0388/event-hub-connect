@@ -51,6 +51,8 @@ const Profile = () => {
                 const combined = [
                     ...(registrations.data || []).map((r: any) => ({
                         ...r.events,
+                        title: r.events?.title || r.event_title || 'Unknown Event',
+                        date: r.events?.date || r.event_date || r.created_at,
                         qr_code: r.qr_code,
                         full_name: r.full_name,
                         roll_number: r.roll_number,
@@ -61,6 +63,8 @@ const Profile = () => {
                     })),
                     ...(attendees.data || []).map((a: any) => ({
                         ...a.events,
+                        title: a.events?.title || a.event_title || 'Unknown Event',
+                        date: a.events?.date || a.event_date || a.created_at,
                         qr_code: a.qr_code,
                         joined_at: a.joined_at,
                         source: 'attendees'
@@ -152,7 +156,7 @@ const Profile = () => {
                                                     <FileText className="w-7 h-7" />
                                                 </div>
                                                 <div>
-                                                    <h3 className="text-xl font-bold text-slate-900 mb-1">{sub.exams?.title || 'Unknown Exam'}</h3>
+                                                    <h3 className="text-xl font-bold text-slate-900 mb-1">{sub.exams?.title || sub.exam_title || 'Unknown Exam'}</h3>
                                                     <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500">
                                                         <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> {format(new Date(sub.submitted_at), "MMM d")}</span>
                                                         <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {Math.floor(sub.time_used_seconds / 60)}mUsed</span>

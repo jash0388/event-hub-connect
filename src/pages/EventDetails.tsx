@@ -159,7 +159,9 @@ export default function EventDetails() {
                     qr_code: qrCode,
                     full_name: registerForm.full_name,
                     roll_number: registerForm.roll_number,
-                    year: registerForm.year
+                    year: registerForm.year,
+                    event_title: event.title,
+                    event_date: event.date
                 });
 
             if (error) {
