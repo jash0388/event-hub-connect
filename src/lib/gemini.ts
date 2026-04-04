@@ -43,7 +43,7 @@ export async function gradeExam(batch: Array<{ question: string, correctAnswer: 
 
   let attempts = 0;
   const maxAttempts = 5;
-  const baseDelay = 3000; // 3 seconds
+  const baseDelay = 1500; // 1.5 seconds (Snappier response)
 
   while (attempts < maxAttempts) {
     try {

@@ -881,10 +881,14 @@ export default function ExamPage() {
       }
     });
 
-    // Execute Batch AI Grading (1 Request instead of Many)
-    let aiResults: any[] = [];
-    if (aiBatch.length > 0) {
-      aiResults = await gradeExam(aiBatch.map(({ originalIndex, ...rest }) => rest));
+    // Execute Chunked AI Grading for High Speed & Reliability
+    const CHUNK_SIZE = 5;
+    const aiResults: any[] = [];
+    
+    for (let i = 0; i < aiBatch.length; i += CHUNK_SIZE) {
+      const chunk = aiBatch.slice(i, i + CHUNK_SIZE).map(({ originalIndex, ...rest }) => rest);
+      const chunkResults = await gradeExam(chunk);
+      aiResults.push(...chunkResults);
     }
 
     const breakdown: any[] = [];
@@ -900,7 +904,7 @@ export default function ExamPage() {
       } else {
         const res = aiResults[aiPtr++];
         qScore = res?.score || 0;
-        qFeedback = res?.feedback || "Evaluation complete.";
+        qFeedback = res?.feedback || "Evaluation complete (Speed optimized).";
         score += qScore;
       }
 
