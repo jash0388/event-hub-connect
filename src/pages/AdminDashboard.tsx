@@ -195,7 +195,6 @@ const AdminDashboard = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('events');
 
-  // === EXAM SYSTEM STATE ===
   const [examsList, setExamsList] = useState<any[]>([]);
   const [examQuestions, setExamQuestions] = useState<any[]>([]);
   const [examSubmissions, setExamSubmissions] = useState<any[]>([]);
@@ -549,6 +548,11 @@ const AdminDashboard = () => {
 
   const handleSaveExam = async () => {
     setIsSaving(true);
+    const safetyTimeout = setTimeout(() => {
+      setIsSaving(false);
+      toast({ title: 'Sync Timeout', description: 'Exam save is taking too long. Please try again.', variant: 'destructive' });
+    }, 15000);
+
     try {
       if (editingExam) {
         const { error } = await (supabase as any).from('exams').update({ ...examForm, updated_at: new Date().toISOString() }).eq('id', editingExam.id);
@@ -564,7 +568,10 @@ const AdminDashboard = () => {
       setExamForm({ title: '', description: '', duration_minutes: 30, max_violations: 2 });
       await fetchExamsList();
     } catch (e: any) { toast({ title: 'Error', description: e.message, variant: 'destructive' }); }
-    setIsSaving(false);
+    finally {
+      clearTimeout(safetyTimeout);
+      setIsSaving(false);
+    }
   };
 
   const handleDeleteExam = async (id: string) => {
@@ -646,9 +653,9 @@ const AdminDashboard = () => {
         .from('exam_submissions')
         .update({ score: manualScore })
         .eq('id', selectedSubForGrading.id);
-      
+
       if (error) throw error;
-      
+
       toast({ title: 'Score updated successfully!' });
       setManualGradeDialogOpen(false);
       fetchExamSubmissions();
@@ -1133,10 +1140,10 @@ const AdminDashboard = () => {
       const client = supabaseAdmin || supabase;
       const { error } = await (client as any)
         .from('event_registrations')
-        .update({ 
-          sip_approved: true, 
-          sip_denied: false, 
-          sip_approved_at: new Date().toISOString() 
+        .update({
+          sip_approved: true,
+          sip_denied: false,
+          sip_approved_at: new Date().toISOString()
         })
         .eq('id', registrationId);
 
@@ -1911,6 +1918,12 @@ const AdminDashboard = () => {
     e.preventDefault();
     setIsSaving(true);
 
+    // Safety timeout: reset button after 15 seconds if DB hangs
+    const safetyTimeout = setTimeout(() => {
+      setIsSaving(false);
+      toast({ title: 'Sync Timeout', description: 'Database response took too long. Please try submitting again.', variant: 'destructive' });
+    }, 15000);
+
     try {
       const payload = {
         title: projectForm.title,
@@ -1939,12 +1952,14 @@ const AdminDashboard = () => {
       setProjectDialogOpen(false);
       fetchProjects();
     } catch (error: any) {
+      console.error('[AdminDashboard] Project save error:', error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Failed to save project.",
         variant: "destructive",
       });
     } finally {
+      clearTimeout(safetyTimeout);
       setIsSaving(false);
     }
   };
@@ -1994,6 +2009,11 @@ const AdminDashboard = () => {
     e.preventDefault();
     setIsSaving(true);
 
+    const safetyTimeout = setTimeout(() => {
+      setIsSaving(false);
+      toast({ title: 'Sync Timeout', description: 'Database response took too long. Please try again.', variant: 'destructive' });
+    }, 15000);
+
     try {
       const payload = {
         title: internshipForm.title,
@@ -2029,6 +2049,7 @@ const AdminDashboard = () => {
         variant: "destructive",
       });
     } finally {
+      clearTimeout(safetyTimeout);
       setIsSaving(false);
     }
   };
@@ -2244,6 +2265,11 @@ const AdminDashboard = () => {
     e.preventDefault();
     setIsSaving(true);
 
+    const safetyTimeout = setTimeout(() => {
+      setIsSaving(false);
+      toast({ title: 'Sync Timeout', description: 'Saving social link is taking too long. Please try again.', variant: 'destructive' });
+    }, 15000);
+
     try {
       const payload = {
         platform: socialForm.platform,
@@ -2275,6 +2301,7 @@ const AdminDashboard = () => {
         variant: "destructive",
       });
     } finally {
+      clearTimeout(safetyTimeout);
       setIsSaving(false);
     }
   };
@@ -2666,8 +2693,8 @@ const AdminDashboard = () => {
                             <TableCell className="text-sm text-slate-700 font-medium max-w-[300px] truncate">{(sub.coding_tasks as any)?.title || 'Deleted Task'}</TableCell>
                             <TableCell>
                               <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${sub.status === 'approved' ? 'bg-green-50 text-green-700 border border-green-200' :
-                                  sub.status === 'denied' ? 'bg-red-50 text-red-600 border border-red-200' :
-                                    'bg-amber-50 text-amber-700 border border-amber-200'
+                                sub.status === 'denied' ? 'bg-red-50 text-red-600 border border-red-200' :
+                                  'bg-amber-50 text-amber-700 border border-amber-200'
                                 }`}>
                                 <span className={`w-1.5 h-1.5 rounded-full ${sub.status === 'approved' ? 'bg-green-500' : sub.status === 'denied' ? 'bg-red-500' : 'bg-amber-500'}`} />
                                 {sub.status === 'approved' ? 'Approved' : sub.status === 'denied' ? 'Rejected' : 'Pending'}
@@ -3778,7 +3805,7 @@ const AdminDashboard = () => {
                           <TableCell className="text-xs text-muted-foreground">{sub.submitted_at ? format(new Date(sub.submitted_at), 'PP p') : '-'}</TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-1">
-                              <Button size="sm" variant="ghost" className="text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50" 
+                              <Button size="sm" variant="ghost" className="text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50"
                                 onClick={() => {
                                   setSelectedSubForGrading(sub);
                                   setManualScore(sub.score);
@@ -3814,18 +3841,18 @@ const AdminDashboard = () => {
                   <p className="text-[10px] text-slate-400 mt-2 font-bold uppercase tracking-tighter">Current Score</p>
                   <p className="text-base font-black text-indigo-600">{selectedSubForGrading?.score} / {selectedSubForGrading?.total_marks}</p>
                 </div>
-                
+
                 <div>
                   <Label>Adjusted Score (Max: {selectedSubForGrading?.total_marks})</Label>
-                  <Input 
-                    type="number" 
-                    value={manualScore} 
+                  <Input
+                    type="number"
+                    value={manualScore}
                     onChange={e => setManualScore(Number(e.target.value))}
                     max={selectedSubForGrading?.total_marks}
                     className="mt-2 text-lg font-bold"
                   />
                 </div>
-                
+
                 <Button onClick={handleUpdateScore} disabled={isSaving} className="w-full h-12 bg-indigo-600 hover:bg-indigo-700">
                   {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <ShieldCheck className="w-4 h-4 mr-2" />}
                   Confirm Manual Grade

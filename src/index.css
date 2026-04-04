@@ -80,9 +80,18 @@
 @layer utilities {
   .text-gradient {
     @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, #1e40af 0%, #4f46e5 30%, #a855f7 60%, #3b82f6 100%);
+    /* High-end metallic gradient: Midnight -> Indigo -> Deep Violet */
+    background-image: linear-gradient(
+      135deg, 
+      #0f172a 0%,    /* Midnight Slate */
+      #312e81 25%,   /* Deep Indigo */
+      #4338ca 50%,   /* Royal Blue */
+      #6d28d9 75%,   /* Deep Violet */
+      #0f172a 100%   /* Loop back to Midnight */
+    );
     background-size: 200% auto;
-    animation: text-shimmer 4s linear infinite;
+    animation: text-shimmer 6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.05));
     will-change: background-position;
   }
 

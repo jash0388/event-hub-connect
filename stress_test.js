@@ -85,4 +85,7 @@ async function runStressTest(userCount = 60) {
   }
 }
 
-runStressTest(60);
+// Extract user count from command line arguments, default to 150
+const USER_COUNT = parseInt(process.argv[2]) || 150;
+
+runStressTest(USER_COUNT);
