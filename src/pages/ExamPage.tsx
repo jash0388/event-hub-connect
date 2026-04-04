@@ -730,10 +730,11 @@ export default function ExamPage() {
 
   // Fetch available exams & user status in parallel for speed
   useEffect(() => {
-
     let mounted = true;
     const fetchPortalData = async () => {
+      // WAIT for userId to be ready before fetching
       if (!userId) return;
+      
       setLoadingExams(true);
       try {
         const [examsRes, subsRes] = await Promise.all([
@@ -764,7 +765,7 @@ export default function ExamPage() {
     };
     fetchPortalData();
     return () => { mounted = false; };
-  }, [userId]);
+  }, [userId, user, firebaseUser]); // Added extra deps for stability
 
 
   // Timer
@@ -922,10 +923,14 @@ export default function ExamPage() {
     // Save to Supabase
     if (userId && selectedExam) {
       try {
+        // APPEND email to student_name for Admin Dashboard visibility
+        const storageEmail = user?.email || (isFirebaseUser ? firebaseUser?.email : '') || 'Guest';
+        const displayNameWithEmail = `${studentName} (${storageEmail})`;
+
         await (supabase as any).from('exam_submissions').insert({
           exam_id: selectedExam.id,
           user_id: userId,
-          student_name: studentName,
+          student_name: displayNameWithEmail,
           roll_number: rollNumber,
           answers: answers,
           score: score,

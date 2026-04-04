@@ -521,9 +521,15 @@ const AdminDashboard = () => {
 
     const rows = filtered.map((s: any) => {
       const userProfile = allUsers.find(u => u.id === s.user_id || u.firebase_uid === s.user_id);
+      
+      const nameParts = s.student_name?.match(/^(.*) \((.*)\)$/);
+      const displayName = nameParts ? nameParts[1] : s.student_name;
+      const extractedEmail = nameParts ? nameParts[2] : null;
+      const emailValue = extractedEmail || userProfile?.email || 'N/A';
+
       return [
-        escapeCSV(s.student_name),
-        escapeCSV(userProfile?.email || 'N/A'),
+        escapeCSV(displayName),
+        escapeCSV(emailValue),
         escapeCSV(s.roll_number),
         escapeCSV(s.exams?.title || 'Unknown'),
         escapeCSV(s.score),
@@ -3802,10 +3808,16 @@ const AdminDashboard = () => {
                       .filter((s: any) => examResultsFilter === 'all' || s.exam_id === examResultsFilter)
                       .map((sub: any) => {
                         const studentProfile = allUsers.find(u => u.id === sub.user_id || u.firebase_uid === sub.user_id);
+                        // Extract email from name if it was appended: "Name (email@domain.com)"
+                        const nameParts = sub.student_name?.match(/^(.*) \((.*)\)$/);
+                        const displayName = nameParts ? nameParts[1] : sub.student_name;
+                        const extractedEmail = nameParts ? nameParts[2] : null;
+                        const emailDisp = extractedEmail || studentProfile?.email || 'N/A';
+
                         return (
                           <TableRow key={sub.id}>
-                            <TableCell className="font-bold">{sub.student_name}</TableCell>
-                            <TableCell className="text-xs text-blue-600 font-medium">{studentProfile?.email || 'N/A'}</TableCell>
+                            <TableCell className="font-bold">{displayName || 'Unknown Student'}</TableCell>
+                            <TableCell className="text-xs text-blue-600 font-medium">{emailDisp}</TableCell>
                             <TableCell>{sub.roll_number}</TableCell>
                             <TableCell>{sub.exams?.title || 'Unknown'}</TableCell>
                             <TableCell>
