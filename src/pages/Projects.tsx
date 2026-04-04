@@ -19,17 +19,36 @@ const Projects = () => {
   const { data: projects = [], isLoading } = useQuery({
     queryKey: ['projects_list'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('projects')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(100);
+      // Hardcoded "DataNauts AI" project so it's always live even if DB hangs
+      const atlasProject: Project = {
+        id: 'atlas-static-id',
+        title: 'DataNauts AI – Self-Learning LLM Platform',
+        description: 'DataNauts AI is a self-learning Large Language Model (LLM) platform designed to continuously improve its knowledge and responses through user interaction and dynamic data ingestion. Built for students, developers, and innovators, DataNauts AI aims to simplify access to advanced AI while promoting experimentation and learning.',
+        image_url: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=600',
+        github_url: 'https://github.com/jash0388/datanauts-atlas.git',
+        demo_url: 'https://datanautsai.netlify.app',
+        tags: ['AI', 'LLM', 'Self-Learning', 'Atlas']
+      };
 
-      if (error) {
-        console.error('Error fetching projects:', error);
-        throw error;
+      try {
+        const { data, error } = await supabase
+          .from('projects')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(100);
+
+        if (error) {
+          console.error('Error fetching projects:', error);
+          return [atlasProject]; // Return static project on error
+        }
+        
+        // Combine static with any DB projects (ensuring no duplicates)
+        const dbProjects = data as Project[];
+        const filteredDB = dbProjects.filter(p => !p.title.includes('DataNauts AI'));
+        return [atlasProject, ...filteredDB];
+      } catch (err) {
+        return [atlasProject];
       }
-      return data as Project[];
     },
     staleTime: 60000,
   });
