@@ -498,7 +498,7 @@ const AdminDashboard = () => {
 
     // Helper to escape values for CSV (handles commas and quotes)
     const escapeCSV = (val: any) => {
-      let str = String(val ?? "");
+      const str = String(val ?? "");
       if (str.includes(",") || str.includes("\"") || str.includes("\n") || str.includes("\r")) {
         return `"${str.replace(/"/g, '""')}"`;
       }
@@ -507,6 +507,7 @@ const AdminDashboard = () => {
 
     const headers = [
       "Student Name",
+      "Email Address",
       "Roll Number",
       "Exam Title",
       "Score Obtained",
@@ -518,18 +519,22 @@ const AdminDashboard = () => {
       "Submission Date"
     ];
 
-    const rows = filtered.map((s: any) => [
-      escapeCSV(s.student_name),
-      escapeCSV(s.roll_number),
-      escapeCSV(s.exams?.title || 'Unknown'),
-      escapeCSV(s.score),
-      escapeCSV(s.total_marks),
-      escapeCSV(s.total_marks > 0 ? `${Math.round((s.score / s.total_marks) * 100)}%` : '0%'),
-      escapeCSV(s.violations),
-      escapeCSV(`${Math.floor((s.time_used_seconds || 0) / 60)}m ${(s.time_used_seconds || 0) % 60}s`),
-      escapeCSV(s.status),
-      escapeCSV(s.submitted_at ? format(new Date(s.submitted_at), 'PP p') : '-')
-    ]);
+    const rows = filtered.map((s: any) => {
+      const userProfile = allUsers.find(u => u.id === s.user_id || u.firebase_uid === s.user_id);
+      return [
+        escapeCSV(s.student_name),
+        escapeCSV(userProfile?.email || 'N/A'),
+        escapeCSV(s.roll_number),
+        escapeCSV(s.exams?.title || 'Unknown'),
+        escapeCSV(s.score),
+        escapeCSV(s.total_marks),
+        escapeCSV(s.total_marks > 0 ? `${Math.round((s.score / s.total_marks) * 100)}%` : '0%'),
+        escapeCSV(s.violations),
+        escapeCSV(`${Math.floor((s.time_used_seconds || 0) / 60)}m ${(s.time_used_seconds || 0) % 60}s`),
+        escapeCSV(s.status),
+        escapeCSV(s.submitted_at ? format(new Date(s.submitted_at), 'PP p') : '-')
+      ];
+    });
 
     // Add UTF-8 BOM for Excel compatibility
     const BOM = "\ufeff";
@@ -1252,7 +1257,7 @@ const AdminDashboard = () => {
       }
 
       // First check if user already exists in our system
-      let targetUser = allUsers.find(u => u.email?.toLowerCase() === adminForm.email.toLowerCase());
+      const targetUser = allUsers.find(u => u.email?.toLowerCase() === adminForm.email.toLowerCase());
       let userId = targetUser?.id;
 
       // If user doesn't exist, create them via supabaseAdmin
@@ -3781,6 +3786,7 @@ const AdminDashboard = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Student Name</TableHead>
+                      <TableHead>Email ID</TableHead>
                       <TableHead>Roll Number</TableHead>
                       <TableHead>Exam</TableHead>
                       <TableHead>Score</TableHead>
@@ -3794,47 +3800,50 @@ const AdminDashboard = () => {
                   <TableBody>
                     {examSubmissions
                       .filter((s: any) => examResultsFilter === 'all' || s.exam_id === examResultsFilter)
-                      .map((sub: any) => (
-                        <TableRow key={sub.id}>
-                          <TableCell className="font-bold">{sub.student_name}</TableCell>
-                          <TableCell>{sub.roll_number}</TableCell>
-                          <TableCell>{sub.exams?.title || 'Unknown'}</TableCell>
-                          <TableCell>
-                            <span className={`font-bold ${sub.total_marks > 0 && (sub.score / sub.total_marks) >= 0.4 ? 'text-green-600' : 'text-red-600'}`}>
-                              {sub.score}/{sub.total_marks}
-                            </span>
-                            <span className="text-xs text-muted-foreground ml-1">({sub.total_marks > 0 ? Math.round((sub.score / sub.total_marks) * 100) : 0}%)</span>
-                          </TableCell>
-                          <TableCell>
-                            <span className={sub.violations > 0 ? 'text-red-600 font-bold' : 'text-green-600'}>{sub.violations}</span>
-                          </TableCell>
-                          <TableCell>{Math.floor((sub.time_used_seconds || 0) / 60)}m {(sub.time_used_seconds || 0) % 60}s</TableCell>
-                          <TableCell>
-                            <Badge variant={sub.status === 'auto_submitted' ? 'destructive' : 'default'}>
-                              {sub.status === 'auto_submitted' ? 'Auto-Submitted' : 'Completed'}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-xs text-muted-foreground">{sub.submitted_at ? format(new Date(sub.submitted_at), 'PP p') : '-'}</TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end gap-1">
-                              <Button size="sm" variant="ghost" className="text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50"
-                                onClick={() => {
-                                  setSelectedSubForGrading(sub);
-                                  setManualScore(sub.score);
-                                  setManualGradeDialogOpen(true);
-                                }}>
-                                <Edit className="w-3 h-3 mr-1" /> Edit Score
-                              </Button>
-                              <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-700 hover:bg-red-50" onClick={() => handleDeleteExamSubmission(sub.id)}>
-                                <RefreshCw className="w-3 h-3 mr-1" /> Allow Retest
-                              </Button>
-                            </div>
-                          </TableCell>
-
-                        </TableRow>
-                      ))}
+                      .map((sub: any) => {
+                        const studentProfile = allUsers.find(u => u.id === sub.user_id || u.firebase_uid === sub.user_id);
+                        return (
+                          <TableRow key={sub.id}>
+                            <TableCell className="font-bold">{sub.student_name}</TableCell>
+                            <TableCell className="text-xs text-blue-600 font-medium">{studentProfile?.email || 'N/A'}</TableCell>
+                            <TableCell>{sub.roll_number}</TableCell>
+                            <TableCell>{sub.exams?.title || 'Unknown'}</TableCell>
+                            <TableCell>
+                              <span className={`font-bold ${sub.total_marks > 0 && (sub.score / sub.total_marks) >= 0.4 ? 'text-green-600' : 'text-red-600'}`}>
+                                {sub.score}/{sub.total_marks}
+                              </span>
+                              <span className="text-xs text-muted-foreground ml-1">({sub.total_marks > 0 ? Math.round((sub.score / sub.total_marks) * 100) : 0}%)</span>
+                            </TableCell>
+                            <TableCell>
+                              <span className={sub.violations > 0 ? 'text-red-600 font-bold' : 'text-green-600'}>{sub.violations}</span>
+                            </TableCell>
+                            <TableCell>{Math.floor((sub.time_used_seconds || 0) / 60)}m {(sub.time_used_seconds || 0) % 60}s</TableCell>
+                            <TableCell>
+                              <Badge variant={sub.status === 'auto_submitted' ? 'destructive' : 'default'}>
+                                {sub.status === 'auto_submitted' ? 'Auto-Submitted' : 'Completed'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-xs text-muted-foreground">{sub.submitted_at ? format(new Date(sub.submitted_at), 'PP p') : '-'}</TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-1">
+                                <Button size="sm" variant="ghost" className="text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50"
+                                  onClick={() => {
+                                    setSelectedSubForGrading(sub);
+                                    setManualScore(sub.score);
+                                    setManualGradeDialogOpen(true);
+                                  }}>
+                                  <Edit className="w-3 h-3 mr-1" /> Edit Score
+                                </Button>
+                                <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-700 hover:bg-red-50" onClick={() => handleDeleteExamSubmission(sub.id)}>
+                                  <RefreshCw className="w-3 h-3 mr-1" /> Allow Retest
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     {examSubmissions.filter((s: any) => examResultsFilter === 'all' || s.exam_id === examResultsFilter).length === 0 && (
-                      <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">No submissions yet.</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={10} className="text-center py-8 text-muted-foreground">No submissions yet.</TableCell></TableRow>
                     )}
                   </TableBody>
                 </Table>

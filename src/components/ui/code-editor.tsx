@@ -45,7 +45,7 @@ function highlightCode(code: string): React.ReactNode[] {
     ]);
 
     lines.forEach((line, lineIndex) => {
-        let highlightedLine: React.ReactNode[] = [];
+        const highlightedLine: React.ReactNode[] = [];
         let remaining = line;
         let keyIndex = 0;
 
@@ -87,7 +87,7 @@ function highlightCode(code: string): React.ReactNode[] {
             }
 
             // Match brackets and braces - gold as requested but VS Code style
-            const bracketMatch = remaining.match(/^([{}\[\]()])/);
+            const bracketMatch = remaining.match(/^([{}[]()])/);
             if (bracketMatch) {
                 highlightedLine.push(
                     <span key={`${lineIndex}-${keyIndex++}`} style={{ color: VSCODE_COLORS.brackets }}>
