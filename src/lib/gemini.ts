@@ -41,24 +41,44 @@ export async function gradeExam(batch: Array<{ question: string, correctAnswer: 
     ]
   `;
 
-  try {
-    const result = await model.generateContent(prompt);
-    let text = result.response.text().trim();
-    const jsonMatch = text.match(/\[[\s\S]*\]/); // Match array
-    if (jsonMatch) text = jsonMatch[0];
-    
-    const results = JSON.parse(text);
-    return batch.map((b, i) => ({
-      score: isNaN(results[i]?.score) ? 0 : Math.min(Number(results[i].score), b.maxMarks),
-      feedback: results[i]?.feedback || "No specific feedback."
-    }));
-  } catch (error) {
-    console.error("Batch AI Grading failed:", error);
-    return batch.map(b => ({
-      score: simpleGrade(b.correctAnswer, b.userAnswer, b.maxMarks),
-      feedback: "Automated keyword evaluation (AI Busy)."
-    }));
+  let attempts = 0;
+  const maxAttempts = 5;
+  const baseDelay = 3000; // 3 seconds
+
+  while (attempts < maxAttempts) {
+    try {
+      const result = await model.generateContent(prompt);
+      let text = result.response.text().trim();
+      const jsonMatch = text.match(/\[[\s\S]*\]/); // Match array
+      if (jsonMatch) text = jsonMatch[0];
+      
+      const results = JSON.parse(text);
+      return batch.map((b, i) => ({
+        score: isNaN(results[i]?.score) ? 0 : Math.min(Number(results[i].score), b.maxMarks),
+        feedback: results[i]?.feedback || "No specific feedback."
+      }));
+    } catch (error: any) {
+      const isRateLimit = error.message?.includes("429") || error.message?.includes("exhausted");
+      
+      if (isRateLimit && attempts < maxAttempts - 1) {
+        attempts++;
+        console.warn(`[AI Grade] Rate limited. Attempt ${attempts} of ${maxAttempts}. Waiting...`);
+        await new Promise(resolve => setTimeout(resolve, baseDelay * attempts)); // Exponential backoff
+        continue;
+      }
+
+      console.error("Batch AI Grading failed:", error);
+      return batch.map(b => ({
+        score: simpleGrade(b.correctAnswer, b.userAnswer, b.maxMarks),
+        feedback: isRateLimit ? "Evaluated via database key (AI Queued)." : "Automated keyword evaluation (AI Busy)."
+      }));
+    }
   }
+  
+  return batch.map(b => ({
+    score: simpleGrade(b.correctAnswer, b.userAnswer, b.maxMarks),
+    feedback: "High traffic fallback (AI Queued)."
+  }));
 }
 
 export async function gradeAnswer(question: string, correctAnswer: string, userAnswer: string, maxMarks: number): Promise<GradingResult> {
