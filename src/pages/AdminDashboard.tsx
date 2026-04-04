@@ -223,6 +223,10 @@ const AdminDashboard = () => {
   const [qrScanError, setQrScanError] = useState<string>('');
   const [isVerifying, setIsVerifying] = useState(false);
   const [cameraScannerReady, setCameraScannerReady] = useState(false);
+  const [manualGradeDialogOpen, setManualGradeDialogOpen] = useState(false);
+  const [selectedSubForGrading, setSelectedSubForGrading] = useState<any>(null);
+  const [manualScore, setManualScore] = useState(0);
+
 
   // Initialize camera QR scanner
   useEffect(() => {
@@ -634,7 +638,29 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleUpdateScore = async () => {
+    if (!selectedSubForGrading) return;
+    setIsSaving(true);
+    try {
+      const { error } = await (supabase as any)
+        .from('exam_submissions')
+        .update({ score: manualScore })
+        .eq('id', selectedSubForGrading.id);
+      
+      if (error) throw error;
+      
+      toast({ title: 'Score updated successfully!' });
+      setManualGradeDialogOpen(false);
+      fetchExamSubmissions();
+    } catch (e: any) {
+      toast({ title: 'Error', description: e.message, variant: 'destructive' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleDeleteExamQuestion = async (id: string) => {
+
     try {
       const { error } = await (supabase as any).from('exam_questions').delete().eq('id', id);
       if (error) throw error;
@@ -1777,7 +1803,18 @@ const AdminDashboard = () => {
     }, 20000);
 
     try {
-      const dateISO = new Date(eventForm.datetime).toISOString();
+      let dateISO: string;
+      try {
+        if (!eventForm.datetime) throw new Error("Please provide a date and time");
+        const parsedDate = new Date(eventForm.datetime);
+        if (isNaN(parsedDate.getTime())) throw new Error("Invalid date format");
+        dateISO = parsedDate.toISOString();
+      } catch (dateErr: any) {
+        toast({ title: "Invalid Date", description: dateErr.message, variant: "destructive" });
+        setIsSaving(false);
+        clearTimeout(safetyTimeout);
+        return;
+      }
       const photosArray = eventForm.photos ? eventForm.photos.split(',').map(url => url.trim()).filter(url => url) : [];
       const videosArray = eventForm.videos ? eventForm.videos.split(',').map(url => url.trim()).filter(url => url) : [];
 
@@ -3645,27 +3682,34 @@ const AdminDashboard = () => {
                         </div>
                         <div>
                           <Label>Correct Answer *</Label>
-                          <select value={examQuestionForm.correct_answer} onChange={e => setExamQuestionForm({ ...examQuestionForm, correct_answer: e.target.value })} className="w-full p-2 border rounded-lg">
+                          <select value={examQuestionForm.correct_answer} onChange={e => setExamQuestionForm({ ...examQuestionForm, correct_answer: e.target.value })} className="w-full p-2 border rounded-lg bg-slate-900 border-white/5 text-white">
                             <option value="">Select correct answer...</option>
                             {examQuestionForm.options.filter(o => o.trim()).map((opt, idx) => (
                               <option key={idx} value={opt}>{String.fromCharCode(65 + idx)}. {opt}</option>
                             ))}
                           </select>
+                          <p className="text-[10px] text-indigo-400 mt-1 flex items-center gap-1">
+                            <Zap className="w-3 h-3" />
+                            Multi-Correct Support: You can manualy edit the Answer Key after adding to include alternatives with |.
+                          </p>
                         </div>
+
                       </>
                     ) : (
                       <div>
-                        <Label>Correct Answer (Answer Key)</Label>
+                        <Label>Correct Answer (AI Answer Key)</Label>
                         <Input
                           value={examQuestionForm.correct_answer}
                           onChange={e => setExamQuestionForm({ ...examQuestionForm, correct_answer: e.target.value })}
-                          placeholder="e.g. O(n log n) or keyword1, keyword2, keyword3"
+                          placeholder="e.g. 2 | 22 or keyword1, keyword2"
+                          className="bg-slate-900 border-white/5 text-white"
                         />
-                        <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1">
-                          <Info className="w-3 h-3" />
-                          For paragraph/code, use comma-separated keywords to enable partial auto-grading.
+                        <p className="text-[10px] text-indigo-400 mt-1 flex items-center gap-1">
+                          <Bot className="w-3 h-3" />
+                          AI Auto-marking: Use | for alternative correct answers. Use , for required keywords.
                         </p>
                       </div>
+
                     )}
 
                     <Button onClick={handleSaveExamQuestion} disabled={!examQuestionForm.question.trim() || isSaving || (examQuestionForm.question_type === 'mcq' && !examQuestionForm.correct_answer)} className="w-full">
@@ -3733,10 +3777,21 @@ const AdminDashboard = () => {
                           </TableCell>
                           <TableCell className="text-xs text-muted-foreground">{sub.submitted_at ? format(new Date(sub.submitted_at), 'PP p') : '-'}</TableCell>
                           <TableCell className="text-right">
-                            <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-700 hover:bg-red-50" onClick={() => handleDeleteExamSubmission(sub.id)}>
-                              <RefreshCw className="w-3 h-3 mr-1" /> Allow Retest
-                            </Button>
+                            <div className="flex justify-end gap-1">
+                              <Button size="sm" variant="ghost" className="text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50" 
+                                onClick={() => {
+                                  setSelectedSubForGrading(sub);
+                                  setManualScore(sub.score);
+                                  setManualGradeDialogOpen(true);
+                                }}>
+                                <Edit className="w-3 h-3 mr-1" /> Edit Score
+                              </Button>
+                              <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-700 hover:bg-red-50" onClick={() => handleDeleteExamSubmission(sub.id)}>
+                                <RefreshCw className="w-3 h-3 mr-1" /> Allow Retest
+                              </Button>
+                            </div>
                           </TableCell>
+
                         </TableRow>
                       ))}
                     {examSubmissions.filter((s: any) => examResultsFilter === 'all' || s.exam_id === examResultsFilter).length === 0 && (
@@ -3746,8 +3801,39 @@ const AdminDashboard = () => {
                 </Table>
               </div>
             </TabsContent>
-
           </Tabs>
+
+          {/* Manual Grade Dialog */}
+          <Dialog open={manualGradeDialogOpen} onOpenChange={setManualGradeDialogOpen}>
+            <DialogContent className="max-w-sm">
+              <DialogHeader><DialogTitle>Manual Score Override</DialogTitle></DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-4">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Student</p>
+                  <p className="text-sm font-black text-slate-900">{selectedSubForGrading?.student_name}</p>
+                  <p className="text-[10px] text-slate-400 mt-2 font-bold uppercase tracking-tighter">Current Score</p>
+                  <p className="text-base font-black text-indigo-600">{selectedSubForGrading?.score} / {selectedSubForGrading?.total_marks}</p>
+                </div>
+                
+                <div>
+                  <Label>Adjusted Score (Max: {selectedSubForGrading?.total_marks})</Label>
+                  <Input 
+                    type="number" 
+                    value={manualScore} 
+                    onChange={e => setManualScore(Number(e.target.value))}
+                    max={selectedSubForGrading?.total_marks}
+                    className="mt-2 text-lg font-bold"
+                  />
+                </div>
+                
+                <Button onClick={handleUpdateScore} disabled={isSaving} className="w-full h-12 bg-indigo-600 hover:bg-indigo-700">
+                  {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <ShieldCheck className="w-4 h-4 mr-2" />}
+                  Confirm Manual Grade
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
 
         </div>
       </main>

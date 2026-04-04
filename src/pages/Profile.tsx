@@ -4,11 +4,102 @@ import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
-import { Loader2, User, Calendar, MapPin, Clock, Ticket, FileText } from "lucide-react";
+import { Loader2, User, Calendar, MapPin, Clock, Ticket, FileText, Zap, AlertTriangle } from "lucide-react";
+
 import { format } from "date-fns";
 import { useAuth } from "@/hooks/useAuth";
 import { QRCodeSVG } from "qrcode.react";
 import { cn } from "@/lib/utils";
+
+const TestResultItem = ({ sub }: { sub: any }) => {
+    const [isExpanded, setIsExpanded] = useState(false);
+    return (
+        <div className="relative bg-white/70 backdrop-blur-xl border border-white/40 shadow-xl rounded-3xl p-6 flex flex-col gap-6 group hover:bg-white/80 transition-all">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                <div className="flex items-center gap-4">
+                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border-2 ${
+                        (sub.score / sub.total_marks) >= 0.4 ? 'bg-green-50 border-green-100 text-green-600' : 'bg-red-50 border-red-100 text-red-600'
+                    }`}>
+                        <FileText className="w-7 h-7" />
+                    </div>
+                    <div>
+                        <h3 className="text-xl font-bold text-slate-900 mb-1">{sub.exams?.title || sub.exam_title || 'Unknown Exam'}</h3>
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500">
+                            <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> {format(new Date(sub.submitted_at), "MMM d")}</span>
+                            <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {Math.floor(sub.time_used_seconds / 60)}mUsed</span>
+                            {sub.violations > 0 && <span className="text-red-500 font-medium font-mono text-xs bg-red-50 px-2 py-0.5 rounded-full border border-red-100">! {sub.violations} Violations</span>}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-6">
+                    <div className="text-right">
+                        <p className="text-xs uppercase tracking-wider text-slate-400 mb-1 font-bold">Score</p>
+                        <div className="flex items-baseline gap-1">
+                            <span className={`text-2xl font-black ${(sub.score / sub.total_marks) >= 0.4 ? 'text-green-600' : 'text-rose-600'}`}>{sub.score}</span>
+                            <span className="text-slate-400 font-bold">/{sub.total_marks}</span>
+                        </div>
+                    </div>
+                    <div className={`w-14 h-14 rounded-full border-4 flex items-center justify-center font-bold text-xs ${
+                        (sub.score / sub.total_marks) >= 0.4 ? 'border-green-100 text-green-600' : 'border-red-100 text-red-600'
+                    }`}>
+                        {Math.round((sub.score / sub.total_marks) * 100)}%
+                    </div>
+                    <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => setIsExpanded(!isExpanded)}
+                        className="h-10 rounded-xl px-4 border border-slate-200 hover:bg-slate-50"
+                    >
+                        {isExpanded ? 'Hide Review' : 'Review Test'}
+                    </Button>
+                </div>
+            </div>
+
+            {sub.status === 'auto_submitted' && (
+                <div className="absolute top-2 right-6">
+                    <span className="bg-red-500 text-white text-[10px] uppercase font-black px-2 py-0.5 rounded-b-md shadow-sm">Auto-Submitted</span>
+                </div>
+            )}
+
+            {isExpanded && sub.results_breakdown && (
+                <div className="mt-4 pt-6 border-t border-slate-100 animate-in fade-in slide-in-from-top-1 duration-300">
+                    <h4 className="text-sm font-bold text-slate-900 mb-4 px-2">Detailed Answer Review</h4>
+                    <div className="space-y-4">
+                        {sub.results_breakdown.map((item: any, idx: number) => (
+                            <div key={idx} className="bg-slate-50 border border-slate-200/60 rounded-2xl p-5">
+                                <div className="flex justify-between items-start gap-3 mb-3">
+                                    <p className="text-sm font-bold text-slate-800 leading-relaxed max-w-[80%]">{idx + 1}. {item.question}</p>
+                                    <span className={`text-xs font-black px-2 py-1 rounded-lg ${item.score === item.maxScore ? 'bg-emerald-500/10 text-emerald-600' : 'bg-amber-500/10 text-amber-600'}`}>
+                                        {item.score}/{item.maxScore}
+                                    </span>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                    <div className="bg-white border border-slate-200 rounded-xl p-3">
+                                        <p className="text-[9px] uppercase font-bold text-slate-400 mb-1">Your Answer</p>
+                                        <p className="text-xs text-slate-700 font-medium">{item.userAnswer || 'No answer'}</p>
+                                    </div>
+                                    <div className="bg-white border border-slate-200 rounded-xl p-3">
+                                        <p className="text-[9px] uppercase font-bold text-indigo-400 mb-1">Recommended Key</p>
+                                        <p className="text-xs text-indigo-700 font-medium">{item.correctAnswer || 'AI Evaluated'}</p>
+                                    </div>
+                                </div>
+                                <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-3 flex gap-3">
+                                    <div className="mt-0.5"><Zap className="w-3 h-3 text-indigo-400" /></div>
+                                    <div>
+                                        <p className="text-[9px] uppercase font-bold text-indigo-400 mb-0.5">Teacher's Note</p>
+                                        <p className="text-[11px] text-indigo-800 font-medium leading-relaxed italic">{item.feedback}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
 
 const Profile = () => {
     const { user } = useAuth();
@@ -148,46 +239,10 @@ const Profile = () => {
                             {userExamHistory.length > 0 ? (
                                 <div className="grid gap-6">
                                     {userExamHistory.map((sub: any) => (
-                                        <div key={sub.id} className="relative bg-white/70 backdrop-blur-xl border border-white/40 shadow-xl rounded-3xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-6 group hover:scale-[1.01] transition-all hover:bg-white/80">
-                                            <div className="flex items-center gap-4">
-                                                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border-2 ${
-                                                    (sub.score / sub.total_marks) >= 0.4 ? 'bg-green-50 border-green-100 text-green-600' : 'bg-red-50 border-red-100 text-red-600'
-                                                }`}>
-                                                    <FileText className="w-7 h-7" />
-                                                </div>
-                                                <div>
-                                                    <h3 className="text-xl font-bold text-slate-900 mb-1">{sub.exams?.title || sub.exam_title || 'Unknown Exam'}</h3>
-                                                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500">
-                                                        <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> {format(new Date(sub.submitted_at), "MMM d")}</span>
-                                                        <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {Math.floor(sub.time_used_seconds / 60)}mUsed</span>
-                                                        {sub.violations > 0 && <span className="text-red-500 font-medium font-mono text-xs bg-red-50 px-2 py-0.5 rounded-full border border-red-100">! {sub.violations} Violations</span>}
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div className="flex items-center gap-6">
-                                                <div className="text-right">
-                                                    <p className="text-xs uppercase tracking-wider text-slate-400 mb-1 font-bold">Score</p>
-                                                    <div className="flex items-baseline gap-1">
-                                                        <span className={`text-2xl font-black ${(sub.score / sub.total_marks) >= 0.4 ? 'text-green-600' : 'text-rose-600'}`}>{sub.score}</span>
-                                                        <span className="text-slate-400 font-bold">/{sub.total_marks}</span>
-                                                    </div>
-                                                </div>
-                                                <div className={`w-14 h-14 rounded-full border-4 flex items-center justify-center font-bold text-xs ${
-                                                    (sub.score / sub.total_marks) >= 0.4 ? 'border-green-100 text-green-600' : 'border-red-100 text-red-600'
-                                                }`}>
-                                                    {Math.round((sub.score / sub.total_marks) * 100)}%
-                                                </div>
-                                            </div>
-
-                                            {sub.status === 'auto_submitted' && (
-                                                <div className="absolute top-2 right-6">
-                                                    <span className="bg-red-500 text-white text-[10px] uppercase font-black px-2 py-0.5 rounded-b-md shadow-sm">Auto-Submitted</span>
-                                                </div>
-                                            )}
-                                        </div>
+                                        <TestResultItem key={sub.id} sub={sub} />
                                     ))}
                                 </div>
+
                             ) : (
                                 <div className="text-center py-16 bg-white/40 rounded-[2rem] border border-dashed border-gray-200">
                                     <FileText className="w-12 h-12 text-gray-200 mx-auto mb-4" />

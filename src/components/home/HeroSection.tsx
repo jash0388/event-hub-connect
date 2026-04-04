@@ -2,9 +2,8 @@ import { useEffect, useState } from "react";
 import { ArrowRight, Sparkles, Database, Users, GraduationCap } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
 
-export function HeroSection() {
+export function HeroSection({ stats: externalStats }: { stats?: { events?: number, projects?: number, students?: number, internships?: number, isLoading?: boolean } }) {
   const [loaded, setLoaded] = useState(false);
   const [stats, setStats] = useState({
     events: 50,
@@ -15,33 +14,16 @@ export function HeroSection() {
 
   useEffect(() => {
     setLoaded(true);
-
-    const fetchRealStats = async () => {
-      try {
-        const [
-          { count: eventCount },
-          { count: projectCount },
-          { count: profileCount }
-        ] = await Promise.all([
-          supabase.from('events').select('*', { count: 'exact', head: true }),
-          supabase.from('projects').select('*', { count: 'exact', head: true }),
-          supabase.from('profiles').select('*', { count: 'exact', head: true })
-        ]);
-
-        setStats(prev => ({
-          ...prev,
-          events: Math.max(50, eventCount || 0),
-          projects: projectCount || 0,
-          students: Math.max(1200, profileCount || 0),
-          internships: 100
-        }));
-      } catch (error) {
-        console.error("Error fetching hero stats:", error);
-      }
-    };
-
-    fetchRealStats();
-  }, []);
+    if (externalStats && !externalStats.isLoading) {
+      setStats(prev => ({
+        ...prev,
+        events: Math.max(50, externalStats.events || 0),
+        projects: externalStats.projects || 0,
+        students: Math.max(1200, externalStats.students || 0),
+        internships: externalStats.internships || 100
+      }));
+    }
+  }, [externalStats]);
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20 bg-[radial-gradient(circle_at_50%_0%,_#f8fafc_0%,_#f1f5f9_100%)]">

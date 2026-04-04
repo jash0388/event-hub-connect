@@ -1,75 +1,32 @@
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { Calendar, Users, Folder, Award } from "lucide-react";
 
-interface Stats {
-  eventsCount: number;
-  attendeesCount: number;
-  projectsCount: number;
+interface StatsProps {
+  stats?: {
+    events: number;
+    students: number;
+    projects: number;
+    attendees: number;
+    isLoading: boolean;
+  };
 }
 
-export function StatsSection() {
-  const [stats, setStats] = useState<Stats>({
-    eventsCount: 0,
-    attendeesCount: 0,
-    projectsCount: 0,
-  });
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const { count: eventsCount } = await supabase
-          .from("events")
-          .select("*", { count: "exact", head: true });
-
-        const { count: attendeesCount } = await supabase
-          .from("event_attendees")
-          .select("*", { count: "exact", head: true })
-          .eq("rsvp_status", "going");
-
-        const { count: projectsCount } = await supabase
-          .from("projects")
-          .select("*", { count: "exact", head: true });
-
-        setStats({
-          eventsCount: eventsCount || 0,
-          attendeesCount: attendeesCount || 0,
-          projectsCount: projectsCount || 0,
-        });
-      } catch (error) {
-        console.warn("Failed to fetch stats:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchStats();
-  }, []);
-
-  const formatNumber = (num: number) => {
-    if (num >= 1000) {
-      return (num / 1000).toFixed(1) + "K+";
-    }
-    return num > 0 ? num + "+" : "0+";
-  };
-
+export function StatsSection({ stats: externalStats }: StatsProps) {
   const statsData = [
     {
       icon: Calendar,
-      value: Math.max(50, stats.eventsCount),
+      value: Math.max(50, externalStats?.events || 0),
       label: "Events Hosted",
       description: "Hackathons, workshops & meetups",
     },
     {
       icon: Users,
-      value: Math.max(1200, stats.attendeesCount),
+      value: Math.max(1200, externalStats?.attendees || 0),
       label: "Students",
       description: "Growing every day",
     },
     {
       icon: Folder,
-      value: stats.projectsCount,
+      value: externalStats?.projects || 0,
       label: "Projects Built",
       description: "By our community",
     },
@@ -80,6 +37,14 @@ export function StatsSection() {
       description: "Career opportunities",
     },
   ];
+
+  const isLoading = externalStats?.isLoading ?? true;
+  const formatNumber = (num: number) => {
+    if (num >= 1000) {
+      return (num / 1000).toFixed(1) + "K+";
+    }
+    return num > 0 ? num + "+" : "0+";
+  };
 
   return (
     <section className="py-20 bg-foreground">
