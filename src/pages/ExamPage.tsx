@@ -746,7 +746,7 @@ export default function ExamPage() {
       try {
         const [examsRes, subsRes] = await Promise.all([
           (supabase as any).from('exams').select('*').eq('is_active', true).order('created_at', { ascending: false }),
-          (supabase as any).from('exam_submissions').select('exam_id').eq('user_id', userId)
+          (supabase as any).from('exam_submissions').select('exam_id, exam_title').eq('user_id', userId)
         ]);
 
         if (!mounted) return;
@@ -770,7 +770,7 @@ export default function ExamPage() {
         if (subsRes.data) {
           subsRes.data.forEach((s: any) => {
             ids.add(s.exam_id);
-            if (s.exam_title) titles.add(s.exam_title);
+            if (s.exam_title) titles.add(s.exam_title.trim().toLowerCase());
           });
         }
 
@@ -806,8 +806,9 @@ export default function ExamPage() {
   }, [phase]);
 
   const handleSelectExam = async (exam: Exam) => {
-    // 1. Instant state check - ID or TITLE
-    if (completedExamIds.has(exam.id) || completedExamTitles.has(exam.title)) {
+    // 1. Instant state check - ID or FUZZY TITLE
+    const examTitleNorm = (exam.title || '').trim().toLowerCase();
+    if (completedExamIds.has(exam.id) || completedExamTitles.has(examTitleNorm)) {
       toast({ title: "Access Denied", description: "You have already completed this examination (including any other versions).", variant: "destructive" });
       return;
     }
