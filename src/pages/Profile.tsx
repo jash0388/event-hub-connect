@@ -130,7 +130,7 @@ const Profile = () => {
                 const examsPromise = (supabase as any)
                     .from('exam_submissions')
                     .select('*, exams(title)')
-                    .eq('user_id', user.id)
+                    .or(`user_id.eq.${user.id},user_id.eq.${(user as any).firebase_uid || ''}`)
                     .order('submitted_at', { ascending: false });
 
                 const [registrations, attendees, exams] = await Promise.all([

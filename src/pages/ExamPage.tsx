@@ -686,6 +686,7 @@ export default function ExamPage() {
   const [phase, setPhase] = useState<'select' | 'info' | 'exam' | 'results'>('select');
   const [exams, setExams] = useState<Exam[]>([]);
   const [completedExamIds, setCompletedExamIds] = useState<Set<string>>(new Set());
+  const [completedExamTitles, setCompletedExamTitles] = useState<Set<string>>(new Set());
   const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
   const [questions, setQuestions] = useState<ExamQuestion[]>([]);
   const [loadingExams, setLoadingExams] = useState(true);
@@ -752,16 +753,29 @@ export default function ExamPage() {
 
         if (examsRes.error) throw examsRes.error;
         const freshExams = examsRes.data || [];
-        setExams(freshExams);
+        
+        // DEDUPLICATE by title - keep most recent
+        const deduped: Record<string, any> = {};
+        freshExams.forEach((ex: any) => {
+          if (!deduped[ex.title] || new Date(ex.created_at) > new Date(deduped[ex.title].created_at)) {
+            deduped[ex.title] = ex;
+          }
+        });
+        setExams(Object.values(deduped));
 
         const ids = new Set<string>();
+        const titles = new Set<string>();
 
         // Check database submissions - SINGLE SOURCE OF TRUTH
         if (subsRes.data) {
-          subsRes.data.forEach((s: any) => ids.add(s.exam_id));
+          subsRes.data.forEach((s: any) => {
+            ids.add(s.exam_id);
+            if (s.exam_title) titles.add(s.exam_title);
+          });
         }
 
         setCompletedExamIds(ids);
+        setCompletedExamTitles(titles);
       } catch (err: any) {
         console.error('Error fetching portal data:', err);
         if (mounted) setExams([]);
@@ -792,10 +806,9 @@ export default function ExamPage() {
   }, [phase]);
 
   const handleSelectExam = async (exam: Exam) => {
-    // 1. Instant state check
-    if (completedExamIds.has(exam.id)) {
-
-      toast({ title: "Access Denied", description: "You have already completed this examination.", variant: "destructive" });
+    // 1. Instant state check - ID or TITLE
+    if (completedExamIds.has(exam.id) || completedExamTitles.has(exam.title)) {
+      toast({ title: "Access Denied", description: "You have already completed this examination (including any other versions).", variant: "destructive" });
       return;
     }
 

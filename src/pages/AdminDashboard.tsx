@@ -3804,10 +3804,20 @@ const AdminDashboard = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {examSubmissions
-                      .filter((s: any) => examResultsFilter === 'all' || s.exam_id === examResultsFilter)
-                      .map((sub: any) => {
-                        const studentProfile = allUsers.find(u => u.id === sub.user_id || u.firebase_uid === sub.user_id);
+                    {(() => {
+                      // BUILD MAPS ONCE OUTSIDE THE LOOP
+                      const userMap = new Map((allUsers || []).map(u => [u.id, u]));
+                      const fbUserMap = new Map((allUsers || []).map(u => [u.firebase_uid, u]));
+                      
+                      const filteredSubs = (examSubmissions || []).filter((s: any) => examResultsFilter === 'all' || s.exam_id === examResultsFilter);
+                      
+                      if (filteredSubs.length === 0) {
+                        return <TableRow><TableCell colSpan={10} className="text-center py-8 text-muted-foreground">No submissions yet.</TableCell></TableRow>;
+                      }
+
+                      return filteredSubs.map((sub: any) => {
+                        const studentProfile = userMap.get(sub.user_id) || fbUserMap.get(sub.user_id);
+                        
                         // Extract email from name if it was appended: "Name (email@domain.com)"
                         const nameParts = sub.student_name?.match(/^(.*) \((.*)\)$/);
                         const displayName = nameParts ? nameParts[1] : sub.student_name;
@@ -3853,10 +3863,8 @@ const AdminDashboard = () => {
                             </TableCell>
                           </TableRow>
                         );
-                      })}
-                    {examSubmissions.filter((s: any) => examResultsFilter === 'all' || s.exam_id === examResultsFilter).length === 0 && (
-                      <TableRow><TableCell colSpan={10} className="text-center py-8 text-muted-foreground">No submissions yet.</TableCell></TableRow>
-                    )}
+                      });
+                    })()}
                   </TableBody>
                 </Table>
               </div>
