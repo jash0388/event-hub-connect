@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "AIzaSyByvtqmSfAQ-YB5YO1EXn_yXepau8sq8M0";
 const genAI = new GoogleGenerativeAI(API_KEY);
 
 export interface GradingResult {
