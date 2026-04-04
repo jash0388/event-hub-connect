@@ -5,6 +5,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
+// Deployment Ping: 2026-04-04 22:52:00
+
 // Lazy load pages for better performance
 const Home = lazy(() => import("./pages/Home"));
 const Feed = lazy(() => import("./pages/Feed"));
