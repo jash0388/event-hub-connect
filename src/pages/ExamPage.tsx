@@ -680,7 +680,7 @@ function ResultsScreen({
 // ============================================================
 export default function ExamPage() {
   const navigate = useNavigate();
-  const { user, firebaseUser, isFirebaseUser } = useAuth();
+  const { user, firebaseUser, isFirebaseUser, loading: authLoading } = useAuth();
   const { toast } = useToast();
 
   const [phase, setPhase] = useState<'select' | 'info' | 'exam' | 'results'>('select');
@@ -732,8 +732,14 @@ export default function ExamPage() {
   useEffect(() => {
     let mounted = true;
     const fetchPortalData = async () => {
-      // WAIT for userId to be ready before fetching
-      if (!userId) return;
+      // 1. Wait for Auth to resolve
+      if (authLoading) return;
+
+      // 2. If Auth finished and no user, stop loading
+      if (!userId) {
+        if (mounted) setLoadingExams(false);
+        return;
+      }
       
       setLoadingExams(true);
       try {
@@ -750,7 +756,7 @@ export default function ExamPage() {
 
         const ids = new Set<string>();
 
-        // 1. Check database submissions - SINGLE SOURCE OF TRUTH
+        // Check database submissions - SINGLE SOURCE OF TRUTH
         if (subsRes.data) {
           subsRes.data.forEach((s: any) => ids.add(s.exam_id));
         }
@@ -765,7 +771,7 @@ export default function ExamPage() {
     };
     fetchPortalData();
     return () => { mounted = false; };
-  }, [userId, user, firebaseUser]); // Added extra deps for stability
+  }, [userId, authLoading]); // Simplified deps
 
 
   // Timer
