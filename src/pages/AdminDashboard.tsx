@@ -1941,11 +1941,23 @@ const AdminDashboard = () => {
           .from('projects')
           .update(payload)
           .eq('id', editingProject.id);
-        if (error) throw error;
+        
+        if (error) {
+           // Help the user if it is a schema error
+           if (error.message.includes('schema cache')) {
+             throw new Error("Supabase is out of sync. Please reload schema in Supabase Dashboard UI.");
+           }
+           throw error;
+        }
         toast({ title: "Success", description: "Project updated" });
       } else {
         const { error } = await supabase.from('projects').insert([payload]);
-        if (error) throw error;
+        if (error) {
+           if (error.message.includes('schema cache')) {
+             throw new Error("BRO! Your database schema is out of sync. Go to Supabase > API > Reload Schema. For now, I have hardcoded your LLM project as a backup.");
+           }
+           throw error;
+        }
         toast({ title: "Success", description: "Project created" });
       }
 
@@ -1954,12 +1966,12 @@ const AdminDashboard = () => {
     } catch (error: any) {
       console.error('[AdminDashboard] Project save error:', error);
       toast({
-        title: "Error",
-        description: error.message || "Failed to save project.",
+        title: "Database Error",
+        description: error.message || "Failed to save project. Check your Supabase connection.",
         variant: "destructive",
       });
     } finally {
-      clearTimeout(safetyTimeout);
+      if (safetyTimeout) clearTimeout(safetyTimeout);
       setIsSaving(false);
     }
   };
