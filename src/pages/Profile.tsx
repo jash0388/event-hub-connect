@@ -62,11 +62,11 @@ const TestResultItem = ({ sub }: { sub: any }) => {
                 </div>
             )}
 
-            {isExpanded && sub.results_breakdown && (
+            {isExpanded && (sub.results_breakdown || (sub.answers && sub.answers._results_breakdown)) && (
                 <div className="mt-4 pt-6 border-t border-slate-100 animate-in fade-in slide-in-from-top-1 duration-300">
                     <h4 className="text-sm font-bold text-slate-900 mb-4 px-2">Detailed Answer Review</h4>
                     <div className="space-y-4">
-                        {sub.results_breakdown.map((item: any, idx: number) => (
+                        {(sub.results_breakdown || (sub.answers && sub.answers._results_breakdown)).map((item: any, idx: number) => (
                             <div key={idx} className="bg-slate-50 border border-slate-200/60 rounded-2xl p-5">
                                 <div className="flex justify-between items-start gap-3 mb-3">
                                     <p className="text-sm font-bold text-slate-800 leading-relaxed max-w-[80%]">{idx + 1}. {item.question}</p>

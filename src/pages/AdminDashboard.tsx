@@ -3679,96 +3679,6 @@ const AdminDashboard = () => {
                 })}
               </div>
 
-              {/* Create/Edit Exam Dialog */}
-              <Dialog open={examDialogOpen} onOpenChange={setExamDialogOpen}>
-                <DialogContent className="max-w-lg">
-                  <DialogHeader><DialogTitle>{editingExam ? 'Edit Exam' : 'Create New Exam'}</DialogTitle></DialogHeader>
-                  <div className="space-y-4">
-                    <div><Label>Title *</Label><Input value={examForm.title} onChange={e => setExamForm({ ...examForm, title: e.target.value })} placeholder="e.g. Data Structures Test 1" /></div>
-                    <div><Label>Description</Label><Textarea value={examForm.description} onChange={e => setExamForm({ ...examForm, description: e.target.value })} placeholder="Brief description..." /></div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div><Label>Duration (minutes)</Label><Input type="number" value={examForm.duration_minutes} onChange={e => setExamForm({ ...examForm, duration_minutes: parseInt(e.target.value) || 30 })} /></div>
-                      <div><Label>Max Violations</Label><Input type="number" value={examForm.max_violations} onChange={e => setExamForm({ ...examForm, max_violations: parseInt(e.target.value) || 2 })} /></div>
-                    </div>
-                    <Button onClick={handleSaveExam} disabled={!examForm.title.trim() || isSaving} className="w-full">
-                      {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
-                      {editingExam ? 'Update Exam' : 'Create Exam'}
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-
-              {/* Add Question Dialog */}
-              <Dialog open={examQuestionDialogOpen} onOpenChange={setExamQuestionDialogOpen}>
-                <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-                  <DialogHeader><DialogTitle>Add Question</DialogTitle></DialogHeader>
-                  <div className="space-y-4">
-                    <div><Label>Question *</Label><Textarea value={examQuestionForm.question} onChange={e => setExamQuestionForm({ ...examQuestionForm, question: e.target.value })} placeholder="Enter the question..." /></div>
-                    <div>
-                      <Label>Type</Label>
-                      <select value={examQuestionForm.question_type} onChange={e => setExamQuestionForm({ ...examQuestionForm, question_type: e.target.value })} className="w-full p-2 border rounded-lg">
-                        <option value="mcq">Multiple Choice</option>
-                        <option value="paragraph">Paragraph Answer</option>
-                        <option value="code">Query / Code Challenge</option>
-                      </select>
-                    </div>
-                    <div><Label>Marks</Label><Input type="number" value={examQuestionForm.marks} onChange={e => setExamQuestionForm({ ...examQuestionForm, marks: parseInt(e.target.value) || 5 })} /></div>
-
-                    {examQuestionForm.question_type === 'mcq' ? (
-                      <>
-                        <div>
-                          <Label>Options</Label>
-                          {examQuestionForm.options.map((opt, idx) => (
-                            <div key={idx} className="flex gap-2 mt-2">
-                              <Input value={opt} onChange={e => { const newOpts = [...examQuestionForm.options]; newOpts[idx] = e.target.value; setExamQuestionForm({ ...examQuestionForm, options: newOpts }); }} placeholder={`Option ${String.fromCharCode(65 + idx)}`} />
-                              {idx >= 2 && <Button size="sm" variant="ghost" onClick={() => { const newOpts = examQuestionForm.options.filter((_, i) => i !== idx); setExamQuestionForm({ ...examQuestionForm, options: newOpts }); }}><Trash2 className="w-3 h-3" /></Button>}
-                            </div>
-                          ))}
-                          {examQuestionForm.options.length < 6 && (
-                            <Button size="sm" variant="outline" className="mt-2" onClick={() => setExamQuestionForm({ ...examQuestionForm, options: [...examQuestionForm.options, ''] })}>
-                              <Plus className="w-3 h-3 mr-1" /> Add Option
-                            </Button>
-                          )}
-                        </div>
-                        <div>
-                          <Label>Correct Answer *</Label>
-                          <select value={examQuestionForm.correct_answer} onChange={e => setExamQuestionForm({ ...examQuestionForm, correct_answer: e.target.value })} className="w-full p-2 border rounded-lg bg-slate-900 border-white/5 text-white">
-                            <option value="">Select correct answer...</option>
-                            {examQuestionForm.options.filter(o => o.trim()).map((opt, idx) => (
-                              <option key={idx} value={opt}>{String.fromCharCode(65 + idx)}. {opt}</option>
-                            ))}
-                          </select>
-                          <p className="text-[10px] text-indigo-400 mt-1 flex items-center gap-1">
-                            <Zap className="w-3 h-3" />
-                            Multi-Correct Support: You can manualy edit the Answer Key after adding to include alternatives with |.
-                          </p>
-                        </div>
-
-                      </>
-                    ) : (
-                      <div>
-                        <Label>Correct Answer (AI Answer Key)</Label>
-                        <Input
-                          value={examQuestionForm.correct_answer}
-                          onChange={e => setExamQuestionForm({ ...examQuestionForm, correct_answer: e.target.value })}
-                          placeholder="e.g. 2 | 22 or keyword1, keyword2"
-                          className="bg-slate-900 border-white/5 text-white"
-                        />
-                        <p className="text-[10px] text-indigo-400 mt-1 flex items-center gap-1">
-                          <Bot className="w-3 h-3" />
-                          AI Auto-marking: Use | for alternative correct answers. Use , for required keywords.
-                        </p>
-                      </div>
-
-                    )}
-
-                    <Button onClick={handleSaveExamQuestion} disabled={!examQuestionForm.question.trim() || isSaving || (examQuestionForm.question_type === 'mcq' && !examQuestionForm.correct_answer)} className="w-full">
-                      {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
-                      Add Question
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
             </TabsContent>
 
             {/* ==================== TEST RESULTS TAB ==================== */}
@@ -3870,6 +3780,97 @@ const AdminDashboard = () => {
               </div>
             </TabsContent>
           </Tabs>
+
+          {/* Create/Edit Exam Dialog */}
+          <Dialog open={examDialogOpen} onOpenChange={setExamDialogOpen}>
+            <DialogContent className="max-w-lg">
+              <DialogHeader><DialogTitle>{editingExam ? 'Edit Exam' : 'Create New Exam'}</DialogTitle></DialogHeader>
+              <div className="space-y-4">
+                <div><Label>Title *</Label><Input value={examForm.title} onChange={e => setExamForm({ ...examForm, title: e.target.value })} placeholder="e.g. Data Structures Test 1" /></div>
+                <div><Label>Description</Label><Textarea value={examForm.description} onChange={e => setExamForm({ ...examForm, description: e.target.value })} placeholder="Brief description..." /></div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div><Label>Duration (minutes)</Label><Input type="number" value={examForm.duration_minutes} onChange={e => setExamForm({ ...examForm, duration_minutes: parseInt(e.target.value) || 30 })} /></div>
+                  <div><Label>Max Violations</Label><Input type="number" value={examForm.max_violations} onChange={e => setExamForm({ ...examForm, max_violations: parseInt(e.target.value) || 2 })} /></div>
+                </div>
+                <Button onClick={handleSaveExam} disabled={!examForm.title.trim() || isSaving} className="w-full">
+                  {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
+                  {editingExam ? 'Update Exam' : 'Create Exam'}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Add Question Dialog */}
+          <Dialog open={examQuestionDialogOpen} onOpenChange={setExamQuestionDialogOpen}>
+            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+              <DialogHeader><DialogTitle>Add Question</DialogTitle></DialogHeader>
+              <div className="space-y-4">
+                <div><Label>Question *</Label><Textarea value={examQuestionForm.question} onChange={e => setExamQuestionForm({ ...examQuestionForm, question: e.target.value })} placeholder="Enter the question..." /></div>
+                <div>
+                  <Label>Type</Label>
+                  <select value={examQuestionForm.question_type} onChange={e => setExamQuestionForm({ ...examQuestionForm, question_type: e.target.value })} className="w-full p-2 border rounded-lg">
+                    <option value="mcq">Multiple Choice</option>
+                    <option value="paragraph">Paragraph Answer</option>
+                    <option value="code">Query / Code Challenge</option>
+                  </select>
+                </div>
+                <div><Label>Marks</Label><Input type="number" value={examQuestionForm.marks} onChange={e => setExamQuestionForm({ ...examQuestionForm, marks: parseInt(e.target.value) || 5 })} /></div>
+
+                {examQuestionForm.question_type === 'mcq' ? (
+                  <>
+                    <div>
+                      <Label>Options</Label>
+                      {examQuestionForm.options.map((opt, idx) => (
+                        <div key={idx} className="flex gap-2 mt-2">
+                          <Input value={opt} onChange={e => { const newOpts = [...examQuestionForm.options]; newOpts[idx] = e.target.value; setExamQuestionForm({ ...examQuestionForm, options: newOpts }); }} placeholder={`Option ${String.fromCharCode(65 + idx)}`} />
+                          {idx >= 2 && <Button size="sm" variant="ghost" onClick={() => { const newOpts = examQuestionForm.options.filter((_, i) => i !== idx); setExamQuestionForm({ ...examQuestionForm, options: newOpts }); }}><Trash2 className="w-3 h-3" /></Button>}
+                        </div>
+                      ))}
+                      {examQuestionForm.options.length < 6 && (
+                        <Button size="sm" variant="outline" className="mt-2" onClick={() => setExamQuestionForm({ ...examQuestionForm, options: [...examQuestionForm.options, ''] })}>
+                          <Plus className="w-3 h-3 mr-1" /> Add Option
+                        </Button>
+                      )}
+                    </div>
+                    <div>
+                      <Label>Correct Answer *</Label>
+                      <select value={examQuestionForm.correct_answer} onChange={e => setExamQuestionForm({ ...examQuestionForm, correct_answer: e.target.value })} className="w-full p-2 border rounded-lg bg-slate-900 border-white/5 text-white">
+                        <option value="">Select correct answer...</option>
+                        {examQuestionForm.options.filter(o => o.trim()).map((opt, idx) => (
+                          <option key={idx} value={opt}>{String.fromCharCode(65 + idx)}. {opt}</option>
+                        ))}
+                      </select>
+                      <p className="text-[10px] text-indigo-400 mt-1 flex items-center gap-1">
+                        <Zap className="w-3 h-3" />
+                        Multi-Correct Support: You can manualy edit the Answer Key after adding to include alternatives with |.
+                      </p>
+                    </div>
+
+                  </>
+                ) : (
+                  <div>
+                    <Label>Correct Answer (AI Answer Key)</Label>
+                    <Input
+                      value={examQuestionForm.correct_answer}
+                      onChange={e => setExamQuestionForm({ ...examQuestionForm, correct_answer: e.target.value })}
+                      placeholder="e.g. 2 | 22 or keyword1, keyword2"
+                      className="bg-slate-900 border-white/5 text-white"
+                    />
+                    <p className="text-[10px] text-indigo-400 mt-1 flex items-center gap-1">
+                      <Bot className="w-3 h-3" />
+                      AI Auto-marking: Use | for alternative correct answers. Use , for required keywords.
+                    </p>
+                  </div>
+
+                )}
+
+                <Button onClick={handleSaveExamQuestion} disabled={!examQuestionForm.question.trim() || isSaving || (examQuestionForm.question_type === 'mcq' && !examQuestionForm.correct_answer)} className="w-full">
+                  {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
+                  Add Question
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
 
           {/* Manual Grade Dialog */}
           <Dialog open={manualGradeDialogOpen} onOpenChange={setManualGradeDialogOpen}>

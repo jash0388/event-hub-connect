@@ -63,11 +63,13 @@ function TestSelectionScreen({
   loading,
   onSelectExam,
   completedExamIds,
+  completedExamTitles,
 }: {
   exams: Exam[];
   loading: boolean;
   onSelectExam: (exam: Exam) => void;
   completedExamIds: Set<string>;
+  completedExamTitles: Set<string>;
 }) {
   const navigate = useNavigate();
 
@@ -131,7 +133,8 @@ function TestSelectionScreen({
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {exams.map((exam, idx) => {
-              const isCompleted = completedExamIds.has(exam.id);
+              const examTitleNorm = (exam.title || '').trim().toLowerCase();
+              const isCompleted = completedExamIds.has(exam.id) || completedExamTitles.has(examTitleNorm);
               return (
                 <motion.div
                   key={exam.id}
@@ -746,7 +749,7 @@ export default function ExamPage() {
       try {
         const [examsRes, subsRes] = await Promise.all([
           (supabase as any).from('exams').select('*').eq('is_active', true).order('created_at', { ascending: false }),
-          (supabase as any).from('exam_submissions').select('exam_id, exam_title').eq('user_id', userId)
+          (supabase as any).from('exam_submissions').select('exam_id, exams(title)').eq('user_id', userId)
         ]);
 
         if (!mounted) return;
@@ -766,11 +769,11 @@ export default function ExamPage() {
         const ids = new Set<string>();
         const titles = new Set<string>();
 
-        // Check database submissions - SINGLE SOURCE OF TRUTH
         if (subsRes.data) {
           subsRes.data.forEach((s: any) => {
             ids.add(s.exam_id);
-            if (s.exam_title) titles.add(s.exam_title.trim().toLowerCase());
+            const title = s.exams?.title || s.exam_title;
+            if (title) titles.add(title.trim().toLowerCase());
           });
         }
 
@@ -876,77 +879,78 @@ export default function ExamPage() {
 
     const timeUsed = Math.floor((Date.now() - startTime) / 1000);
 
-    // Category-based Batch Grading for High Speed
-    let score = 0;
-    let totalMarks = 0;
-    const aiBatch: any[] = [];
-    const mcqResults: Record<number, number> = {};
+    try {
+      // Category-based Batch Grading for High Speed
+      let score = 0;
+      let totalMarks = 0;
+      const aiBatch: any[] = [];
+      const mcqResults: Record<number, number> = {};
 
-    questions.forEach((q, i) => {
-      totalMarks += q.marks;
-      const userAnswer = (answers[q.id] || '').trim();
-      const correctAnswer = (q.correct_answer || '').trim();
+      questions.forEach((q, i) => {
+        totalMarks += q.marks;
+        const userAnswer = (answers[q.id] || '').trim();
+        const correctAnswer = (q.correct_answer || '').trim();
 
-      if (q.question_type === 'mcq') {
-        let qScore = 0;
-        if (correctAnswer) {
-          const alternatives = correctAnswer.toLowerCase().split('|').map(a => a.trim());
-          const isMatch = alternatives.some(alt => userAnswer.toLowerCase() === alt);
-          qScore = isMatch ? q.marks : 0;
+        if (q.question_type === 'mcq') {
+          let qScore = 0;
+          if (correctAnswer) {
+            const alternatives = correctAnswer.toLowerCase().split('|').map(a => a.trim());
+            const isMatch = alternatives.some(alt => userAnswer.toLowerCase() === alt);
+            qScore = isMatch ? q.marks : 0;
+          }
+          mcqResults[i] = qScore;
+          score += qScore;
+        } else {
+          aiBatch.push({ question: q.question, correctAnswer, userAnswer, maxMarks: q.marks, originalIndex: i });
         }
-        mcqResults[i] = qScore;
-        score += qScore;
-      } else {
-        aiBatch.push({ question: q.question, correctAnswer, userAnswer, maxMarks: q.marks, originalIndex: i });
-      }
-    });
-
-    // Execute Chunked AI Grading for High Speed & Reliability
-    const CHUNK_SIZE = 5;
-    const aiResults: any[] = [];
-    
-    for (let i = 0; i < aiBatch.length; i += CHUNK_SIZE) {
-      const chunk = aiBatch.slice(i, i + CHUNK_SIZE).map(({ originalIndex, ...rest }) => rest);
-      const chunkResults = await gradeExam(chunk);
-      aiResults.push(...chunkResults);
-    }
-
-    const breakdown: any[] = [];
-    let aiPtr = 0;
-
-    questions.forEach((q, i) => {
-      let qScore = 0;
-      let qFeedback = "";
-
-      if (q.question_type === 'mcq') {
-        qScore = mcqResults[i];
-        qFeedback = qScore > 0 ? "Correct selection." : "Incorrect selection.";
-      } else {
-        const res = aiResults[aiPtr++];
-        qScore = res?.score || 0;
-        qFeedback = res?.feedback || "Evaluation complete (Speed optimized).";
-        score += qScore;
-      }
-
-      breakdown.push({
-        question: q.question,
-        userAnswer: answers[q.id] || '',
-        correctAnswer: q.correct_answer || '',
-        score: qScore,
-        maxScore: q.marks,
-        feedback: qFeedback
       });
-    });
 
-    setResultScore(score);
-    setResultTotalMarks(totalMarks);
-    setResultTimeUsed(timeUsed);
-    setResultsBreakdown(breakdown);
-    setIsEvaluating(false);
+      // Execute Chunked AI Grading for High Speed & Reliability
+      const CHUNK_SIZE = 5;
+      const aiResults: any[] = [];
+      
+      const promises = [];
+      for (let i = 0; i < aiBatch.length; i += CHUNK_SIZE) {
+        const chunk = aiBatch.slice(i, i + CHUNK_SIZE).map(({ originalIndex, ...rest }) => rest);
+        promises.push(gradeExam(chunk));
+      }
+      const chunkedResults = await Promise.all(promises);
+      chunkedResults.forEach(res => aiResults.push(...res));
 
-    // Save to Supabase
-    if (userId && selectedExam) {
-      try {
+      const breakdown: any[] = [];
+      let aiPtr = 0;
+
+      questions.forEach((q, i) => {
+        let qScore = 0;
+        let qFeedback = "";
+
+        if (q.question_type === 'mcq') {
+          qScore = mcqResults[i];
+          qFeedback = qScore > 0 ? "Correct selection." : "Incorrect selection.";
+        } else {
+          const res = aiResults[aiPtr++];
+          qScore = res?.score || 0;
+          qFeedback = res?.feedback || "Evaluation complete (Speed optimized).";
+          score += qScore;
+        }
+
+        breakdown.push({
+          question: q.question,
+          userAnswer: answers[q.id] || '',
+          correctAnswer: q.correct_answer || '',
+          score: qScore,
+          maxScore: q.marks,
+          feedback: qFeedback
+        });
+      });
+
+      setResultScore(score);
+      setResultTotalMarks(totalMarks);
+      setResultTimeUsed(timeUsed);
+      setResultsBreakdown(breakdown);
+
+      // Save to Supabase
+      if (userId && selectedExam) {
         // APPEND email to student_name for Admin Dashboard visibility
         const storageEmail = user?.email || (isFirebaseUser ? firebaseUser?.email : '') || 'Guest';
         const displayNameWithEmail = `${studentName} (${storageEmail})`;
@@ -956,33 +960,28 @@ export default function ExamPage() {
           user_id: userId,
           student_name: displayNameWithEmail,
           roll_number: rollNumber,
-          answers: answers,
+          answers: { ...answers, _results_breakdown: breakdown },
           score: score,
           total_marks: totalMarks,
           violations: security.violations.length,
           time_used_seconds: timeUsed,
           status: isAutoSubmit ? 'auto_submitted' : 'completed',
-          exam_title: selectedExam.title,
-          results_breakdown: breakdown
+          exam_title: selectedExam.title
         });
-
-
 
         // LOCK OUT: Immediately mark as completed in local state to prevent "double start" glitch
-
-        setCompletedExamIds(prev => {
-          const next = new Set(prev);
-          next.add(selectedExam.id);
-          return next;
-        });
-
-      } catch (err) {
-        console.error('Error saving submission:', err);
+        const lowerTitle = selectedExam.title.trim().toLowerCase();
+        setCompletedExamIds(prev => new Set(prev).add(selectedExam.id));
+        setCompletedExamTitles(prev => new Set(prev).add(lowerTitle));
       }
+    } catch (err) {
+      console.error('Error during evaluation or saving submission:', err);
+      toast({ title: "Evaluation Error", description: "There was a problem finalizing your score. Results might not be saved.", variant: "destructive" });
+    } finally {
+      setIsEvaluating(false);
+      security.exitFullscreen();
+      setPhase('results');
     }
-
-    security.exitFullscreen();
-    setPhase('results');
   }, [security, startTime, questions, answers, userId, selectedExam, studentName, rollNumber, isAutoSubmit, isEvaluating]);
 
 
@@ -1015,7 +1014,7 @@ export default function ExamPage() {
 
   // === SELECT PHASE ===
   if (phase === 'select') {
-    return <TestSelectionScreen exams={exams} loading={loadingExams || loadingQuestions} onSelectExam={handleSelectExam} completedExamIds={completedExamIds} />;
+    return <TestSelectionScreen exams={exams} loading={loadingExams || loadingQuestions} onSelectExam={handleSelectExam} completedExamIds={completedExamIds} completedExamTitles={completedExamTitles} />;
   }
 
   // === INFO PHASE ===

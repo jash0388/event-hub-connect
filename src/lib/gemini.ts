@@ -41,13 +41,24 @@ export async function gradeExam(batch: Array<{ question: string, correctAnswer: 
     ]
   `;
 
+  // Timeout helper
+  const withTimeout = <T>(promise: Promise<T>, ms: number) => {
+    let timeoutId: any;
+    return Promise.race([
+      promise,
+      new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error('AI Request Timeout')), ms);
+      })
+    ]).finally(() => clearTimeout(timeoutId));
+  };
+
   let attempts = 0;
-  const maxAttempts = 5;
-  const baseDelay = 1500; // 1.5 seconds (Snappier response)
+  const maxAttempts = 3; // Reduced for faster response
+  const baseDelay = 1500;
 
   while (attempts < maxAttempts) {
     try {
-      const result = await model.generateContent(prompt);
+      const result = await withTimeout(model.generateContent(prompt), 10000) as any;
       let text = result.response.text().trim();
       const jsonMatch = text.match(/\[[\s\S]*\]/); // Match array
       if (jsonMatch) text = jsonMatch[0];
