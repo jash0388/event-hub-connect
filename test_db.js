@@ -22,7 +22,6 @@ async function check() {
   const { data: s } = await supabase.from('task_submissions').select('*');
   console.log("Submissions count:", s?.length);
 
-  // find any profile matching BFXQ
   const bfxq = p?.filter(x => x.id.toLowerCase().includes('bfxq') || x.firebase_uid?.toLowerCase().includes('bfxq'));
   console.log("Profile BFXQ:", bfxq);
 

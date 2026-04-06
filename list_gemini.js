@@ -20,7 +20,7 @@ async function list() {
          console.log(`\nSUCCESS WITH: ${modelName}`);
          process.exit(0);
        } catch (e) {
-         console.log(`FAILED WITH: ${modelName}`);
+         console.log(`FAILED WITH: ${modelName}`, e.message);
        }
     }
     process.exit(1);

@@ -9,7 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import {
   CheckCircle2, Clock, Trophy, Send, AlertCircle, Loader2, BookOpen, X,
-  Play, Code2, Search, Brain, Timer, History, Filter, TerminalSquare, RefreshCw
+  Play, Code2, Search, Brain, Timer, History, Filter, TerminalSquare, RefreshCw, XCircle
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -115,8 +115,19 @@ function CodeEditorModal({
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
-      if (!isReadOnly && !submissionCode) {
-        // Restore saved code from localStorage if it exists (persists across refresh)
+      
+      // If we have a past submission, load its code (even if not readonly)
+      if (submissionCode) {
+        setCode(submissionCode);
+        codeIntegrityRef.current = submissionCode;
+        if (isReadOnly) {
+          setOutput("Read-only mode. Execution disabled.");
+        } else {
+          setOutput("📝 Resubmission Mode: Modify your previous code and test it again.");
+        }
+      } 
+      // Otherwise, if not readonly, try to restore from localStorage
+      else if (!isReadOnly) {
         const savedCode = task?.id ? localStorage.getItem(`task_code_${task.id}`) : null;
         const savedLang = task?.id ? localStorage.getItem(`task_lang_${task.id}`) : null;
         setCode(savedCode || "");
@@ -128,9 +139,6 @@ function CodeEditorModal({
         setHints(savedHints ? JSON.parse(savedHints) : []);
         setIsHintLoading(false);
         setTimeLeft(1800);
-      } else if (isReadOnly) {
-        setCode(submissionCode);
-        setOutput("Read-only mode. Execution disabled.");
       }
     } else {
       document.body.style.overflow = "unset";
@@ -851,6 +859,16 @@ export default function Tasks() {
                               <Clock className="w-4 h-4" /> <span className="text-xs font-semibold">Pending Review</span>
                             </div>
                             <Button size="sm" variant="ghost" className="h-7 text-xs text-indigo-600 hover:text-indigo-800" onClick={() => handleOpenModal(task, true, submission.answer)}><History className="w-3 h-3 mr-1" /> View Code</Button>
+                          </div>
+                        ) : submission?.status === 'denied' ? (
+                          <div className="flex flex-col items-end gap-2">
+                            <div className="flex items-center gap-2 text-rose-600 bg-rose-50 px-3 py-1.5 rounded-full border border-rose-200">
+                              <XCircle className="w-4 h-4" /> <span className="text-xs font-semibold">Rejected - Try Again</span>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button size="sm" variant="ghost" className="h-7 text-xs text-slate-500 hover:text-slate-700" onClick={() => handleOpenModal(task, true, submission.answer)}><History className="w-3 h-3 mr-1" /> View Previous</Button>
+                              <Button size="sm" variant="ghost" className="h-7 text-xs text-indigo-600 hover:text-indigo-800" onClick={() => handleOpenModal(task, false, submission.answer)}><RefreshCw className="w-3 h-3 mr-1" /> Edit & Fix</Button>
+                            </div>
                           </div>
                         ) : (
                           <Button onClick={() => handleOpenModal(task)} className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-transform hover:scale-105">Code Now <Code2 className="w-4 h-4 ml-2" /></Button>

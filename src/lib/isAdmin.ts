@@ -8,6 +8,8 @@ import { supabase } from "@/integrations/supabase/client";
  * @param forceRefresh - If true, bypasses any caching to get fresh data (default: true for debug)
  */
 // Admin email addresses - add your email here to get admin access
+//access via db in supabase in table user_role in the db project id=czj7754 
+//
 const ADMIN_EMAILS = [
   'jashwanthsingh0707@gmail.com', // Add your email here
   'jashwanth038@gmail.com',       // The actual email the user is testing with

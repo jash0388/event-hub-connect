@@ -18,10 +18,21 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { gradeAnswer, gradeExam } from "@/lib/gemini";
 
-
+// Helper to normalize text for comparison (ignores case, extra spaces, etc)
+const normalizeAnswer = (text: string) => {
+  if (!text) return "";
+  return text
+    .toString()
+    .toLowerCase()
+    .replace(/\s+/g, '') // Remove ALL spaces for maximum leniency as requested
+    .replace(/[;.,]/g, '') // Remove trailing punctuation
+    .replace(/['"`]/g, '') // Remove quotes (often varied in SQL)
+    .trim();
+};
 
 // ============================================================
 // TYPES
+//(writing this text just fir time pass soo blah blah blah blah oh i see it blah blah blah blah its a good muusic isnt it?)
 // ============================================================
 interface ExamQuestion {
   id: string;
@@ -901,6 +912,19 @@ export default function ExamPage() {
           mcqResults[i] = qScore;
           score += qScore;
         } else {
+          // INSTANT GRADING CHECK: If correct_answer exists, try matching it first to avoid AI latency
+          if (correctAnswer) {
+            const alternatives = correctAnswer.split('|').map(a => normalizeAnswer(a));
+            const normUser = normalizeAnswer(userAnswer);
+            
+            const isExactMatch = alternatives.some(alt => alt === normUser && normUser !== "");
+            
+            if (isExactMatch) {
+               mcqResults[i] = q.marks; // Mark it as graded instantly
+               score += q.marks;
+               return;
+            }
+          }
           aiBatch.push({ question: q.question, correctAnswer, userAnswer, maxMarks: q.marks, originalIndex: i });
         }
       });
@@ -919,18 +943,26 @@ export default function ExamPage() {
 
       const breakdown: any[] = [];
       let aiPtr = 0;
+      let usedFallback = false;
 
       questions.forEach((q, i) => {
         let qScore = 0;
         let qFeedback = "";
+        let gradedBy = 'mcq';
 
-        if (q.question_type === 'mcq') {
-          qScore = mcqResults[i];
+        if (q.question_type === 'mcq' || mcqResults[i] !== undefined) {
+          qScore = mcqResults[i] || 0;
           qFeedback = qScore > 0 ? "Correct selection." : "Incorrect selection.";
+          if (q.question_type !== 'mcq') {
+            qFeedback = qScore > 0 ? "Correct! Exact match found." : "Evaluation complete.";
+            gradedBy = 'exact_match';
+          }
         } else {
           const res = aiResults[aiPtr++];
           qScore = res?.score || 0;
           qFeedback = res?.feedback || "Evaluation complete (Speed optimized).";
+          gradedBy = res?.gradedBy || 'gemini';
+          if (gradedBy === 'fallback') usedFallback = true;
           score += qScore;
         }
 
@@ -940,7 +972,8 @@ export default function ExamPage() {
           correctAnswer: q.correct_answer || '',
           score: qScore,
           maxScore: q.marks,
-          feedback: qFeedback
+          feedback: qFeedback,
+          gradedBy
         });
       });
 
@@ -951,7 +984,6 @@ export default function ExamPage() {
 
       // Save to Supabase
       if (userId && selectedExam) {
-        // APPEND email to student_name for Admin Dashboard visibility
         const storageEmail = user?.email || (isFirebaseUser ? firebaseUser?.email : '') || 'Guest';
         const displayNameWithEmail = `${studentName} (${storageEmail})`;
 
@@ -960,7 +992,11 @@ export default function ExamPage() {
           user_id: userId,
           student_name: displayNameWithEmail,
           roll_number: rollNumber,
-          answers: { ...answers, _results_breakdown: breakdown },
+          answers: { 
+            ...answers, 
+            _results_breakdown: breakdown,
+            _ai_status: usedFallback ? 'fallback' : 'ai_verified'
+          },
           score: score,
           total_marks: totalMarks,
           violations: security.violations.length,
