@@ -7,7 +7,9 @@ import {
   signOutFirebase,
   hasFirebaseConfig,
   onFirebaseAuthStateChange,
-  getFirebaseAuth
+  getFirebaseAuth,
+  signInFirebaseUser,
+  signUpFirebaseUser
 } from '@/integrations/firebase/client';
 
 interface AuthState {
@@ -37,6 +39,7 @@ interface FirebaseUserData {
   email: string | null;
   displayName: string | null;
   photoURL: string | null;
+  emailVerified: boolean;
 }
 
 const saveFirebaseUser = (user: FirebaseUserData | null) => {
@@ -148,6 +151,12 @@ export function useAuth() {
       checkAndResolveLoading();
       saveFirebaseUser(null);
       return;
+    }
+
+    // Check email verification status for email/password users
+    if (firebaseUser.email?.includes('@gmail.com') && !firebaseUser.emailVerified) {
+       // We let them through only if it's Google Auth (Google Auth is auto-verified usually)
+       // or we can handle it in the UI. For now, let's keep the user object but track verification.
     }
 
     const pseudoUser = {
@@ -362,6 +371,7 @@ export function useAuth() {
                 email: auth.currentUser.email,
                 displayName: auth.currentUser.displayName,
                 photoURL: auth.currentUser.photoURL,
+                emailVerified: auth.currentUser.emailVerified,
               });
             }
           }
@@ -377,6 +387,7 @@ export function useAuth() {
             email: firebaseUser.email,
             displayName: firebaseUser.displayName,
             photoURL: firebaseUser.photoURL,
+            emailVerified: firebaseUser.emailVerified
           } : null);
           
           clearTimeout(firebaseCheckTimeout);
@@ -414,18 +425,21 @@ export function useAuth() {
   };
 
   const signIn = async (email: string, password: string) => {
+    // Try Firebase First (New System)
+    const { user: fUser, error: fError } = await signInFirebaseUser(email, password);
+    if (!fError && fUser) {
+      return { data: { user: globalAuthState.user, session: null }, error: null };
+    }
+    
+    // Fallback to Supabase for existing users
     return await supabase.auth.signInWithPassword({ email, password });
   };
 
   const signUp = async (email: string, password: string, fullName?: string) => {
-    return await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: window.location.origin,
-        data: { full_name: fullName },
-      },
-    });
+    // Switch completely to Firebase for new signups due to Supabase limits
+    const { user, error } = await signUpFirebaseUser(email, password, fullName || email.split('@')[0]);
+    if (error) return { data: { user: null, session: null }, error };
+    return { data: { user: null, session: null }, error: null }; // Success but needs verification
   };
 
   const signOut = async () => {

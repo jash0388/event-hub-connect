@@ -1,5 +1,17 @@
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut as firebaseSignOut, onAuthStateChanged, Auth, User as FirebaseUser } from 'firebase/auth';
+import { 
+    getAuth, 
+    GoogleAuthProvider, 
+    signInWithPopup, 
+    signOut as firebaseSignOut, 
+    onAuthStateChanged, 
+    Auth, 
+    User as FirebaseUser,
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    sendEmailVerification,
+    updateProfile
+} from 'firebase/auth';
 
 // Firebase configuration from environment variables
 const firebaseConfig = {
@@ -59,6 +71,42 @@ export const getFirebaseAuth = () => {
         initializeFirebase();
     }
     return auth;
+};
+
+// Email/Password Signup with Gmail Guard
+export const signUpFirebaseUser = async (email: string, pass: string, fullName: string): Promise<{ user: FirebaseUser | null; error: any }> => {
+    const auth = getFirebaseAuth();
+    if (!auth) return { user: null, error: new Error('Firebase not initialized') };
+    
+    // Strict Gmail Guard
+    if (!email.toLowerCase().endsWith('@gmail.com')) {
+        return { user: null, error: new Error('Registration is restricted to @gmail.com addresses only. Our community uses Gmail for verified communications.') };
+    }
+
+    try {
+        const result = await createUserWithEmailAndPassword(auth, email, pass);
+        // Set display name immediately
+        await updateProfile(result.user, { displayName: fullName });
+        // Send verification email
+        await sendEmailVerification(result.user);
+        return { user: result.user, error: null };
+    } catch (error: any) {
+        console.error('[Firebase] Signup Error:', error);
+        return { user: null, error };
+    }
+};
+
+// Email/Password Sign In
+export const signInFirebaseUser = async (email: string, pass: string): Promise<{ user: FirebaseUser | null; error: any }> => {
+    const auth = getFirebaseAuth();
+    if (!auth) return { user: null, error: new Error('Firebase not initialized') };
+    try {
+        const result = await signInWithEmailAndPassword(auth, email, pass);
+        return { user: result.user, error: null };
+    } catch (error: any) {
+        console.error('[Firebase] Sign In Error:', error);
+        return { user: null, error };
+    }
 };
 
 // Google Sign In
