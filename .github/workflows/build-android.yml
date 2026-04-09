@@ -36,16 +36,13 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Set Execute Permission for Gradlew
+      - name: Capacitor Setup
         run: |
-          if [ -d "android" ]; then
-            chmod +x android/gradlew
-          fi
-
-      - name: Capacitor Sync
-        run: |
-          npx cap add android || true
+          npx cap add android
           npx cap sync android
+
+      - name: Set Execute Permission for Gradlew
+        run: chmod +x android/gradlew
 
       - name: Build APK
         working-directory: android
