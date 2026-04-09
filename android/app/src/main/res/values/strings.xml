@@ -1,7 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources>
-    <string name="app_name">DataNauts</string>
-    <string name="title_activity_main">DataNauts</string>
-    <string name="package_name">in.datanauts.app</string>
-    <string name="custom_url_scheme">in.datanauts.app</string>
-</resources>
