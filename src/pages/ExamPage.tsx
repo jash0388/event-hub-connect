@@ -12,6 +12,7 @@ import {
   TriangleAlert, ShieldAlert, ShieldOff, Monitor, Zap, ClipboardList,
   ArrowLeft, User, Hash, Users, Bot
 } from "lucide-react";
+import { Capacitor } from "@capacitor/core";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -95,13 +96,15 @@ function TestSelectionScreen({
       {/* Persistent App Header */}
       <div className="sticky top-0 z-50 border-b border-white/5 bg-slate-900/60 backdrop-blur-xl">
         <div className="container mx-auto px-8 py-4 flex items-center justify-between">
-          <button 
-            onClick={() => navigate(-1)} 
-            className="flex items-center gap-3 text-slate-400 hover:text-white transition-all group px-4 py-2 rounded-xl hover:bg-white/5"
-          >
-            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-            <span className="text-xs font-black uppercase tracking-widest">Return to Base</span>
-          </button>
+          {!Capacitor.isNativePlatform() && (
+            <button 
+              onClick={() => navigate(-1)} 
+              className="flex items-center gap-3 text-slate-400 hover:text-white transition-all group px-4 py-2 rounded-xl hover:bg-white/5"
+            >
+              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+              <span className="text-xs font-black uppercase tracking-widest">Return to Base</span>
+            </button>
+          )}
           
           <div className="flex items-center gap-4">
             <div className="w-10 h-10 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(99,102,241,0.3)]">
