@@ -37,12 +37,15 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Set Execute Permission for Gradlew
-        run: chmod +x android/gradlew
+        run: |
+          if [ -d "android" ]; then
+            chmod +x android/gradlew
+          fi
 
       - name: Capacitor Sync
         run: |
+          npx cap add android || true
           npx cap sync android
-          npx cap update android
 
       - name: Build APK
         working-directory: android
