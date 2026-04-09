@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { supabase, supabaseAdmin } from "@/integrations/supabase/client";
-import { signInWithGoogle, hasFirebaseConfig } from "@/integrations/firebase/client";
+import { signInWithGoogle, hasFirebaseConfig, resendVerificationEmail } from "@/integrations/firebase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,7 @@ export default function UserAuth() {
   const [showPassword, setShowPassword] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isVerificationSent, setIsVerificationSent] = useState(false);
+  const [isResending, setIsResending] = useState(false);
 
   // Registration popup state
   const [showRegistration, setShowRegistration] = useState(false);
@@ -40,15 +41,49 @@ export default function UserAuth() {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const { user: authUser, signIn, signUp } = useAuth();
+  const { user: authUser, firebaseUser, signIn, signUp } = useAuth();
+
+  const [isCheckingRegistration, setIsCheckingRegistration] = useState(false);
 
   useEffect(() => {
-    if (authUser) {
-      const from = (location.state as any)?.from?.pathname || "/";
-      console.log('[UserAuth] User already logged in, redirecting to:', from);
-      navigate(from, { replace: true });
-    }
-  }, [authUser, navigate, location]);
+    const checkUserRegistration = async () => {
+      if (authUser && !showRegistration) {
+        setIsCheckingRegistration(true);
+        try {
+          const adminClient = supabaseAdmin || supabase;
+          const { data, error } = await adminClient
+            .from('user_registrations')
+            .select('*')
+            .eq('user_id', authUser.id)
+            .single();
+
+          if (error && error.code !== 'PGRST116') {
+            console.error('[UserAuth] Error checking registration:', error);
+          }
+
+          if (!data) {
+            console.log('[UserAuth] No registration found, showing popup');
+            setRegisteredUser({
+              uid: authUser.id,
+              email: authUser.email,
+              displayName: firebaseUser?.displayName || authUser.email?.split('@')[0] || 'User'
+            });
+            setShowRegistration(true);
+          } else {
+            const from = (location.state as any)?.from?.pathname || "/";
+            console.log('[UserAuth] User registered, redirecting to:', from);
+            navigate(from, { replace: true });
+          }
+        } catch (err) {
+          console.error('[UserAuth] Fatal registration check error:', err);
+        } finally {
+          setIsCheckingRegistration(false);
+        }
+      }
+    };
+
+    checkUserRegistration();
+  }, [authUser, navigate, location, showRegistration]);
 
   const handleGoogleSignIn = async () => {
     setIsGoogleLoading(true);
@@ -173,6 +208,19 @@ export default function UserAuth() {
     }
   };
 
+  const handleResendEmail = async () => {
+    setIsResending(true);
+    try {
+      const { error } = await resendVerificationEmail();
+      if (error) throw error;
+      toast({ title: "Email Sent!", description: "A new verification link has been sent to your Gmail." });
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+      setIsResending(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -183,6 +231,14 @@ export default function UserAuth() {
         const { error } = await signIn(email, password);
 
         if (error) throw error;
+        
+        // Success check - if useAuth blocked the user due to verification
+        if (!authUser && firebaseUser && !firebaseUser.emailVerified) {
+          setIsVerificationSent(true);
+          setIsLoading(false);
+          return;
+        }
+
         toast({ title: "Welcome back!", description: "Login successful" });
         const from = (location.state as any)?.from?.pathname || "/";
         navigate(from, { replace: true });
@@ -283,12 +339,20 @@ export default function UserAuth() {
                   </p>
                 </div>
 
-                <div className="pt-6 border-t border-border/50">
+                <div className="pt-6 border-t border-border/50 flex flex-col gap-3">
                   <Button 
                     onClick={() => { setIsVerificationSent(false); setIsLogin(true); }}
                     className="w-full h-12 rounded-xl bg-foreground text-background hover:bg-foreground/90 font-semibold"
                   >
                     Go Back to Login
+                  </Button>
+                  <Button 
+                    variant="link"
+                    onClick={handleResendEmail}
+                    disabled={isResending}
+                    className="text-indigo-400 hover:text-indigo-300 text-sm font-medium"
+                  >
+                    {isResending ? "Sending..." : "Didn't get the link? Resend"}
                   </Button>
                 </div>
 

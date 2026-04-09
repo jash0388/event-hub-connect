@@ -29,19 +29,16 @@ ALTER TABLE profiles DROP CONSTRAINT IF EXISTS profiles_id_fkey;
 -- Change column types
 ALTER TABLE task_submissions ALTER COLUMN user_id TYPE TEXT;
 ALTER TABLE profiles ALTER COLUMN id TYPE TEXT;
-
 -- Recreate foreign key
 ALTER TABLE task_submissions 
 ADD CONSTRAINT task_submissions_user_id_fkey 
 FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE;
 
--- Recreate policies on task_submissions
 CREATE POLICY "Users can view their own submissions" ON task_submissions
   FOR SELECT USING (auth.uid()::text = user_id);
 CREATE POLICY "Users can submit answers" ON task_submissions
   FOR INSERT WITH CHECK (auth.uid()::text = user_id);
 
--- Recreate policies on profiles  
 CREATE POLICY "Users can view their own profile" ON profiles
   FOR SELECT USING (auth.uid()::text = id);
 CREATE POLICY "Users can update their own profile" ON profiles

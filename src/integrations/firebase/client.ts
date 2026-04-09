@@ -109,6 +109,19 @@ export const signInFirebaseUser = async (email: string, pass: string): Promise<{
     }
 };
 
+// Resend Verification Email
+export const resendVerificationEmail = async (): Promise<{ error: any }> => {
+    const auth = getFirebaseAuth();
+    if (!auth || !auth.currentUser) return { error: new Error('User context not found. Please try logging in again.') };
+    try {
+        await sendEmailVerification(auth.currentUser);
+        return { error: null };
+    } catch (error: any) {
+        console.error('[Firebase] Resend Error:', error);
+        return { error };
+    }
+};
+
 // Google Sign In
 export const signInWithGoogle = async (): Promise<{ user: FirebaseUser | null; error: Error | null }> => {
     if (!auth || !googleProvider) {
@@ -139,6 +152,19 @@ export const signOutFirebase = async (): Promise<{ error: Error | null }> => {
     } catch (error: any) {
         console.error('[Firebase] Sign Out Error:', error);
         return { error };
+    }
+};
+
+// Force refresh user status to check for email verification
+export const refreshUserStatus = async (): Promise<{ user: FirebaseUser | null; error: any }> => {
+    const auth = getFirebaseAuth();
+    if (!auth || !auth.currentUser) return { user: null, error: new Error('Session expired. Please log in again.') };
+    try {
+        await auth.currentUser.reload();
+        return { user: auth.currentUser, error: null };
+    } catch (error: any) {
+        console.error('[Firebase] Refresh Error:', error);
+        return { user: null, error };
     }
 };
 

@@ -40,6 +40,7 @@ const CodeCompiler = lazy(() => import("@/components/ui/code-compiler"));
 
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import HubAssistant from "./components/ai/HubAssistant";
+import { Capacitor } from "@capacitor/core";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -60,58 +61,67 @@ const PageLoader = () => (
   </div>
 );
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Suspense fallback={<PageLoader />}>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/landing" element={<CollegeEventsHub />} />
-            <Route path="/feed" element={<Feed />} />
-            <Route path="/events" element={<ProtectedRoute><Events /></ProtectedRoute>} />
-            <Route path="/events/:id" element={<ProtectedRoute><EventDetails /></ProtectedRoute>} />
-            <Route path="/projects" element={<Projects />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/login" element={<UserAuth />} />
-            <Route path="/admin/login" element={<AdminLogin />} />
-            <Route
-              path="/admin"
-              element={<ProtectedRoute requireAdmin={true}><AdminDashboard /></ProtectedRoute>}
-            />
-            <Route
-              path="/admin/dashboard"
-              element={<ProtectedRoute requireAdmin={true}><AdminDashboard /></ProtectedRoute>}
-            />
-            <Route
-              path="/event-qrcodes"
-              element={<ProtectedRoute><EventQRCodes /></ProtectedRoute>}
-            />
-            <Route
-              path="/checkin"
-              element={<ProtectedRoute><CheckIn /></ProtectedRoute>}
-            />
-            <Route path="/compilers" element={<Compilers />} />
-            <Route path="/internships" element={<Internships />} />
-            <Route path="/learn" element={<ProtectedRoute><LearnHub /></ProtectedRoute>} />
-            <Route path="/learn/:topicId" element={<ProtectedRoute><Tutorial /></ProtectedRoute>} />
-            <Route path="/learn/:topicId/:lessonId" element={<ProtectedRoute><Tutorial /></ProtectedRoute>} />
-            <Route path="/learn/codequest" element={<ProtectedRoute><CodeQuest /></ProtectedRoute>} />
-            <Route path="/arcade" element={<ProtectedRoute><Arcade /></ProtectedRoute>} />
-            <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
-            <Route path="/download" element={<DownloadApp />} />
-            <Route path="/exam" element={<ProtectedRoute><ExamPage /></ProtectedRoute>} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Suspense>
-        <HubAssistant />
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  const isMobileApp = Capacitor.isNativePlatform();
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              {/* Force Redirect for Mobile App */}
+              <Route 
+                path="/" 
+                element={isMobileApp ? <ProtectedRoute><ExamPage /></ProtectedRoute> : <Home />} 
+              />
+              
+              <Route path="/landing" element={<CollegeEventsHub />} />
+              <Route path="/feed" element={<Feed />} />
+              <Route path="/events" element={<ProtectedRoute><Events /></ProtectedRoute>} />
+              <Route path="/events/:id" element={<ProtectedRoute><EventDetails /></ProtectedRoute>} />
+              <Route path="/projects" element={<Projects />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/login" element={<UserAuth />} />
+              <Route path="/admin/login" element={<AdminLogin />} />
+              <Route
+                path="/admin"
+                element={<ProtectedRoute requireAdmin={true}><AdminDashboard /></ProtectedRoute>}
+              />
+              <Route
+                path="/admin/dashboard"
+                element={<ProtectedRoute requireAdmin={true}><AdminDashboard /></ProtectedRoute>}
+              />
+              <Route
+                path="/event-qrcodes"
+                element={<ProtectedRoute><EventQRCodes /></ProtectedRoute>}
+              />
+              <Route
+                path="/checkin"
+                element={<ProtectedRoute><CheckIn /></ProtectedRoute>}
+              />
+              <Route path="/compilers" element={<Compilers />} />
+              <Route path="/internships" element={<Internships />} />
+              <Route path="/learn" element={<ProtectedRoute><LearnHub /></ProtectedRoute>} />
+              <Route path="/learn/:topicId" element={<ProtectedRoute><Tutorial /></ProtectedRoute>} />
+              <Route path="/learn/:topicId/:lessonId" element={<ProtectedRoute><Tutorial /></ProtectedRoute>} />
+              <Route path="/learn/codequest" element={<ProtectedRoute><CodeQuest /></ProtectedRoute>} />
+              <Route path="/arcade" element={<ProtectedRoute><Arcade /></ProtectedRoute>} />
+              <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
+              <Route path="/download" element={<DownloadApp />} />
+              <Route path="/exam" element={<ProtectedRoute><ExamPage /></ProtectedRoute>} />
+              <Route path="*" element={<ProtectedRoute><ExamPage /></ProtectedRoute>} />
+            </Routes>
+          </Suspense>
+          {!isMobileApp && <HubAssistant />}
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;

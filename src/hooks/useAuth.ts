@@ -19,12 +19,7 @@ interface AuthState {
   loading: boolean;
   error: Error | null;
   isFirebaseUser: boolean;
-  firebaseUser?: {
-    uid: string;
-    email: string | null;
-    displayName: string | null;
-    photoURL: string | null;
-  } | null;
+  firebaseUser?: FirebaseUserData | null;
 }
 
 // Global cache for admin status
@@ -154,9 +149,22 @@ export function useAuth() {
     }
 
     // Check email verification status for email/password users
+    // If they signed in via Email/Password, ensure they are verified
     if (firebaseUser.email?.includes('@gmail.com') && !firebaseUser.emailVerified) {
-       // We let them through only if it's Google Auth (Google Auth is auto-verified usually)
-       // or we can handle it in the UI. For now, let's keep the user object but track verification.
+       console.log('[useAuth] Firebase user email NOT verified. Blocking session.');
+       setGlobalState({
+         user: null,
+         session: null,
+         isAdmin: false,
+         error: null,
+         isFirebaseUser: true, // Keep this true so the UI knows it's a firebase context
+         firebaseUser: {
+           ...firebaseUser,
+           emailVerified: false
+         }
+       });
+       checkAndResolveLoading();
+       return;
     }
 
     const pseudoUser = {
