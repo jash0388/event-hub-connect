@@ -12,7 +12,7 @@ import {
   BookOpen, FileText, CircleDot, Square, CheckSquare,
   TriangleAlert, ShieldAlert, ShieldOff, Monitor, Zap, ClipboardList,
   ArrowLeft, User, Hash, Users, Bot, Mail, Eye, EyeOff, GraduationCap,
-  LogOut, History, Award, Check
+  LogOut, History, Award, Check, Sparkles, Brain
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -62,6 +62,137 @@ function shuffleArray<T>(array: T[]): T[] {
 }
 
 // ============================================================
+// SUB-COMPONENTS (VIEWS)
+// ============================================================
+
+function ViolationOverlay({ show, count, max, msg, onDismiss }: { show: boolean; count: number; max: number; msg: string; onDismiss: () => void }) {
+  return (
+    <AnimatePresence>
+      {show && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[200000] bg-red-600/90 backdrop-blur-xl flex items-center justify-center p-6 sm:p-12 text-center text-white font-sans">
+          <div className="max-w-xl">
+            <motion.div initial={{ scale: 0.5 }} animate={{ scale: 1 }} className="w-24 h-24 sm:w-32 sm:h-32 bg-white/20 rounded-[40px] flex items-center justify-center mx-auto mb-8 shadow-2xl"><ShieldAlert className="w-12 h-12 sm:w-16 sm:h-16 text-white" /></motion.div>
+            <h2 className="text-4xl sm:text-6xl font-black mb-6 uppercase tracking-tight">SECURITY ALERT</h2>
+            <p className="text-lg sm:text-2xl font-bold mb-10 opacity-90 leading-relaxed uppercase tracking-wide">{msg}</p>
+            <div className="bg-black/20 p-8 rounded-[32px] mb-12 border border-white/10">
+              <div className="text-[10px] sm:text-[12px] font-black tracking-[0.3em] uppercase opacity-60 mb-2">INTEGRITY SCORE REDUCED</div>
+              <div className="text-3xl sm:text-5xl font-black">{count} <span className="text-xl sm:text-2xl opacity-40">/ {max}</span></div>
+            </div>
+            <Button onClick={onDismiss} className="h-16 sm:h-20 px-12 sm:px-16 rounded-[24px] sm:rounded-[40px] bg-white text-red-600 font-black text-lg sm:text-xl uppercase tracking-widest hover:bg-slate-50 active:scale-95 transition-all shadow-2xl">RESUME ASSESSMENT</Button>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+function TestSelectionView({ exams, loading, onSelect, completedIds, completedTitles }: any) {
+  return (
+    <div className="min-h-screen bg-[#F8FAFC] p-6 sm:p-12 font-sans overflow-y-auto no-scrollbar">
+      <header className="max-w-7xl mx-auto mb-16 flex flex-col sm:flex-row sm:items-end justify-between gap-8">
+        <div>
+          <div className="text-indigo-600 font-black text-[10px] tracking-[0.4em] uppercase mb-4 flex items-center gap-3"><Monitor className="w-4 h-4" /> SECURE TESTING ENVIRONMENT</div>
+          <h1 className="text-4xl sm:text-6xl font-black text-slate-900 tracking-tight uppercase leading-[0.9]">PORTAL <span className="text-slate-300">HUB</span></h1>
+        </div>
+        <div className="bg-white px-8 py-5 rounded-[32px] border border-slate-100 shadow-sm flex items-center gap-6">
+          <div className="text-right">
+            <div className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1">METRICS</div>
+            <div className="text-xl font-black text-slate-900 uppercase">{exams.length} ACTIVE</div>
+          </div>
+          <div className="h-10 w-px bg-slate-100"></div>
+          <Sparkles className="w-6 h-6 text-indigo-200" />
+        </div>
+      </header>
+
+      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-10">
+        {loading ? Array(6).fill(0).map((_, i) => <div key={i} className="h-64 sm:h-80 bg-white rounded-[48px] animate-pulse border border-slate-50" />) : exams.map((ex: any, i: number) => {
+          const isDone = completedIds.has(ex.id) || completedTitles.has(ex.title.trim().toLowerCase());
+          return (
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} key={ex.id} 
+              onClick={() => !isDone && onSelect(ex)} 
+              className={`group relative h-64 sm:h-80 rounded-[48px] p-8 sm:p-10 flex flex-col justify-between transition-all cursor-pointer ${isDone ? 'bg-slate-50 grayscale opacity-60 pointer-events-none' : 'bg-white hover:bg-slate-900 hover:scale-[1.02] active:scale-95 border border-slate-100 hover:border-slate-900 shadow-sm hover:shadow-2xl hover:shadow-indigo-200/20'}`}
+            >
+              <div>
+                <div className="flex items-center justify-between mb-8">
+                  <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-3xl flex items-center justify-center transition-all ${isDone ? 'bg-slate-200 text-white' : 'bg-indigo-600 text-white group-hover:bg-white group-hover:text-indigo-600'}`}>{isDone ? <CheckCircle2 className="w-7 h-7" /> : <BookOpen className="w-7 h-7 sm:w-8 sm:h-8" />}</div>
+                  <Badge className={`px-4 py-1.5 rounded-full font-black text-[9px] sm:text-[10px] tracking-widest ${isDone ? 'bg-slate-100 text-slate-400' : 'bg-slate-50 text-slate-400 border-none group-hover:bg-white/10 group-hover:text-white'}`}>{ex.duration_minutes} MIN</Badge>
+                </div>
+                <h3 className={`text-2xl sm:text-3xl font-black uppercase leading-tight transition-colors ${isDone ? 'text-slate-400' : 'text-slate-900 group-hover:text-white'}`}>{ex.title}</h3>
+                <p className={`text-[10px] font-bold uppercase tracking-widest mt-4 transition-colors ${isDone ? 'text-slate-300' : 'text-slate-400 group-hover:text-slate-500'}`}>{isDone ? 'Assessment Completed' : 'Session Ready'}</p>
+              </div>
+              <ChevronRight className={`w-10 h-10 transition-all ${isDone ? 'text-slate-100' : 'text-slate-100 group-hover:text-indigo-500 group-hover:translate-x-2'}`} />
+            </motion.div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function StudentInfoFormView({ exam, onStart }: any) {
+  const [n, setN] = useState('');
+  const [r, setR] = useState('');
+  return (
+    <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center p-6 sm:p-12 font-sans">
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-2xl bg-white p-10 sm:p-20 rounded-[64px] border border-slate-100 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.05)] text-center">
+        <div className="w-20 h-20 sm:w-24 sm:h-24 bg-indigo-600 rounded-[32px] flex items-center justify-center mx-auto mb-10 shadow-2xl shadow-indigo-200"><ClipboardList className="w-10 h-10 sm:w-12 sm:h-12 text-white" /></div>
+        <h2 className="text-3xl sm:text-5xl font-black text-slate-900 mb-4 uppercase tracking-tight">VERIFY IDENTITY</h2>
+        <div className="text-[10px] sm:text-[11px] font-black text-slate-300 uppercase tracking-[0.3em] mb-12">Institutional Credentials Required</div>
+        <div className="space-y-6 sm:space-y-8 mb-16">
+          <div className="space-y-2"><Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-left block ml-6">Student Full Name</Label><Input placeholder="EX: JOHN DOE" value={n} onChange={e => setN(e.target.value.toUpperCase())} className="h-16 sm:h-20 bg-slate-50 border-none rounded-[28px] text-center font-black text-lg sm:text-2xl text-slate-900 placeholder:text-slate-300 focus:bg-white focus:ring-4 focus:ring-indigo-50 transition-all uppercase" /></div>
+          <div className="space-y-2"><Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-left block ml-6">Registration ID / Roll No</Label><Input placeholder="EX: 24CS101" value={r} onChange={e => setR(e.target.value.toUpperCase())} className="h-16 sm:h-20 bg-slate-50 border-none rounded-[28px] text-center font-black text-lg sm:text-2xl text-slate-900 placeholder:text-slate-300 focus:bg-white focus:ring-4 focus:ring-indigo-50 transition-all uppercase" /></div>
+        </div>
+        <Button onClick={() => n && r && onStart(n, r)} className="w-full h-20 sm:h-24 rounded-[32px] sm:rounded-[40px] bg-indigo-600 text-white font-black uppercase tracking-widest text-lg sm:text-xl shadow-2xl shadow-indigo-100 hover:bg-slate-950 active:scale-95 transition-all">START SECURE SESSION</Button>
+      </motion.div>
+    </div>
+  );
+}
+
+function FinalResultsView({ score, total, violations, time, title, breakdown, onExit }: any) {
+  return (
+    <div className="min-h-screen bg-[#F8FAFC] p-6 sm:p-12 font-sans overflow-y-auto no-scrollbar">
+      <div className="max-w-4xl mx-auto">
+        <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-10 sm:p-20 rounded-[64px] border border-slate-100 shadow-sm text-center mb-10 overflow-hidden relative">
+          <div className="absolute top-0 left-0 w-full h-3 bg-indigo-600"></div>
+          <div className="w-20 h-20 sm:w-24 sm:h-24 bg-indigo-50 rounded-[40px] flex items-center justify-center mx-auto mb-10 text-indigo-600"><CheckCircle2 className="w-10 h-10 sm:w-12 sm:h-12" /></div>
+          <h2 className="text-3xl sm:text-5xl font-black text-slate-900 mb-2 uppercase tracking-tight">ASSESSMENT COMPLETE</h2>
+          <p className="text-slate-400 text-[10px] sm:text-[11px] font-black uppercase tracking-[0.3em] mb-16">{title}</p>
+          
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 sm:gap-10 mb-20">
+            <div className="p-8 bg-slate-50 rounded-[40px] text-center">
+              <div className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-2">SCORE</div>
+              <div className="text-3xl sm:text-5xl font-black text-indigo-600">{score}<span className="text-xl sm:text-2xl text-slate-300"> / {total}</span></div>
+            </div>
+            <div className="p-8 bg-slate-50 rounded-[40px] text-center">
+              <div className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-2">ACCURACY</div>
+              <div className="text-3xl sm:text-5xl font-black text-slate-900">{Math.round((score/total)*100)}%</div>
+            </div>
+            <div className="p-8 bg-slate-50 rounded-[40px] text-center col-span-2 sm:col-span-1">
+              <div className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-2">VIOLATIONS</div>
+              <div className="text-3xl sm:text-5xl font-black text-red-500">{violations}</div>
+            </div>
+          </div>
+
+          <Button onClick={onExit} className="w-full h-18 sm:h-24 rounded-[32px] sm:rounded-[40px] bg-slate-950 text-white font-black uppercase tracking-widest shadow-2xl hover:bg-indigo-600 transition-all">RETURN TO TERMINAL</Button>
+        </motion.div>
+
+        {breakdown && (
+          <div className="space-y-6 p-2">
+            <div className="flex items-center gap-4"><div className="h-0.5 flex-1 bg-slate-100"></div><span className="text-[10px] font-black text-slate-300 uppercase tracking-[0.4em]">Detailed Breakdown</span><div className="h-0.5 flex-1 bg-slate-100"></div></div>
+            {breakdown.map((b: any, i: number) => (
+              <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 + i * 0.05 }} key={i} className="bg-white p-8 rounded-[40px] border border-slate-50 shadow-sm flex items-center justify-between group hover:border-indigo-100 transition-all">
+                <div className="max-w-[70%]"><div className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-2">QUERY {i + 1}</div><h4 className="text-lg font-black text-slate-900 leading-tight uppercase line-clamp-2">{b.question}</h4></div>
+                <div className={`px-5 py-3 rounded-2xl font-black text-lg ${b.score > 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>+{b.score}</div>
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
 // AUTH COMPONENT (FIREBASE ONLY)
 // ============================================================
 function AuthView({ onAuthSuccess }: { onAuthSuccess: () => void }) {
@@ -105,8 +236,8 @@ function AuthView({ onAuthSuccess }: { onAuthSuccess: () => void }) {
         }
       }
     };
-    checkRegistration();
-  }, [user, showRegistration, onAuthSuccess]);
+    if (user) checkRegistration();
+  }, [user, showRegistration, onAuthSuccess, firebaseUser]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -115,7 +246,6 @@ function AuthView({ onAuthSuccess }: { onAuthSuccess: () => void }) {
       if (isLogin) {
         const { data, error } = await signIn(email, password);
         if (error) throw error;
-        // Check if verified
         const fUser = (data as any)?.firebaseUser;
         if (!data?.user && fUser && !fUser.emailVerified) {
           setIsVerificationSent(true);
@@ -152,10 +282,10 @@ function AuthView({ onAuthSuccess }: { onAuthSuccess: () => void }) {
 
   const checkVerification = async () => {
     setIsLoading(true);
-    const { user: refreshedUser, error } = await refreshUserStatus();
+    const { user: refreshedUser } = await refreshUserStatus();
     if (refreshedUser?.emailVerified) {
        toast({ title: "Verified!", description: "Your email has been verified. Welcome!" });
-       window.location.reload(); // Refresh to catch new auth state
+       window.location.reload();
     } else {
        toast({ title: "Not Verified", description: "Please click the link in your email first.", variant: "destructive" });
     }
@@ -550,6 +680,8 @@ export default function SphnsExmTest() {
   const q = questions[currentQ];
   const answeredCount = Object.keys(answers).length;
 
+  if (!q && phase === 'exam') return <div className="min-h-screen flex items-center justify-center font-black uppercase text-slate-300">Synchronizing Queries...</div>;
+
   return (
     <div className="h-screen w-screen flex flex-col bg-white overflow-hidden font-sans relative" onContextMenu={e => e.preventDefault()} style={{ userSelect: 'none' }}>
       <ViolationOverlay show={security.showWarning} count={security.violationCount} max={selectedEx?.max_violations || 2} msg={security.warningMessage} onDismiss={security.dismissWarning} />
@@ -575,7 +707,7 @@ export default function SphnsExmTest() {
           <div className="w-10 h-10 sm:w-12 sm:h-12 bg-indigo-600 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-100"><Shield className="w-5 h-5 sm:w-6 sm:h-6 text-white" /></div>
           <div className="flex flex-col">
             <span className="text-slate-900 font-black text-xs sm:text-sm uppercase tracking-widest line-clamp-1 max-w-[100px] sm:max-w-none">{selectedEx?.title}</span>
-            <span className="text-[8px] sm:text-[9px] text-slate-400 font-black uppercase tracking-[0.2em]">{name}</span>
+            <span className="text-[8px] sm:text-[9px] text-slate-400 font-black uppercase tracking-[0.2em]">{name || user?.email?.split('@')[0]}</span>
           </div>
         </div>
         
@@ -618,13 +750,13 @@ export default function SphnsExmTest() {
           >
             <div className="flex items-center justify-between mb-8 lg:mb-12">
               <Badge className="bg-slate-50 text-slate-400 border-none px-4 py-1.5 font-black text-[10px] uppercase tracking-widest">QUERY {currentQ + 1}</Badge>
-              <Badge className="bg-indigo-50 text-indigo-600 border-none px-4 py-1.5 font-black text-[10px] tracking-widest">{q.marks} MARKS</Badge>
+              <Badge className="bg-indigo-50 text-indigo-600 border-none px-4 py-1.5 font-black text-[10px] tracking-widest">{q?.marks || 0} MARKS</Badge>
             </div>
 
-            <h3 className="text-xl sm:text-4xl font-[900] text-slate-950 mb-8 lg:mb-14 leading-tight uppercase tracking-tight">{q.question}</h3>
+            <h3 className="text-xl sm:text-4xl font-[900] text-slate-950 mb-8 lg:mb-14 leading-tight uppercase tracking-tight">{q?.question || 'Identifying Security baseline...'}</h3>
             
             <div className="space-y-3 lg:space-y-4">
-              {q.question_type === 'mcq' ? (
+              {q?.question_type === 'mcq' ? (
                 <div className="grid grid-cols-1 gap-3 lg:gap-6">
                   {q.options.map((opt, i) => (
                     <button
@@ -639,20 +771,20 @@ export default function SphnsExmTest() {
                     </button>
                   ))}
                 </div>
-              ) : (
+              ) : q ? (
                 <textarea 
                   value={answers[q.id] || ''} 
                   onChange={e => setAnswers(p => ({ ...p, [q.id]: e.target.value }))} 
                   className="w-full h-full min-h-[300px] bg-slate-50 border-2 border-slate-50 rounded-[28px] lg:rounded-[48px] p-8 lg:p-12 text-slate-900 font-bold text- base sm:text-2xl focus:border-indigo-100 focus:bg-white outline-none resize-none transition-all placeholder:text-slate-300 shadow-inner" 
                   placeholder="AUTHOR YOUR SECURE RESPONSE HERE..." 
                 />
-              )}
+              ) : null}
             </div>
           </motion.div>
 
           <footer className="h-20 lg:h-28 bg-white rounded-[24px] lg:rounded-[48px] border border-slate-100 px-6 lg:px-12 flex items-center justify-between shadow-sm flex-shrink-0">
             <Button variant="ghost" onClick={() => setCurrentQ(p => Math.max(0, p-1))} disabled={currentQ === 0} className="h-12 lg:h-16 px-4 lg:px-10 rounded-xl lg:rounded-2xl text-slate-400 font-black text-[10px] lg:text-sm tracking-[0.2em] uppercase">PREVIOUS</Button>
-            <div className="h-2 w-32 sm:w-80 bg-slate-50 rounded-full overflow-hidden hidden md:block"><motion.div initial={{ width: 0 }} animate={{ width: `${((currentQ+1)/questions.length)*100}%` }} className="h-full bg-indigo-600 rounded-full shadow-[0_0_10px_rgba(79,70,229,0.5)]" /></div>
+            <div className="h-2 w-32 sm:w-80 bg-slate-50 rounded-full overflow-hidden hidden md:block"><motion.div initial={{ width: 0 }} animate={{ width: `${((currentQ+1)/(questions.length || 1))*100}%` }} className="h-full bg-indigo-600 rounded-full shadow-[0_0_10px_rgba(79,70,229,0.5)]" /></div>
             <Button onClick={() => currentQ === questions.length - 1 ? handleSubmit() : setCurrentQ(p => p+1)} className="h-12 lg:h-16 px-8 lg:px-14 rounded-xl lg:rounded-2xl bg-indigo-600 text-white font-[900] text-[10px] lg:text-sm tracking-[0.2em] uppercase shadow-lg shadow-indigo-100 hover:bg-indigo-700 active:scale-95 transition-all">{currentQ === questions.length - 1 ? "FINALIZE" : "NEXT QUERY"}</Button>
           </footer>
         </section>
