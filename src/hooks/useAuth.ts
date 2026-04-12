@@ -435,12 +435,33 @@ export function useAuth() {
   const signIn = async (email: string, password: string) => {
     // Try Firebase First (New System)
     const { user: fUser, error: fError } = await signInFirebaseUser(email, password);
+    
     if (!fError && fUser) {
-      return { data: { user: globalAuthState.user, session: null }, error: null };
+      // Check if user is verified
+      if (fUser.email?.includes('@gmail.com') && !fUser.emailVerified) {
+        console.log('[useAuth] Firebase user not verified on sign-in');
+        return { data: { user: null, firebaseUser: fUser }, error: null };
+      }
+
+      const pseudoUser = {
+        id: fUser.uid,
+        email: fUser.email,
+        email_confirmed_at: new Date().toISOString(),
+        app_metadata: { provider: 'google', provider_id: 'firebase' },
+        user_metadata: {
+          full_name: fUser.displayName,
+          avatar_url: fUser.photoURL
+        },
+        aud: 'authenticated',
+        created_at: new Date().toISOString(),
+      } as unknown as User;
+
+      return { data: { user: pseudoUser, firebaseUser: fUser }, error: null };
     }
     
     // Fallback to Supabase for existing users
-    return await supabase.auth.signInWithPassword({ email, password });
+    const result = await supabase.auth.signInWithPassword({ email, password });
+    return result;
   };
 
   const signUp = async (email: string, password: string, fullName?: string) => {
@@ -476,7 +497,16 @@ export function useAuth() {
     if (!hasFirebaseConfig) {
       return { error: new Error('Firebase is not configured') };
     }
-    return await firebaseSignInWithGoogle();
+    const { user, error } = await firebaseSignInWithGoogle();
+    if (user && !error) {
+       const pseudoUser = {
+         id: user.uid,
+         email: user.email,
+         user_metadata: { full_name: user.displayName, avatar_url: user.photoURL }
+       } as any;
+       return { user, data: { user: pseudoUser }, error: null };
+    }
+    return { user: null, error };
   };
 
   return {

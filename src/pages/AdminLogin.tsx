@@ -58,48 +58,42 @@ const AdminLogin = () => {
       }
 
       console.log("[AdminLogin] Sign in successful, verifying admin access...");
-      toast({
-        title: "Login Successful",
-        description: "Verifying admin access...",
-      });
+      
+      // Use the user from sign-in data (handles both Supabase and Firebase)
+      const currentUser = data?.user;
 
-      // Fetch user and role directly without setTimeout
-      const { data: { user: currentUser }, error: userError } = await supabase.auth.getUser();
-
-      if (userError || !currentUser) {
-        console.error("[AdminLogin] User fetch error:", userError);
-        toast({
-          title: "Error",
-          description: "Authentication failed. Please try again.",
-          variant: "destructive",
-        });
+      if (!currentUser) {
+        // If no user object, maybe it needs verification
+        const firebaseUser = (data as any)?.firebaseUser;
+        if (firebaseUser && !firebaseUser.emailVerified) {
+             toast({
+               title: "Verification Required",
+               description: "Please verify your email address before logging in.",
+               variant: "destructive",
+             });
+        } else {
+             toast({
+               title: "Error",
+               description: "Authentication failed. Please try again.",
+               variant: "destructive",
+             });
+        }
         setIsLoading(false);
         return;
       }
 
-      console.log("[AdminLogin] Current user:", currentUser.id);
+      console.log("[AdminLogin] Current user ID:", currentUser.id);
 
-      const { data: roleData, error: roleError } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', currentUser.id);
+      // Verify admin status using the library function which handles both providers
+      const { isAdmin: checkIsAdminResult } = await import('@/lib/isAdmin');
+      const hasAdminAccess = await checkIsAdminResult(currentUser.id);
 
-      if (roleError) {
-        console.error("[AdminLogin] Role fetch error:", roleError);
-        toast({
-          title: "Error",
-          description: "Unable to verify your permissions. Please try again.",
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return;
-      }
-
-      console.log("[AdminLogin] Role data:", roleData);
-      const hasAdminRole = roleData?.some(({ role }) => role === 'admin');
-
-      if (hasAdminRole) {
+      if (hasAdminAccess) {
         console.log("[AdminLogin] Admin access granted, navigating to:", from);
+        toast({
+          title: "Login Successful",
+          description: "Welcome back, Admin.",
+        });
         navigate(from, { replace: true });
       } else {
         console.warn("[AdminLogin] Admin access denied for user:", currentUser.id);

@@ -15,13 +15,13 @@ import {
 
 // Firebase configuration from environment variables
 const firebaseConfig = {
-    apiKey: import.meta.env.VITE_FIREBASE_API_KEY || '',
-    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || '',
-    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || '',
-    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || '',
-    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
-    appId: import.meta.env.VITE_FIREBASE_APP_ID || '',
-    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || '',
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyAW-1JVFs8y8OKPG5qJeJSZsiN1979O2Wc',
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'datanauts-652ed.firebaseapp.com',
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'datanauts-652ed',
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'datanauts-652ed.firebasestorage.app',
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '206057381692',
+    appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:206057381692:web:0969ea6ef357595e74c839',
+    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || 'G-R94DP41Q53',
 };
 
 // Initialize Firebase only once

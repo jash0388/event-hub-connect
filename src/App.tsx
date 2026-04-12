@@ -33,6 +33,7 @@ const Arcade = lazy(() => import("./pages/Arcade"));
 const Tasks = lazy(() => import("./pages/Tasks"));
 const ExamPage = lazy(() => import("./pages/ExamPage"));
 const DownloadApp = lazy(() => import("./pages/DownloadApp"));
+const SphnsExmTest = lazy(() => import("./pages/sphnsexm-test"));
 
 // Lazy load heavy UI components
 const CollegeEventsHub = lazy(() => import("@/components/ui/college-events-hub"));
@@ -113,6 +114,7 @@ const App = () => {
               <Route path="/arcade" element={<ProtectedRoute><Arcade /></ProtectedRoute>} />
               <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
               <Route path="/download" element={<DownloadApp />} />
+              <Route path="/sphnsexm-test" element={<SphnsExmTest />} />
               <Route path="/exam" element={<ProtectedRoute><ExamPage /></ProtectedRoute>} />
               <Route path="*" element={<ProtectedRoute><ExamPage /></ProtectedRoute>} />
             </Routes>

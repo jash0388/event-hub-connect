@@ -131,10 +131,14 @@ export default function UserAuth() {
           .eq('user_id', user.uid)
           .single();
 
-        console.log('[UserAuth] Registration check:', { existingReg, regCheckError });
+        console.log('[UserAuth] Registration check result:', { existingReg, regCheckError });
 
-        if (!existingReg || regCheckError) {
+        // Only show registration if it's definitely not found (PGRST116) or missing, and no other critical error
+        const notFound = regCheckError?.code === 'PGRST116';
+        
+        if (!existingReg && (notFound || !regCheckError)) {
           // Show registration popup for new users
+          console.log('[UserAuth] User not found in registrations, showing popup');
           setRegisteredUser(user);
           setRegistrationData({
             year: "",
@@ -144,6 +148,12 @@ export default function UserAuth() {
             phone: ""
           });
           setShowRegistration(true);
+        } else if (regCheckError && !notFound) {
+          // Database error (maybe RLS?) - don't block login if possible, but warn
+          console.error('[UserAuth] Unexpected registration check error:', regCheckError);
+          toast({ title: "Welcome back!", description: "Successfully signed in with Google" });
+          const from = (location.state as any)?.from?.pathname || "/";
+          navigate(from, { replace: true });
         } else {
           toast({ title: "Welcome back!", description: "Successfully signed in with Google" });
           const from = (location.state as any)?.from?.pathname || "/";
@@ -227,13 +237,17 @@ export default function UserAuth() {
 
     try {
       if (isLogin) {
-        // Login - try Firebase first via the updated useAuth hook
-        const { error } = await signIn(email, password);
+        // Login - use the return values directly to avoid stale state
+        const { data, error } = await signIn(email, password);
 
         if (error) throw error;
         
-        // Success check - if useAuth blocked the user due to verification
-        if (!authUser && firebaseUser && !firebaseUser.emailVerified) {
+        // Success check - use data from return value instead of stale hook state
+        const resultUser = data?.user;
+        const resultFirebaseUser = (data as any)?.firebaseUser;
+
+        if (!resultUser && resultFirebaseUser && !resultFirebaseUser.emailVerified) {
+          console.log('[UserAuth] User needs verification');
           setIsVerificationSent(true);
           setIsLoading(false);
           return;
@@ -435,7 +449,7 @@ export default function UserAuth() {
                       <Loader2 className="w-5 h-5 animate-spin" />
                     ) : (
                       <>
-                        {isLogin ? "Sign In" : "Register with Gmail"}
+                        {isLogin ? "Login" : "Register"}
                         <ArrowRight className="w-4 h-4 ml-2" />
                       </>
                     )}
@@ -450,7 +464,7 @@ export default function UserAuth() {
                     </div>
                     <div className="relative flex justify-center text-[10px] uppercase tracking-widest font-bold">
                       <span className="bg-card px-4 text-muted-foreground">
-                        {isLogin ? "Social Logic" : "Fast Track"}
+                        {isLogin ? "OR LOGIN WITH" : "OR REGISTER WITH"}
                       </span>
                     </div>
                   </div>
@@ -475,7 +489,7 @@ export default function UserAuth() {
                           <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
                           <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
                         </svg>
-                        {isLogin ? "Continue with Google" : "Join with Google"}
+                        {isLogin ? "Sign in with Google" : "Sign up with Google"}
                       </>
                     )}
                   </Button>
@@ -488,7 +502,7 @@ export default function UserAuth() {
                       onClick={() => setIsLogin(!isLogin)}
                       className="text-foreground hover:text-indigo-400 font-bold transition-colors underline-offset-4 hover:underline"
                     >
-                      {isLogin ? "Sign Up" : "Sign In"}
+                      {isLogin ? "Register" : "Login"}
                     </button>
                   </p>
                 </div>
