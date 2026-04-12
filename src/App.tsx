@@ -74,49 +74,20 @@ const App = () => {
           <Suspense fallback={<PageLoader />}>
             <Routes>
               {/* Force Redirect for Mobile App */}
-              <Route 
-                path="/" 
-                element={isMobileApp ? <ProtectedRoute><ExamPage /></ProtectedRoute> : <Home />} 
-              />
-              
-              <Route path="/landing" element={<CollegeEventsHub />} />
-              <Route path="/feed" element={<Feed />} />
-              <Route path="/events" element={<ProtectedRoute><Events /></ProtectedRoute>} />
-              <Route path="/events/:id" element={<ProtectedRoute><EventDetails /></ProtectedRoute>} />
-              <Route path="/projects" element={<Projects />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/contact" element={<Contact />} />
-              <Route path="/profile" element={<Profile />} />
+              {/* Only show Login and Test Exam page as per request */}
+              <Route path="/" element={<SphnsExmTest />} />
               <Route path="/login" element={<UserAuth />} />
+              <Route path="/sphnsexm-test" element={<SphnsExmTest />} />
+              
+              {/* Optional Admin access */}
               <Route path="/admin/login" element={<AdminLogin />} />
               <Route
                 path="/admin"
                 element={<ProtectedRoute requireAdmin={true}><AdminDashboard /></ProtectedRoute>}
               />
-              <Route
-                path="/admin/dashboard"
-                element={<ProtectedRoute requireAdmin={true}><AdminDashboard /></ProtectedRoute>}
-              />
-              <Route
-                path="/event-qrcodes"
-                element={<ProtectedRoute><EventQRCodes /></ProtectedRoute>}
-              />
-              <Route
-                path="/checkin"
-                element={<ProtectedRoute><CheckIn /></ProtectedRoute>}
-              />
-              <Route path="/compilers" element={<Compilers />} />
-              <Route path="/internships" element={<Internships />} />
-              <Route path="/learn" element={<ProtectedRoute><LearnHub /></ProtectedRoute>} />
-              <Route path="/learn/:topicId" element={<ProtectedRoute><Tutorial /></ProtectedRoute>} />
-              <Route path="/learn/:topicId/:lessonId" element={<ProtectedRoute><Tutorial /></ProtectedRoute>} />
-              <Route path="/learn/codequest" element={<ProtectedRoute><CodeQuest /></ProtectedRoute>} />
-              <Route path="/arcade" element={<ProtectedRoute><Arcade /></ProtectedRoute>} />
-              <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
-              <Route path="/download" element={<DownloadApp />} />
-              <Route path="/sphnsexm-test" element={<SphnsExmTest />} />
-              <Route path="/exam" element={<ProtectedRoute><ExamPage /></ProtectedRoute>} />
-              <Route path="*" element={<ProtectedRoute><ExamPage /></ProtectedRoute>} />
+
+              {/* Catch-all redirects to the test page */}
+              <Route path="*" element={<SphnsExmTest />} />
             </Routes>
           </Suspense>
           {!isMobileApp && <HubAssistant />}
