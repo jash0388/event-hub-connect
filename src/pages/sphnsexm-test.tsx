@@ -246,17 +246,17 @@ function AuthView({ onAuthSuccess }: { onAuthSuccess: () => void }) {
 function TestSelectionView({ exams, loading, onSelect, completedIds, completedTitles }: any) {
   return (
     <div className="min-h-screen bg-[#F8FAFC] px-8 py-20 relative overflow-hidden font-sans">
-      {/* Dynamic Background */}
-      <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
+      {/* Optimized Dynamic Background */}
+      <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden select-none">
         <motion.div 
-          animate={{ rotate: 360 }}
-          transition={{ duration: 50, repeat: Infinity, ease: "linear" }}
-          className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-indigo-100/50 blur-[120px] rounded-full" 
+          animate={{ x: [0, 50, 0], y: [0, 30, 0] }}
+          transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-gradient-to-br from-indigo-100/40 to-transparent blur-[100px] rounded-full will-change-transform" 
         />
         <motion.div 
-          animate={{ rotate: -360 }}
-          transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
-          className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-purple-100/50 blur-[120px] rounded-full" 
+          animate={{ x: [0, -50, 0], y: [0, -30, 0] }}
+          transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-gradient-to-br from-purple-100/40 to-transparent blur-[100px] rounded-full will-change-transform" 
         />
       </div>
 
@@ -298,64 +298,74 @@ function TestSelectionView({ exams, loading, onSelect, completedIds, completedTi
             <p className="text-slate-400">Available assessments will appear here once authorized.</p>
           </motion.div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-            {exams.map((ex: Exam, idx: number) => {
-              const isDone = completedIds.has(ex.id) || completedTitles.has(ex.title.trim().toLowerCase());
-              return (
-                <motion.button
-                  key={ex.id}
-                  disabled={isDone}
-                  onClick={() => onSelect(ex)}
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.1 }}
-                  whileHover={!isDone ? { 
-                    y: -10, 
-                    rotateX: 5, 
-                    rotateY: 5,
-                    scale: 1.02,
-                    boxShadow: "0 30px 60px -12px rgba(99, 102, 241, 0.2)"
-                  } : {}}
-                  className={`group relative p-10 rounded-[48px] text-left transition-all backdrop-blur-sm border ${
-                    isDone 
-                      ? "bg-slate-50/50 border-slate-100 opacity-60 cursor-not-allowed" 
-                      : "bg-white border-white shadow-[0_20px_50px_-12px_rgba(0,0,0,0.04)] hover:border-indigo-100"
-                  }`}
-                  style={{ transformStyle: "preserve-3d" }}
-                >
-                  <div 
-                    className={`w-16 h-16 rounded-3xl flex items-center justify-center mb-10 transition-all ${
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <AnimatePresence mode="popLayout">
+              {exams.map((ex: Exam, idx: number) => {
+                const isDone = completedIds.has(ex.id) || completedTitles.has(ex.title.trim().toLowerCase());
+                return (
+                  <motion.button
+                    key={ex.id}
+                    disabled={isDone}
+                    onClick={() => onSelect(ex)}
+                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    transition={{ 
+                      type: "spring", 
+                      stiffness: 300, 
+                      damping: 30, 
+                      delay: idx * 0.05 
+                    }}
+                    whileHover={!isDone ? { 
+                      scale: 1.02,
+                      translateY: -8,
+                      transition: { type: "spring", stiffness: 400, damping: 20 }
+                    } : {}}
+                    whileTap={!isDone ? { scale: 0.98 } : {}}
+                    className={`group relative p-8 rounded-[40px] text-left transition-all backdrop-blur-md border ${
                       isDone 
-                        ? "bg-slate-100 text-slate-400" 
-                        : "bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white"
-                    }`}
-                    style={{ transform: "translateZ(30px)" }}
+                        ? "bg-slate-50/40 border-slate-100 opacity-60 cursor-not-allowed" 
+                        : "bg-white/80 border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_50px_-12px_rgba(79,70,229,0.12)] hover:border-indigo-100 hover:bg-white"
+                    } will-change-transform`}
                   >
-                    <BookOpen className="w-8 h-8" />
-                  </div>
-                  
-                  <div className="flex items-center gap-2 mb-4" style={{ transform: "translateZ(20px)" }}>
-                    <Badge className={isDone ? "bg-slate-200 text-slate-500" : "bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border-none px-3 font-bold"}>
-                      {isDone ? "COMPLETE" : "OPEN"}
-                    </Badge>
-                    <span className="text-slate-400 text-xs font-bold ml-auto">{ex.duration_minutes} MINS</span>
-                  </div>
-                  
-                  <h3 className="text-2xl font-[900] text-slate-900 mb-4 tracking-tight leading-tight group-hover:text-indigo-600 transition-colors" style={{ transform: "translateZ(40px)" }}>
-                    {ex.title}
-                  </h3>
-                  <p className="text-slate-400 text-sm font-medium line-clamp-2 leading-relaxed" style={{ transform: "translateZ(20px)" }}>
-                    {ex.description || "Secure environment assessment protocol."}
-                  </p>
+                    <div className="flex flex-col h-full">
+                      <div 
+                        className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-8 transition-all duration-500 ${
+                          isDone 
+                            ? "bg-slate-100 text-slate-400" 
+                            : "bg-indigo-50 text-indigo-600 group-hover:scale-110 group-hover:bg-indigo-600 group-hover:text-white group-hover:rotate-6"
+                        }`}
+                      >
+                        <BookOpen className="w-7 h-7" />
+                      </div>
+                      
+                      <div className="flex items-center gap-2 mb-4">
+                        <Badge variant="secondary" className={isDone ? "bg-slate-200 text-slate-500" : "bg-emerald-50 text-emerald-600 border-none px-3 font-bold text-[10px]"}>
+                          {isDone ? "COMPLETE" : "AVAILABLE"}
+                        </Badge>
+                        <span className="text-slate-400 text-[10px] font-bold ml-auto tracking-widest">{ex.duration_minutes} MIN</span>
+                      </div>
+                      
+                      <h3 className="text-xl font-[900] text-slate-900 mb-3 tracking-tight group-hover:text-indigo-600 transition-colors">
+                        {ex.title}
+                      </h3>
+                      <p className="text-slate-500 text-xs font-medium line-clamp-2 leading-relaxed mb-6">
+                        {ex.description || "Secure environment assessment protocol."}
+                      </p>
 
-                  {!isDone && (
-                    <div className="absolute bottom-10 right-10 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
-                      <Zap className="w-6 h-6 text-indigo-600" />
+                      <div className="mt-auto flex items-center justify-between">
+                        <div className="flex -space-x-2">
+                          {[1,2,3].map(i => <div key={i} className="w-6 h-6 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center"><User className="w-3 h-3 text-slate-300" /></div>)}
+                          <div className="w-6 h-6 rounded-full border-2 border-white bg-indigo-50 flex items-center justify-center text-[8px] font-bold text-indigo-600">+12</div>
+                        </div>
+                        <div className={`transition-all duration-300 ${isDone ? 'opacity-0' : 'opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0'}`}>
+                          <div className="w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center"><ChevronRight className="w-4 h-4 text-white" /></div>
+                        </div>
+                      </div>
                     </div>
-                  )}
-                </motion.button>
-              );
-            })}
+                  </motion.button>
+                );
+              })}
+            </AnimatePresence>
           </div>
         )}
       </div>
