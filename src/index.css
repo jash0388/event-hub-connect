@@ -7,35 +7,26 @@
 
 @layer base {
   :root {
-    /* Clean, Light Professional Theme */
-    --background: 40 33% 98%;
-    --foreground: 20 14% 10%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 20 14% 10%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 20 14% 10%;
-
-    --primary: 20 14% 10%;
-    --primary-foreground: 40 33% 98%;
-
-    --secondary: 40 20% 94%;
-    --secondary-foreground: 20 14% 10%;
-
-    --muted: 40 20% 94%;
-    --muted-foreground: 20 10% 45%;
-
-    --accent: 221 83% 53%;
+    /* Premium Dark Theme */
+    --background: 240 10% 4%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 4%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 4%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 230 100% 67%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 230 100% 67%;
     --accent-foreground: 0 0% 100%;
-
-    --destructive: 221 83% 45%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 40 15% 88%;
-    --input: 40 15% 88%;
-    --ring: 221 83% 53%;
-
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 6% 15%;
+    --input: 240 6% 15%;
+    --ring: 230 100% 67%;
     --radius: 1rem;
 
     /* Accent Colors */
@@ -43,14 +34,14 @@
     --sage: 142 35% 45%;
     --sky: 199 89% 48%;
 
-    --sidebar-background: 40 33% 98%;
-    --sidebar-foreground: 20 14% 10%;
-    --sidebar-primary: 20 14% 10%;
-    --sidebar-primary-foreground: 40 33% 98%;
-    --sidebar-accent: 40 20% 94%;
-    --sidebar-accent-foreground: 20 14% 10%;
-    --sidebar-border: 40 15% 88%;
-    --sidebar-ring: 20 14% 10%;
+    --sidebar-background: 240 10% 4%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 0 0% 98%;
+    --sidebar-primary-foreground: 240 5.9% 10%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 240 4.9% 83.9%;
 
     /* Neon Cyberpunk Palette */
     --neon-green: 142 70% 50%;
@@ -60,36 +51,21 @@
     --neon-red: 0 80% 60%;
   }
 
-  .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 240 5.9% 10%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
+  .light {
+    --background: 40 33% 98%;
+    --foreground: 20 14% 10%;
+    --card: 0 0% 100%;
   }
 }
 
 @layer base {
   * {
-    @apply border-border;
+    border-color: hsl(var(--border));
   }
 
   body {
-    @apply bg-background text-foreground;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
     font-family: 'Inter', sans-serif;
     min-height: 100vh;
     overflow-x: hidden;
@@ -104,6 +80,12 @@
     font-family: 'Space Grotesk', sans-serif;
     @apply font-bold tracking-tight;
   }
+}
+
+@layer utilities {
+  .bg-background { background-color: hsl(var(--background)); }
+  .text-foreground { color: hsl(var(--foreground)); }
+  .border-border { border-color: hsl(var(--border)); }
 }
 
 @layer utilities {

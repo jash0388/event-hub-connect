@@ -46,7 +46,7 @@ async function gradeWithGemini(batch: any[]): Promise<GradingResult[]> {
     generationConfig: { responseMimeType: "application/json" } 
   });
 
-  const result = await withTimeout(model.generateContent(GRADING_PROMPT(batch)), 12000) as any;
+  const result = await withTimeout(model.generateContent(GRADING_PROMPT(batch)), 4000) as any;
   let text = result.response.text().trim();
   const jsonMatch = text.match(/\[[\s\S]*\]/);
   if (jsonMatch) text = jsonMatch[0];
@@ -74,7 +74,7 @@ async function gradeWithGroq(batch: any[]): Promise<GradingResult[]> {
       response_format: { type: "json_object" },
       temperature: 0.1
     })
-  }), 12000);
+  }), 4000);
 
   if (!response.ok) throw new Error(`Groq API Error: ${response.status}`);
   

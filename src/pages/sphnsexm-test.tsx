@@ -1,503 +1,931 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useNavigate, useLocation, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { supabase, supabaseAdmin } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { useExamSecurity, Violation } from "@/hooks/useExamSecurity";
 import { motion, AnimatePresence } from "framer-motion";
-import { Capacitor } from "@capacitor/core";
+import { format } from "date-fns";
+import { gradeExam } from "@/lib/gemini";
 import {
-  Shield, Clock, Send, ChevronRight, X,
-  CheckCircle2, Loader2, Maximize,
-  BookOpen, Zap,
-  ArrowLeft, User, Mail, Eye, EyeOff,
-  LogOut, History, Award, Check, Sparkles, Brain, Trophy, Activity,
-  MonitorCheck, Star, Layers, Cpu, Fingerprint
+  Shield, AlertCircle, Eye, EyeOff, Mail, Lock, ArrowLeft, RefreshCw,
+  LogOut, Activity, Target, ShieldAlert, Award, FileText, Clock, PlayCircle, History, AlertTriangle,
+  CheckCircle2, BrainCircuit, XCircle, ChevronLeft
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { gradeExam } from "@/lib/gemini";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { signInWithGoogle, resendVerificationEmail, refreshUserStatus } from "@/integrations/firebase/client";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 
-// ============================================================
-// ULTRA-PREMIUM DESIGN SYSTEM
-// ============================================================
-
-const MasterBackground = () => (
-  <div className="fixed inset-0 -z-20 overflow-hidden bg-[#020617]">
-    {/* Deep Layered Orbs */}
-    <motion.div animate={{ scale: [1, 1.2, 1], rotate: [0, 90, 0] }} transition={{ duration: 20, repeat: Infinity, ease: "linear" }} className="absolute -top-[10%] -left-[10%] w-[70vw] h-[70vw] rounded-full bg-gradient-to-br from-indigo-500/20 via-blue-600/10 to-transparent blur-[150px]" />
-    <motion.div animate={{ scale: [1, 1.1, 1], rotate: [0, -90, 0] }} transition={{ duration: 25, repeat: Infinity, ease: "linear" }} className="absolute -bottom-[20%] -right-[10%] w-[60vw] h-[60vw] rounded-full bg-gradient-to-tr from-violet-600/20 via-purple-500/10 to-transparent blur-[150px]" />
-    
-    {/* Grid Overlay */}
-    <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.4] mix-blend-overlay pointer-events-none" />
-    <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:60px_60px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
-  </div>
-);
-
-const PremiumCard = ({ children, className = "", onClick }: any) => (
-  <motion.div 
-    whileHover={onClick ? { y: -8, scale: 1.01 } : {}}
-    whileTap={onClick ? { scale: 0.98 } : {}}
-    onClick={onClick}
-    className={`relative overflow-hidden rounded-[44px] bg-white/[0.03] backdrop-blur-2xl border border-white/[0.08] shadow-[0_32px_128px_-32px_rgba(0,0,0,0.5)] transition-all duration-500 ${className}`}
-  >
-    {/* Inner Glow */}
-    <div className="absolute inset-0 bg-gradient-to-br from-white/[0.05] to-transparent pointer-events-none" />
-    <div className="relative z-10 h-full">{children}</div>
-  </motion.div>
-);
-
-const GodlyButton = ({ children, onClick, className = "", variant = "primary", disabled = false, type = "button" }: any) => {
-  const isPrimary = variant === "primary";
-  return (
-    <motion.button
-      type={type}
-      disabled={disabled}
-      whileHover={{ scale: 1.02, boxShadow: isPrimary ? "0 20px 40px -10px rgba(79, 70, 229, 0.4)" : "none" }}
-      whileTap={{ scale: 0.97 }}
-      onClick={onClick}
-      className={`relative group h-16 sm:h-20 w-full rounded-[24px] overflow-hidden flex items-center justify-center font-black tracking-[0.2em] transition-all disabled:opacity-50 ${isPrimary ? "bg-indigo-600 text-white" : "bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10"} ${className}`}
-    >
-      <div className="relative z-10 flex items-center gap-3">{children}</div>
-      {isPrimary && <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />}
-    </motion.button>
-  );
+const shuffleArray = (array: any[]) => {
+  const newArray = [...array];
+  for (let i = newArray.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+  }
+  return newArray;
 };
 
-// ============================================================
-// CORE VIEWS
-// ============================================================
-
+// ==========================================
+// 1. AUTH VIEW (Exact Replit UI)
+// ==========================================
 function AuthView({ onAuthSuccess }: any) {
-  const [isLogin, setIsLogin] = useState(true);
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [showVerify, setShowVerify] = useState(false);
   
-  const [regData, setRegData] = useState({ year: "", section: "", department: "", college: "", phone: "" });
-  const [showReg, setShowReg] = useState(false);
-  const [regUser, setRegUser] = useState<any>(null);
-
   const { toast } = useToast();
-  const { user, firebaseUser, signIn, signUp } = useAuth();
+  const { signIn, signUp, signInWithGoogle } = useAuth();
 
-  useEffect(() => {
-    if (user && !showReg) {
-      const initReg = async () => {
-        const { data } = await (supabaseAdmin || supabase).from('user_registrations').select('*').eq('user_id', user.id).single();
-        if (!data) {
-          setRegUser({ uid: user.id, email: user.email, name: firebaseUser?.displayName || user.email?.split('@')[0] });
-          setShowReg(true);
-        } else { onAuthSuccess(); }
-      };
-      initReg();
-    }
-  }, [user, showReg, onAuthSuccess, firebaseUser]);
-
-  const handleAuth = async (e: any) => {
-    e.preventDefault(); setIsLoading(true);
+  const handleAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) return;
+    setIsLoading(true);
     try {
-      if (isLogin) {
-        const { data, error } = await signIn(email, password);
+      if (mode === "signin") {
+        const { error } = await signIn(email, password);
         if (error) throw error;
-        if (!data?.user && (data as any)?.firebaseUser?.emailVerified === false) { setShowVerify(true); return; }
+        onAuthSuccess();
       } else {
-        if (!email.toLowerCase().endsWith('@gmail.com')) throw new Error("Private Domain Required: use @gmail.com");
+        if (!email.toLowerCase().endsWith("@gmail.com")) {
+          throw new Error("Only @gmail.com accounts are permitted.");
+        }
         const { error } = await signUp(email, password);
         if (error) throw error;
-        setShowVerify(true);
+        toast({ title: "Account created", description: "You are now signed in." });
+        onAuthSuccess();
       }
-    } catch (e: any) { toast({ title: "Authorization Denied", description: e.message, variant: "destructive" }); }
-    finally { setIsLoading(false); }
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Authentication Failed", description: err.message });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const finalizeReg = async (e: any) => {
-    e.preventDefault(); setIsLoading(true);
-    try {
-      const { error } = await (supabaseAdmin || supabase).from('user_registrations').insert({
-        user_id: regUser.uid, email: regUser.email, full_name: regUser.name, ...regData
-      });
-      if (error) throw error;
-      setShowReg(false); onAuthSuccess();
-    } catch (e: any) { toast({ title: "Write Error", description: e.message, variant: "destructive" }); }
-    finally { setIsLoading(false); }
-  };
-
-  if (showVerify) return (
-    <div className="min-h-screen flex items-center justify-center p-8 font-sans relative z-10">
-      <PremiumCard className="w-full max-w-xl p-16 sm:p-24 text-center">
-        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="w-24 h-24 bg-indigo-500/20 rounded-[32px] flex items-center justify-center mx-auto mb-12 shadow-[0_0_40px_rgba(99,102,241,0.2)]"><Mail className="w-12 h-12 text-indigo-400" /></motion.div>
-        <h2 className="text-4xl sm:text-5xl font-black text-white mb-6 uppercase tracking-tighter">AUTHENTICATE MAIL</h2>
-        <p className="text-slate-400 font-bold text-[11px] tracking-widest uppercase mb-16 leading-relaxed">A specialized secure link is waiting in <span className="text-indigo-400">{email}</span>. Activate it to finalize clearance.</p>
-        <GodlyButton onClick={() => window.location.reload()}>ACCESS PORTAL</GodlyButton>
-      </PremiumCard>
-    </div>
-  );
-
   return (
-    <div className="min-h-screen flex items-center justify-center p-8 font-sans relative z-10">
-      <PremiumCard className="w-full max-w-3xl p-10 sm:p-24">
-        <div className="flex flex-col items-center mb-16">
-          <motion.div whileHover={{ rotate: 15 }} className="w-20 h-20 bg-indigo-600 rounded-[30px] flex items-center justify-center mb-10 shadow-2xl shadow-indigo-500/30"><Fingerprint className="w-10 h-10 text-white" /></motion.div>
-          <h1 className="text-5xl sm:text-7xl font-black text-white uppercase tracking-tighter mb-4">SPHN<span className="text-indigo-500">_CORE</span></h1>
-          <Badge className="bg-white/5 text-white/40 border-none px-6 py-2 rounded-full font-black text-[10px] tracking-[0.4em] uppercase">Security Level: High (Neural Pass)</Badge>
-        </div>
-
-        <form onSubmit={handleAuth} className="space-y-6">
-          <div className="space-y-4">
-            <Input placeholder="NEURAL_EMAIL" type="email" value={email} onChange={e => setEmail(e.target.value)} className="h-20 bg-white/5 border-white/10 rounded-[28px] text-center font-black text-2xl text-white placeholder:text-slate-800 focus:bg-white/10 focus:ring-0 focus:border-indigo-500 transition-all" required />
-            <Input placeholder="ACCESS_KEY" type="password" value={password} onChange={e => setPassword(e.target.value)} className="h-20 bg-white/5 border-white/10 rounded-[28px] text-center font-black text-2xl text-white placeholder:text-slate-800 focus:bg-white/10 focus:ring-0 focus:border-indigo-500 transition-all" required />
-          </div>
-          <GodlyButton type="submit" disabled={isLoading}>{isLoading ? <Loader2 className="w-8 h-8 animate-spin" /> : isLogin ? "INITIALIZE LOGIN" : "REQUEST CLEARANCE"}</GodlyButton>
-        </form>
-
-        <div className="mt-12 text-center">
-          <button onClick={() => setIsLogin(!isLogin)} className="text-[11px] font-black text-slate-500 uppercase tracking-widest hover:text-indigo-400 transition-colors">{isLogin ? "NEW SUBJECT? REGISTER_NODE" : "BACK TO CONTROL_LOGIN"}</button>
-        </div>
-      </PremiumCard>
-
-      <Dialog open={showReg} onOpenChange={setShowReg}>
-        <DialogContent className="max-w-3xl bg-slate-950 border-white/5 rounded-[60px] p-12 sm:p-24 text-white">
-          <DialogHeader className="mb-12 text-center"><DialogTitle className="text-5xl font-black uppercase tracking-tighter mb-4">NODE_CONFIGURATION</DialogTitle><DialogDescription className="text-slate-500 font-black uppercase text-[10px] tracking-widest">Index institutional parameters for global assessment ranking.</DialogDescription></DialogHeader>
-          <form onSubmit={finalizeReg} className="space-y-8">
-            <div className="grid grid-cols-2 gap-8">
-              <select value={regData.year} onChange={e => setRegData({...regData, year: e.target.value})} className="h-20 bg-white/5 border border-white/10 rounded-[30px] px-10 font-bold text-white outline-none focus:border-indigo-500"><option value="">YEAR</option>{["1st Year", "2nd Year", "3rd Year", "4th Year"].map(y => <option key={y} value={y}>{y}</option>)}</select>
-              <Input placeholder="SECTION" value={regData.section} onChange={e => setRegData({...regData, section: e.target.value})} className="h-20 bg-white/5 border-white/10 rounded-[30px] px-10 font-bold text-center" />
-            </div>
-            <Input placeholder="DEPARTMENTAL_INDEX" value={regData.department} onChange={e => setRegData({...regData, department: e.target.value})} className="h-20 bg-white/5 border-white/10 rounded-[30px] px-10 font-bold text-center" />
-            <Input placeholder="INSTITUTION_ID" value={regData.college} onChange={e => setRegData({...regData, college: e.target.value})} className="h-20 bg-white/5 border-white/10 rounded-[30px] px-10 font-bold text-center" />
-            <Input placeholder="COMM_PROTOCOL (PHONE)" value={regData.phone} onChange={e => setRegData({...regData, phone: e.target.value})} className="h-20 bg-white/5 border-white/10 rounded-[30px] px-10 font-bold text-center" />
-            <GodlyButton type="submit" disabled={isLoading}>FINALIZE_INDEX</GodlyButton>
-          </form>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
-
-function SelectionView({ exams, loading, onSelect, completedIds, completedTitles, onProfile }: any) {
-  return (
-    <div className="min-h-screen p-8 sm:p-16 lg:p-32 font-sans relative z-10">
-      <header className="max-w-7xl mx-auto mb-24 flex flex-col md:flex-row md:items-end justify-between gap-16">
-        <div className="space-y-8">
-          <div className="flex items-center gap-4 text-indigo-400 font-black text-[12px] tracking-[0.6em] uppercase"><Cpu className="w-5 h-5" /> ASSESSMENT_GRID_ONLINE</div>
-          <h1 className="text-7xl sm:text-9xl font-black text-white leading-[0.8] tracking-tighter uppercase whitespace-pre-line">EXPLORE {"\n"} THE <span className="text-white/20">CORE</span></h1>
-        </div>
-        <button onClick={onProfile} className="relative group w-28 h-28 sm:w-40 sm:h-40 bg-white/[0.03] backdrop-blur-3xl rounded-[50px] sm:rounded-[70px] border border-white/10 flex items-center justify-center transition-all hover:bg-white/10 hover:scale-105 active:scale-95 shadow-2xl">
-          <User className="w-12 h-12 sm:w-16 sm:h-16 text-white" />
-          <div className="absolute -top-3 -right-3 w-10 h-10 bg-indigo-600 rounded-full border-4 border-[#020617] flex items-center justify-center font-black text-xs text-white">ID</div>
-        </button>
-      </header>
-
-      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
-        {loading ? Array(3).fill(0).map((_, i) => <div key={i} className="h-96 bg-white/5 rounded-[60px] animate-pulse" />) : exams.map((ex: any, i: number) => {
-          const isDone = completedIds.has(ex.id) || completedTitles.has(ex.title.trim().toLowerCase());
-          return (
-            <PremiumCard key={ex.id} onClick={() => !isDone && onSelect(ex)} className={`h-96 sm:h-[480px] p-12 flex flex-col justify-between ${isDone ? 'opacity-30 grayscale' : 'hover:border-indigo-500/50'}`}>
-              <div className="space-y-10">
-                <div className="flex items-center justify-between">
-                  <div className="w-20 h-20 bg-white/5 rounded-[30px] flex items-center justify-center text-white border border-white/10 group-hover:bg-indigo-600 transition-colors"><BookOpen className="w-10 h-10" /></div>
-                  <Badge className="bg-white/5 text-slate-500 border-none px-6 py-2 rounded-full font-black text-[10px] tracking-widest">{ex.duration_minutes} MNS</Badge>
-                </div>
-                <h3 className="text-4xl sm:text-5xl font-black text-white uppercase leading-tight tracking-tighter">{ex.title}</h3>
-              </div>
-              <div className="flex items-center justify-between border-t border-white/5 pt-8">
-                 <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500">{isDone ? 'SESSION_ARCHIVED' : 'READY_FOR_EVAL'}</p>
-                 <ChevronRight className="w-12 h-12 text-slate-800 transition-all hover:text-indigo-400" />
-              </div>
-            </PremiumCard>
-          );
-        })}
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary rounded-full blur-[150px] opacity-[0.04]" />
       </div>
+
+      <AnimatePresence mode="wait">
+        <motion.div
+          key="credentials"
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -16 }}
+          transition={{ duration: 0.35, ease: "easeOut" }}
+          className="w-full max-w-sm z-10"
+        >
+          <Card className="border-border bg-card/90 backdrop-blur-xl shadow-2xl">
+            <CardHeader className="space-y-3 pb-5 text-center">
+              <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20">
+                <Shield className="w-6 h-6 text-primary" />
+              </div>
+              <div>
+                <CardTitle className="text-2xl font-bold tracking-tight">ExamPortal</CardTitle>
+                <CardDescription className="text-muted-foreground mt-1 text-sm">
+                  Secure Academic Assessment
+                </CardDescription>
+              </div>
+
+              <div className="flex rounded-lg border border-border bg-muted/30 p-1 gap-1">
+                {(["signin", "signup"] as const).map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => setMode(m)}
+                    className={`flex-1 py-1.5 rounded text-sm font-medium transition-all ${
+                      mode === m
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {m === "signin" ? "Sign In" : "Sign Up"}
+                  </button>
+                ))}
+              </div>
+            </CardHeader>
+
+            <CardContent className="space-y-4">
+              <form onSubmit={handleAuth} className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="email" className="text-xs text-muted-foreground uppercase tracking-wider">Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="you@gmail.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="pl-9 bg-background focus:ring-primary/50"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="password" className="text-xs text-muted-foreground uppercase tracking-wider">Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="pl-9 pr-9 bg-background focus:ring-primary/50"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <Button type="submit" size="lg" className="w-full h-11" disabled={isLoading}>
+                  {isLoading ? (
+                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                  ) : mode === "signin" ? "Sign In" : "Continue"}
+                </Button>
+              </form>
+
+              <div className="relative mt-5">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-border" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-2 text-muted-foreground font-medium tracking-wider">
+                    Or continue with
+                  </span>
+                </div>
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full h-11 mt-4 bg-card border-border hover:bg-muted/30"
+                onClick={async () => {
+                  setIsLoading(true);
+                  const { error } = await signInWithGoogle();
+                  setIsLoading(false);
+                  if (error) { toast({ variant: "destructive", title: "Google Sign-In failed", description: error.message }); } else { onAuthSuccess(); }
+                }}
+                disabled={isLoading}
+              >
+                <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+                </svg>
+                Google
+              </Button>
+
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/40 border border-border mt-6">
+                <AlertCircle className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Only <span className="text-foreground font-medium">@gmail.com</span> accounts allowed. Please use your official email.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 }
 
-function ProfileView({ user, submissions, onBack, onLogout }: any) {
+// ==========================================
+// 2. DASHBOARD VIEW (Exact Replit UI)
+// ==========================================
+function DashboardView({ exams, submissions, onStartExam, onLogout, user }: any) {
+  const container = {
+    hidden: { opacity: 0 },
+    show: { opacity: 1, transition: { staggerChildren: 0.08 } }
+  };
+  const item = {
+    hidden: { opacity: 0, y: 16 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: "easeOut" } }
+  };
+
+  const stats = {
+    totalAttempts: submissions.length,
+    averageScore: submissions.length > 0 ? submissions.reduce((a:any, b:any) => a + (b.score/b.total_marks)*100, 0) / submissions.length : 0,
+    highestScore: submissions.length > 0 ? Math.max(...submissions.map((s:any) => s.score/s.total_marks*100)) : 0,
+    totalViolations: submissions.reduce((a:any, b:any) => a + (b.violations || b.violations_count || 0), 0)
+  };
+
   return (
-    <div className="min-h-screen p-8 sm:p-16 lg:p-32 font-sans relative z-10">
-      <header className="max-w-7xl mx-auto mb-24 flex items-center justify-between">
-        <button onClick={onBack} className="w-20 h-20 bg-white/5 rounded-[32px] border border-white/10 flex items-center justify-center text-white transition-all hover:bg-white/10 active:scale-90"><ArrowLeft className="w-8 h-8" /></button>
-        <h2 className="text-3xl font-black text-white uppercase tracking-tighter">NODE_CLEARANCE</h2>
-        <button onClick={onLogout} className="w-20 h-20 bg-red-500/10 rounded-[32px] border border-red-500/20 flex items-center justify-center text-red-500 transition-all hover:bg-red-500 hover:text-white"><LogOut className="w-8 h-8" /></button>
+    <div className="min-h-screen bg-background text-foreground pb-20">
+      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border">
+        <div className="container max-w-6xl mx-auto px-4 h-14 sm:h-16 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <Shield className="w-5 h-5 text-primary shrink-0" />
+            <span className="font-semibold tracking-tight text-sm sm:text-base">ExamPortal</span>
+          </div>
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+            <span className="text-xs text-muted-foreground hidden sm:inline-block truncate max-w-[200px]">{user?.email}</span>
+            <Button variant="ghost" size="sm" onClick={onLogout} className="text-muted-foreground hover:text-foreground shrink-0 px-2 sm:px-3">
+              <LogOut className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Disconnect</span>
+            </Button>
+          </div>
+        </div>
       </header>
 
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-16">
-        <section className="lg:col-span-1 space-y-12">
-          <PremiumCard className="p-16 text-center">
-            <div className="w-32 h-32 bg-indigo-600 rounded-[45px] flex items-center justify-center mx-auto mb-10 text-white shadow-3xl"><User className="w-16 h-16" /></div>
-            <h3 className="text-4xl sm:text-5xl font-black text-white uppercase tracking-tighter mb-4">{user?.user_metadata?.full_name || user?.email?.split('@')[0]}</h3>
-            <p className="text-slate-500 font-black text-xs uppercase tracking-widest mb-12">{user?.email}</p>
-            <div className="flex flex-wrap justify-center gap-4">
-              <Badge className="bg-emerald-500/20 text-emerald-400 px-6 py-2 rounded-full font-black uppercase text-[10px] tracking-widest border-none">CRYPTO_VERIFIED</Badge>
-              <Badge className="bg-white/5 text-slate-500 px-6 py-2 rounded-full font-black uppercase text-[10px] tracking-widest border-none">ADMIN_OK</Badge>
-            </div>
-          </PremiumCard>
+      <main className="container max-w-6xl mx-auto px-4 mt-6 sm:mt-8">
+        <motion.div variants={container} initial="hidden" animate="show" className="space-y-8 sm:space-y-10">
           
-          <PremiumCard className="p-12">
-            <div className="flex items-center gap-4 mb-10 text-indigo-400 font-black text-[12px] uppercase tracking-widest"><Activity className="w-5 h-5" /> GLOBAL_STATS</div>
-            <div className="grid grid-cols-2 gap-10">
-              <div><p className="text-slate-600 text-[10px] font-black uppercase tracking-widest mb-2">RUNS</p><p className="text-6xl font-black text-white">{submissions.length}</p></div>
-              <div><p className="text-slate-600 text-[10px] font-black uppercase tracking-widest mb-2">SCORE</p><p className="text-6xl font-black text-indigo-500">{submissions.reduce((a:any, b:any) => a + (b.score || 0), 0)}</p></div>
+          <motion.div variants={item}>
+            <h2 className="text-base sm:text-xl font-medium tracking-tight mb-3 sm:mb-4 flex items-center gap-2">
+              <Activity className="w-4 h-4 sm:w-5 sm:h-5 text-primary" /> Telemetry
+            </h2>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+              <Card className="bg-card/50 border-border">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex items-center justify-between text-muted-foreground mb-3">
+                    <span className="text-xs sm:text-sm font-medium">Exams Taken</span>
+                    <Target className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  </div>
+                  <div className="text-2xl sm:text-3xl font-bold">{stats.totalAttempts}</div>
+                </CardContent>
+              </Card>
+              <Card className="bg-card/50 border-border">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex items-center justify-between text-muted-foreground mb-3">
+                    <span className="text-xs sm:text-sm font-medium">Avg. Score</span>
+                    <Award className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  </div>
+                  <div className="text-2xl sm:text-3xl font-bold">
+                    {stats.totalAttempts > 0 ? `${Math.round(stats.averageScore)}%` : '--'}
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="bg-card/50 border-border">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex items-center justify-between text-muted-foreground mb-3">
+                    <span className="text-xs sm:text-sm font-medium">High Score</span>
+                    <Award className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" />
+                  </div>
+                  <div className="text-2xl sm:text-3xl font-bold text-primary">
+                    {stats.totalAttempts > 0 ? `${Math.round(stats.highestScore)}%` : '--'}
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="bg-card/50 border-destructive/20 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-12 h-12 bg-destructive/10 rounded-bl-full pointer-events-none" />
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex items-center justify-between text-destructive/80 mb-3">
+                    <span className="text-xs sm:text-sm font-medium">Violations</span>
+                    <ShieldAlert className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  </div>
+                  <div className="text-2xl sm:text-3xl font-bold text-destructive">{stats.totalViolations}</div>
+                </CardContent>
+              </Card>
             </div>
-          </PremiumCard>
-        </section>
+          </motion.div>
 
-        <section className="lg:col-span-2 space-y-10">
-          <div className="flex items-center justify-between px-6">
-             <h4 className="text-[12px] font-black text-slate-600 uppercase tracking-[0.6em]">HISTORICAL_INDEX</h4>
-             <Star className="w-6 h-6 text-indigo-500 animate-pulse" />
-          </div>
-          <div className="space-y-6">
-            {submissions.map((s: any, i: number) => (
-              <PremiumCard key={s.id} className="p-12 flex flex-col md:flex-row items-center justify-between gap-12 group">
-                <div className="flex items-center gap-12 w-full sm:w-auto">
-                   <div className={`w-24 h-24 rounded-[35px] flex items-center justify-center font-black text-3xl ${s.score/s.total_marks >= 0.4 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>{Math.round((s.score/s.total_marks)*100)}%</div>
-                   <div>
-                     <h5 className="text-3xl font-black text-white uppercase tracking-tighter mb-2 group-hover:text-indigo-400 transition-colors">{s.exams?.title || s.exam_title}</h5>
-                     <p className="text-slate-600 font-black text-[10px] uppercase tracking-widest">{new Date(s.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
-                   </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
+            <motion.div variants={item} className="lg:col-span-2 space-y-3 sm:space-y-4">
+              <h2 className="text-base sm:text-xl font-medium tracking-tight flex items-center gap-2">
+                <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-primary" /> Active Deployments
+              </h2>
+              {exams.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                  {exams.map((exam: any) => {
+                    const isCompleted = submissions.some((s: any) => s.exam_id === exam.id);
+                    return (
+                    <Card key={exam.id} className={`bg-card transition-colors border-border flex flex-col group relative overflow-hidden ${isCompleted ? 'opacity-60 saturate-50' : 'hover:bg-card/80'}`}>
+                      <div className={`absolute top-0 left-0 w-1 h-full transition-colors ${isCompleted ? 'bg-muted' : 'bg-primary/40 group-hover:bg-primary'}`} />
+                      <CardHeader className="pb-3 pl-5">
+                        <div className="flex justify-between items-start mb-2">
+                          <Badge variant="outline" className="text-xs uppercase tracking-wider font-mono bg-background">
+                            Assessment
+                          </Badge>
+                          <div className="flex items-center text-xs text-muted-foreground font-mono">
+                            <Clock className="w-3 h-3 mr-1" />
+                            {exam.duration_minutes}m
+                          </div>
+                        </div>
+                        <CardTitle className="text-base sm:text-lg leading-tight">{exam.title}</CardTitle>
+                        <CardDescription className="text-xs sm:text-sm line-clamp-2">
+                          {exam.description || 'No description provided.'}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="pb-3 mt-auto pl-5">
+                        <div className="flex items-center justify-between text-xs sm:text-sm">
+                          <span className="text-muted-foreground">
+                            Marks: <span className="text-foreground font-medium">100</span>
+                          </span>
+                          <span className="text-muted-foreground flex items-center">
+                            <AlertTriangle className="w-3 h-3 mr-1 text-destructive/70" />
+                            {exam.max_violations || 2} violations
+                          </span>
+                        </div>
+                      </CardContent>
+                      <CardFooter className="pl-5">
+                        <Button 
+                          className={`w-full text-sm ${isCompleted ? 'bg-muted text-muted-foreground border-transparent cursor-not-allowed' : 'bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground border border-primary/20'}`}
+                          onClick={() => !isCompleted && onStartExam(exam)}
+                          disabled={isCompleted}
+                        >
+                          {isCompleted ? (
+                            <>
+                              <CheckCircle2 className="w-4 h-4 mr-2" />
+                              Completed
+                            </>
+                          ) : (
+                            <>
+                              <PlayCircle className="w-4 h-4 mr-2" />
+                              Initialize Exam
+                            </>
+                          )}
+                        </Button>
+                      </CardFooter>
+                    </Card>
+                  )})}
                 </div>
-                <div className="text-right">
-                   <p className="text-slate-600 font-black text-[10px] uppercase tracking-widest mb-2">NET_VAL</p>
-                   <p className="text-5xl font-black text-white">{s.score}<span className="text-slate-800 text-2xl">/{s.total_marks}</span></p>
-                </div>
-              </PremiumCard>
-            ))}
+              ) : (
+                <Card className="bg-background border-dashed border-border/50">
+                  <CardContent className="p-8 text-center text-muted-foreground">
+                    <Shield className="w-8 h-8 mx-auto mb-3 opacity-20" />
+                    <p className="text-sm">No active deployments available.</p>
+                  </CardContent>
+                </Card>
+              )}
+            </motion.div>
+
+            <motion.div variants={item} className="space-y-3 sm:space-y-4">
+              <h2 className="text-base sm:text-xl font-medium tracking-tight flex items-center gap-2">
+                <History className="w-4 h-4 sm:w-5 sm:h-5 text-primary" /> Attempt Log
+              </h2>
+              <Card className="bg-card/50 border-border">
+                <ScrollArea className="h-[320px] sm:h-[400px]">
+                  {submissions.length > 0 ? (
+                    <div className="divide-y divide-border/50">
+                      {submissions.map((attempt: any) => (
+                        <div key={attempt.id} className="p-4 hover:bg-muted/30 transition-colors">
+                          <div className="flex justify-between items-start gap-2 mb-1">
+                            <div className="min-w-0">
+                              <p className="font-medium text-sm leading-tight mb-1 truncate">{attempt.exam_title || attempt.exams?.title}</p>
+                              <p className="text-xs text-muted-foreground font-mono">
+                                {format(new Date(attempt.created_at), 'MMM d, yyyy HH:mm')}
+                              </p>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <span className="font-bold text-primary text-sm">
+                                {Math.round((attempt.score / (attempt.total_marks || 1)) * 100)}%
+                              </span>
+                            </div>
+                          </div>
+                          {(attempt.violations || attempt.violations_count || 0) > 0 && (
+                            <div className="flex items-center text-[10px] text-destructive uppercase font-mono tracking-wider mt-1">
+                              <ShieldAlert className="w-3 h-3 mr-1" />
+                              {attempt.violations || attempt.violations_count} violations
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-8 text-center text-muted-foreground text-sm">
+                      No logs found.
+                    </div>
+                  )}
+                </ScrollArea>
+              </Card>
+            </motion.div>
           </div>
-        </section>
-      </div>
+        </motion.div>
+      </main>
     </div>
   );
 }
 
-// ============================================================
-// MAIN PAGE EXPORT
-// ============================================================
-export default function SphnsExmTest() {
-  const { user, loading: authLoading, signOut: authSignOut } = useAuth();
-  const { toast } = useToast();
-  
-  const [phase, setPhase] = useState<'auth' | 'select' | 'info' | 'exam' | 'results' | 'profile'>('auth');
-  const [exams, setExams] = useState<Exam[]>([]);
-  const [submissions, setSubmissions] = useState<any[]>([]);
-  const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
-  const [completedTitles, setCompletedTitles] = useState<Set<string>>(new Set());
-  
-  const [selectedEx, setSelectedEx] = useState<Exam | null>(null);
-  const [questions, setQuestions] = useState<ExamQuestion[]>([]);
-  const [loadingEx, setLoadingEx] = useState(false);
-  
-  const [name, setName] = useState('');
-  const [roll, setRoll] = useState('');
-  const [currentQ, setCurrentQ] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [timeLeft, setTimeLeft] = useState(0);
-  const [startTime, setStartTime] = useState(0);
-  const [isEval, setIsEval] = useState(false);
-  const [res, setRes] = useState<any>(null);
+// ==========================================
+// 3. EXAM TAKING VIEW (Exact Replit UI)
+// ==========================================
+function ExamTakingView({ exam, questions, onSubmit, user }: any) {
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [breachOverlay, setBreachOverlay] = useState(false);
+  const [timeLeft, setTimeLeft] = useState((exam?.duration_minutes || 60) * 60);
+  const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [violationCount, setViolationCount] = useState(0);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const isSubmittingRef = useRef(false);
 
-  const security = useExamSecurity({
-    enabled: phase === 'exam',
-    maxViolations: selectedEx?.max_violations || 2,
-    onMaxViolationsReached: () => { handleAutoSubmit(); },
-  });
+  const handleEnterFullscreen = async () => {
+    try {
+      if (document.documentElement.requestFullscreen) {
+        await document.documentElement.requestFullscreen();
+        setIsFullscreen(true);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const processSubmit = useCallback((auto = false) => {
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
+    setIsProcessing(true);
+    if (document.fullscreenElement) document.exitFullscreen().catch(console.error);
+    onSubmit(answers, auto, violationCount, (exam?.duration_minutes || 60) * 60 - timeLeft);
+  }, [answers, violationCount, timeLeft, exam, onSubmit]);
 
   useEffect(() => {
-    if (user) { setPhase('select'); fetchPortal(); }
-    else { setPhase('auth'); }
-  }, [user]);
-
-  const fetchPortal = async () => {
-    if (!user) return; setLoadingEx(true);
-    try {
-      const [eRes, sRes] = await Promise.all([
-        supabase.from('exams').select('*').eq('is_active', true).order('created_at', { ascending: false }),
-        supabase.from('exam_submissions').select('*, exams(title)').eq('user_id', user.id).order('created_at', { ascending: false })
-      ]);
-      if (eRes.data) setExams(eRes.data);
-      if (sRes.data) setSubmissions(sRes.data);
-      const ids = new Set<string>(); const titles = new Set<string>();
-      sRes.data?.forEach((s: any) => { ids.add(s.exam_id); if (s.exams?.title) titles.add(s.exams.title.trim().toLowerCase()); });
-      setCompletedIds(ids); setCompletedTitles(titles);
-    } finally { setLoadingEx(false); }
-  };
-
-  const handleSelect = async (ex: Exam) => {
-    setLoadingEx(true);
-    const { data: qData } = await (supabaseAdmin || supabase).from('exam_questions').select('*').eq('exam_id', ex.id).order('sort_order', { ascending: true });
-    if (qData) {
-      setQuestions(shuffleArray(qData.map(q => ({ ...q, options: typeof q.options === 'string' ? JSON.parse(q.options) : (q.options || []) }))));
-      setSelectedEx(ex); setPhase('info');
-    }
-    setLoadingEx(false);
-  };
-
-  const handleStart = (n: string, r: string) => {
-    setName(n); setRoll(r); setTimeLeft((selectedEx?.duration_minutes || 30) * 60);
-    setStartTime(Date.now()); setPhase('exam'); security.enterFullscreen();
-  };
-
-  const handleAutoSubmit = () => { if (!isEval) handleSubmit(true); };
-
-  const handleSubmit = async (auto = false) => {
-    setIsEval(true); const timeUsed = Math.floor((Date.now() - startTime) / 1000);
-    try {
-      let score = 0; let total = 0; const results: any[] = []; const aiItems: any[] = [];
-      questions.forEach((q, i) => {
-        total += q.marks; const ans = (answers[q.id] || '').trim(); const cor = (q.correct_answer || '').trim();
-        if (q.question_type === 'mcq') {
-          const match = cor.toLowerCase().split('|').some(a => a.trim() === ans.toLowerCase());
-          const s = match ? q.marks : 0; score += s;
-          results.push({ question: q.question, score: s, max: q.marks, feedback: s > 0 ? "PASSED" : "FAILED" });
-        } else { aiItems.push({ question: q.question, correctAnswer: cor, userAnswer: ans, maxMarks: q.marks, i }); }
+    if (timeLeft <= 0 || breachOverlay) return;
+    const timer = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) { clearInterval(timer); processSubmit(true); return 0; }
+        return prev - 1;
       });
-      if (aiItems.length > 0) {
-        const aiResults = await gradeExam(aiItems);
-        aiItems.forEach((item, idx) => { const r = aiResults[idx]; const s = r?.score || 0; score += s; results.push({ question: item.question, score: s, max: item.maxMarks, feedback: r?.feedback || "GRADE_OK" }); });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [timeLeft, breachOverlay, processSubmit]);
+
+  useEffect(() => {
+    const handleSecurityBreach = () => {
+      if (breachOverlay) return;
+      setBreachOverlay(true);
+      const newViolationCount = violationCount + 1;
+      setViolationCount(newViolationCount);
+      
+      if (newViolationCount >= (exam.max_violations || 2)) {
+        processSubmit(true);
+      } else {
+        setTimeout(() => {
+          setBreachOverlay(false);
+          if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(console.error);
+          }
+        }, 3000);
       }
-      await supabase.from('exam_submissions').insert({ exam_id: selectedEx?.id, user_id: user?.id, student_name: `${name} (${user?.email})`, roll_number: roll, score, total_marks: total, time_used_seconds: timeUsed, status: auto ? 'auto_submitted' : 'completed', exam_title: selectedEx?.title, answers: { ...answers, _breakdown: results } });
-      setRes({ score, total, violations: security.violations, title: selectedEx?.title, breakdown: results });
-      security.exitFullscreen(); setPhase('results');
-    } catch (e) { toast({ title: "Write Failure", variant: "destructive" }); }
-    finally { setIsEval(false); }
+    };
+
+    const onFullscreenChange = () => {
+      if (isSubmittingRef.current) return;
+      setIsFullscreen(!!document.fullscreenElement);
+      if (!document.fullscreenElement) handleSecurityBreach();
+    };
+    const onVisibilityChange = () => { if (!isSubmittingRef.current && document.visibilityState === 'hidden') handleSecurityBreach(); };
+    const onBlur = () => { if (!isSubmittingRef.current) handleSecurityBreach(); };
+
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    window.addEventListener('blur', onBlur);
+    return () => {
+      document.removeEventListener('fullscreenchange', onFullscreenChange);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      window.removeEventListener('blur', onBlur);
+    };
+  }, [breachOverlay, violationCount, exam, processSubmit]);
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  const handleLogout = async () => {
-    try {
-      toast({ title: "NUCLEAR_SIGNOUT_INITIATED", description: "Terminating neural sessions and purging local caches..." });
-      // 1. Explicit clean
-      localStorage.clear();
-      sessionStorage.clear();
-      
-      // 2. Auth call
-      await authSignOut();
-      
-      // 3. Force state reset
-      setPhase('auth');
-      
-      // 4. Hard navigation to prevent back-button re-entry
-      window.location.replace('/login');
-    } catch (e) {
-      window.location.href = '/';
-    }
-  };
-
-  if (authLoading) return <MasterBackground />;
+  if (!isFullscreen && !breachOverlay) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
+        <div className="max-w-sm w-full text-center space-y-6">
+          <div className="w-16 h-16 rounded-full bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-center mx-auto">
+            <AlertTriangle className="w-8 h-8 text-yellow-500" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold tracking-tight mb-2">Fullscreen Required</h1>
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              This assessment requires fullscreen mode. Exiting fullscreen or switching tabs will log a security violation.
+            </p>
+          </div>
+          <Button size="lg" className="w-full h-12" onClick={handleEnterFullscreen}>
+             Enter Fullscreen & Begin
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="relative min-h-screen selection:bg-indigo-500/30 selection:text-white">
-      <MasterBackground />
-      <AnimatePresence mode="wait">
-        {phase === 'auth' && <AuthView key="auth" onAuthSuccess={() => setPhase('select')} />}
-        {phase === 'select' && <SelectionView key="select" exams={exams} loading={loadingEx} onSelect={handleSelect} completedIds={completedIds} completedTitles={completedTitles} onProfile={() => setPhase('profile')} />}
-        {phase === 'profile' && <ProfileView key="profile" user={user} submissions={submissions} onBack={() => setPhase('select')} onLogout={handleLogout} />}
-        
-        {phase === 'info' && (
-          <div className="min-h-screen flex items-center justify-center p-8 font-sans relative z-10">
-            <PremiumCard className="w-full max-w-2xl p-20 text-center">
-              <div className="w-24 h-24 bg-indigo-600 rounded-[35px] flex items-center justify-center mx-auto mb-10 shadow-2xl shadow-indigo-500/30"><Layers className="w-12 h-12 text-white" /></div>
-              <h2 className="text-5xl font-black text-white mb-4 uppercase tracking-tighter">PRE_FLIGHT_CHECK</h2>
-              <p className="text-slate-600 font-black text-[10px] tracking-widest uppercase mb-16">Bind subject identity to assessment session</p>
-              <div className="space-y-6 mb-20">
-                <Input placeholder="FULL_LEGAL_NAME" value={name} onChange={e => setName(e.target.value.toUpperCase())} className="h-20 bg-white/5 border-white/5 rounded-[30px] text-center font-black text-2xl text-white" />
-                <Input placeholder="REGISTER_NODE_ID" value={roll} onChange={e => setRoll(e.target.value.toUpperCase())} className="h-20 bg-white/5 border-white/5 rounded-[30px] text-center font-black text-2xl text-white" />
-              </div>
-              <GodlyButton onClick={() => name && roll && handleStart(name, roll)}>AUTHORIZE_START</GodlyButton>
-            </PremiumCard>
-          </div>
+    <div className="min-h-screen bg-background text-foreground flex flex-col cursor-default select-none">
+      <AnimatePresence>
+        {isProcessing && (
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            className="fixed inset-0 z-[100] bg-background/95 backdrop-blur-md flex flex-col items-center justify-center text-center p-6"
+          >
+            <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mb-6" />
+            <h1 className="text-2xl font-bold tracking-tight mb-2">Analyzing Responses</h1>
+            <p className="text-muted-foreground">Evaluating your answers and enforcing security heuristics...</p>
+          </motion.div>
         )}
-
-        {phase === 'results' && (
-          <div className="min-h-screen p-8 sm:p-32 font-sans relative z-10">
-            <PremiumCard className="max-w-4xl mx-auto p-16 sm:p-24 text-center">
-              <div className="w-32 h-32 bg-indigo-600/20 rounded-[45px] flex items-center justify-center mx-auto mb-12 text-indigo-400"><Trophy className="w-16 h-16" /></div>
-              <h2 className="text-5xl sm:text-7xl font-black text-white mb-4 tracking-tighter uppercase">ASSESSMENT_LOCKED</h2>
-              <p className="text-slate-600 font-black text-[11px] tracking-[0.4em] mb-20">{res?.title}</p>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 mb-24">
-                <div className="bg-white/5 p-12 rounded-[50px]"><p className="text-slate-600 text-[10px] uppercase mb-2">RAW_VAL</p><p className="text-6xl font-black text-white">{res?.score}<span className="text-2xl text-slate-800">/{res?.total}</span></p></div>
-                <div className="bg-white/5 p-12 rounded-[50px]"><p className="text-slate-600 text-[10px] uppercase mb-2">INTEGRITY_INDEX</p><p className="text-6xl font-black text-indigo-400">{100 - (res?.violations * 10)}%</p></div>
-                <div className="bg-white/5 p-12 rounded-[50px]"><p className="text-slate-600 text-[10px] uppercase mb-2">STATUS</p><p className="text-4xl font-black text-emerald-400">ARCHIVED</p></div>
-              </div>
-              <GodlyButton onClick={onBack}>BACK_TO_TERMINAL</GodlyButton>
-            </PremiumCard>
-          </div>
-        )}
-
-        {phase === 'exam' && (
-          <motion.div key="exam" className="h-screen w-screen flex flex-col bg-[#020617] overflow-hidden font-sans relative" onContextMenu={e => e.preventDefault()}>
-            <ViolationOverlay show={security.showWarning} count={security.violationCount} max={selectedEx?.max_violations || 2} msg={security.warningMessage} onDismiss={security.dismissWarning} />
-            <AnimatePresence>{!security.isFullscreen && (
-                <div className="fixed inset-0 z-[100000] bg-slate-950/80 backdrop-blur-3xl flex flex-col items-center justify-center text-center p-8">
-                  <Maximize className="w-24 h-24 text-indigo-500 mb-10 animate-ping" />
-                  <h2 className="text-6xl font-black text-white mb-6 uppercase tracking-tight">SECURITY_DROP</h2>
-                  <p className="text-slate-500 font-black uppercase text-xs tracking-widest mb-16">Enter fullscreen domain to continue assessment</p>
-                  <GodlyButton onClick={security.enterFullscreen} className="max-w-md">RECONNECT_DOMAIN</GodlyButton>
-                </div>
-            )}</AnimatePresence>
-            <header className="h-28 border-b border-white/5 bg-slate-950/50 backdrop-blur-xl px-16 flex items-center justify-between relative z-50">
-               <div className="flex items-center gap-8">
-                 <div className="w-16 h-16 bg-indigo-600/20 rounded-[25px] flex items-center justify-center border border-indigo-500/30"><Shield className="w-8 h-8 text-indigo-400" /></div>
-                 <div><p className="text-white font-black text-xs uppercase tracking-widest">{selectedEx?.title}</p><p className="text-slate-600 font-black text-[10px] uppercase tracking-[0.2em]">{name || 'SUBJECT_ALPHA'}</p></div>
-               </div>
-               <div className={`px-12 h-16 flex items-center gap-6 rounded-full border-2 transition-all ${timeLeft < 300 ? 'bg-red-500/10 border-red-500 text-red-500' : 'bg-white/5 border-white/5 text-white'}`}><Clock className="w-7 h-7" /><span className="font-mono text-4xl font-black tracking-widest">{Math.floor(timeLeft/60)}:{String(timeLeft%60).padStart(2,'0')}</span></div>
-               <GodlyButton onClick={() => handleSubmit()} className="h-16 px-12 rounded-[25px] w-auto text-xs">FINALIZE_SUBMIT</GodlyButton>
-            </header>
-            <main className="flex-1 flex p-10 gap-10 overflow-hidden relative z-10">
-               <aside className="w-96 bg-white/[0.02] rounded-[70px] border border-white/5 p-12 flex flex-col">
-                 <p className="text-[11px] font-black text-slate-700 uppercase tracking-[0.4em] mb-12">GRID_MAP</p>
-                 <div className="grid grid-cols-4 gap-4 overflow-y-auto no-scrollbar pb-10">
-                   {questions.map((_, i) => (
-                     <button key={i} onClick={() => setCurrentQ(i)} className={`aspect-square rounded-[30px] flex items-center justify-center font-black border transition-all ${currentQ === i ? 'bg-indigo-600 border-indigo-600 text-white shadow-2xl shadow-indigo-500/50' : answers[questions[i].id] ? 'bg-indigo-500/20 border-indigo-500/30 text-indigo-400' : 'bg-white/5 border-white/5 text-slate-700'}`}>{i + 1}</button>
-                   ))}
-                 </div>
-               </aside>
-               <section className="flex-1 flex flex-col gap-10 h-full overflow-hidden">
-                 <PremiumCard className="flex-1 p-20 overflow-y-auto no-scrollbar">
-                    <div className="flex items-center justify-between mb-20"><Badge className="bg-white/5 text-slate-700 border-none px-6 py-2 rounded-full font-black text-[10px] tracking-widest uppercase">Query_node::{currentQ + 1}</Badge><Badge className="bg-indigo-500/20 text-indigo-400 border-none px-6 py-2 rounded-full font-black text-[10px] tracking-widest">WEIGHT: {questions[currentQ]?.marks}</Badge></div>
-                    <h3 className="text-4xl sm:text-6xl font-black text-white mb-20 leading-tight uppercase tracking-tighter">{questions[currentQ]?.question}</h3>
-                    <div className="space-y-6">
-                      {questions[currentQ]?.question_type === 'mcq' ? (
-                        <div className="grid grid-cols-1 gap-6">
-                          {questions[currentQ].options.map((opt, i) => (
-                            <button key={i} onClick={() => setAnswers(p => ({ ...p, [questions[currentQ].id]: opt }))} className={`group w-full p-10 rounded-[45px] text-left border-2 transition-all flex items-center gap-10 ${answers[questions[currentQ].id] === opt ? 'bg-indigo-600 border-indigo-600 text-white shadow-2xl' : 'bg-white/5 border-white/5 text-slate-600 hover:border-white/10'}`}><div className={`w-14 h-14 rounded-3xl border-2 flex items-center justify-center font-black text-xl transition-all ${answers[questions[currentQ].id] === opt ? 'bg-white text-indigo-600 border-white' : 'border-slate-800'}`}>{String.fromCharCode(65 + i)}</div><span className="font-bold text-2xl">{opt}</span></button>
-                          ))}
-                        </div>
-                      ) : (
-                        <textarea value={answers[questions[currentQ]?.id] || ''} onChange={e => setAnswers(p => ({ ...p, [questions[currentQ].id]: e.target.value }))} className="w-full h-full min-h-[500px] bg-white/5 border-none rounded-[50px] p-20 text-white font-bold text-3xl focus:bg-white/10 outline-none resize-none transition-all placeholder:text-slate-800 shadow-inner" placeholder="DECRYPT AND AUTHOR_INPUT..." />
-                      )}
-                    </div>
-                 </PremiumCard>
-                 <footer className="h-32 bg-white/[0.02] rounded-[60px] border border-white/5 px-16 flex items-center justify-between">
-                    <button onClick={() => setCurrentQ(p => Math.max(0, p - 1))} className="text-slate-600 font-black text-xs tracking-widest uppercase hover:text-white transition-colors">PREVIOUS_NODE</button>
-                    <div className="h-1.5 w-full max-w-2xl bg-white/5 rounded-full mx-16 overflow-hidden"><motion.div animate={{ width: `${((currentQ + 1) / questions.length) * 100}%` }} className="h-full bg-indigo-600 shadow-[0_0_20px_rgba(79,70,229,0.8)]" /></div>
-                    <GodlyButton onClick={() => currentQ === questions.length - 1 ? handleSubmit() : setCurrentQ(p => p + 1)} className="max-w-[240px] h-20">{currentQ === questions.length - 1 ? "FINALIZE" : "NEXT_NODE"}</GodlyButton>
-                 </footer>
-               </section>
-            </main>
+        {breachOverlay && !isProcessing && (
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-destructive flex flex-col items-center justify-center text-destructive-foreground p-6 text-center"
+          >
+            <ShieldAlert className="w-16 h-16 sm:w-24 sm:h-24 mb-6 animate-pulse" />
+            <h1 className="text-3xl sm:text-5xl font-black tracking-tighter mb-3">INTEGRITY BREACH</h1>
+            <p className="text-base sm:text-xl opacity-90 max-w-md font-mono">
+              Unauthorized window activity detected. Violation logged.
+            </p>
+            <div className="mt-8 text-base font-mono opacity-70">
+              Violations: {violationCount} / {exam.max_violations || 2}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
-      
-      {isEval && (
-        <div className="fixed inset-0 z-[300000] bg-slate-950/90 backdrop-blur-[100px] flex flex-col items-center justify-center text-center font-sans h-full w-full">
-           <Brain className="w-32 h-32 text-indigo-500 animate-bounce mb-12" />
-           <h2 className="text-5xl font-black text-white uppercase tracking-tighter mb-4">NEURAL_DECRYPTION_ACTIVE</h2>
-           <p className="text-[12px] font-black text-slate-700 uppercase tracking-[0.6em]">Indexing assessment data with global ground truth baseline...</p>
+
+      <header className="sticky top-0 z-40 bg-card border-b border-border/50 select-none">
+        <div className="flex items-center justify-between px-4 pt-3 pb-2 sm:hidden">
+          <span className="font-bold text-sm truncate max-w-[55%]">{exam.title}</span>
+          <div className="flex items-center gap-1 text-destructive font-mono text-xs font-bold bg-destructive/10 px-2 py-1 rounded border border-destructive/20">
+            <ShieldAlert className="w-3 h-3" />
+            {violationCount}/{exam.max_violations || 2}
+          </div>
         </div>
-      )}
+        <div className="flex items-center justify-between px-4 pb-3 sm:hidden">
+          <div className="flex items-center gap-1.5 font-mono font-bold text-lg tracking-wider">
+            <Clock className="w-4 h-4 text-muted-foreground" />
+            <span className={timeLeft < 300 ? "text-destructive animate-pulse" : "text-primary"}>
+              {formatTime(timeLeft)}
+            </span>
+          </div>
+          <Button size="sm" className="bg-primary hover:bg-primary/90 font-bold text-xs" onClick={() => processSubmit(false)}>
+            <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> SUBMIT
+          </Button>
+        </div>
+
+        <div className="hidden sm:flex items-center justify-between py-3 px-6">
+          <div className="flex items-center gap-4 min-w-0">
+            <span className="font-bold tracking-tight text-base truncate max-w-xs">{exam.title}</span>
+            <div className="h-4 w-px bg-border" />
+            <div className="flex items-center gap-1.5 text-destructive font-mono text-sm font-bold bg-destructive/10 px-3 py-1 rounded border border-destructive/20 shrink-0">
+              <ShieldAlert className="w-4 h-4" />
+              VIOLATIONS: {violationCount}/{exam.max_violations || 2}
+            </div>
+          </div>
+          <div className="flex items-center gap-4 shrink-0">
+            <div className="flex items-center gap-2 text-xl font-mono font-bold tracking-wider">
+              <Clock className="w-5 h-5 text-muted-foreground" />
+              <span className={timeLeft < 300 ? "text-destructive animate-pulse" : "text-primary"}>
+                {formatTime(timeLeft)}
+              </span>
+            </div>
+            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold" onClick={() => processSubmit(false)}>
+              <CheckCircle2 className="w-4 h-4 mr-2" /> SUBMIT EXAM
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-8 py-6 sm:py-10 space-y-10 pb-24">
+        {questions.map((q: any, idx: number) => (
+          <div key={q.id} className="space-y-4">
+            <div className="flex gap-3 sm:gap-4">
+              <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-muted flex items-center justify-center text-xs sm:text-sm font-bold font-mono border border-border mt-0.5">
+                {idx + 1}
+              </div>
+              <div className="flex-1 space-y-4 min-w-0">
+                <div className="flex justify-between items-start gap-3">
+                  <h3 className="text-base sm:text-lg font-medium leading-relaxed">{q.question}</h3>
+                  <span className="text-xs font-mono text-muted-foreground bg-muted px-2 py-1 rounded border border-border shrink-0">
+                    {q.marks} pts
+                  </span>
+                </div>
+
+                {(() => {
+                  const isMcq = q.question_type?.toLowerCase() === 'mcq' || (Array.isArray(q.options) && q.options.length > 0 && q.options[0] !== "");
+                  return isMcq ? (
+                  <RadioGroup 
+                    className="space-y-2 mt-3" 
+                    value={answers[q.id] || ""} 
+                    onValueChange={(val) => setAnswers(p => ({ ...p, [q.id]: val }))}
+                  >
+                    {(Array.isArray(q.options) ? q.options : []).map((opt: string, i: number) => (
+                      <div 
+                        key={i} 
+                        className="flex items-center space-x-3 bg-card p-3 sm:p-4 rounded-lg border border-border/50 hover:border-primary/50 transition-colors cursor-pointer" 
+                        onClick={() => setAnswers(p => ({ ...p, [q.id]: opt }))}
+                      >
+                        <RadioGroupItem value={opt} id={`q${q.id}-opt${i}`} />
+                        <Label htmlFor={`q${q.id}-opt${i}`} className="flex-1 text-sm sm:text-base cursor-pointer font-normal leading-relaxed">{opt}</Label>
+                      </div>
+                    ))}
+                  </RadioGroup>
+                  ) : (
+                  <Textarea 
+                    className="min-h-[160px] sm:min-h-[200px] mt-3 bg-card border-border/50 focus-visible:ring-primary text-sm sm:text-base leading-relaxed font-sans resize-y"
+                    placeholder="Enter your answer here or write code..."
+                    value={answers[q.id] || ""}
+                    onChange={(e) => setAnswers(p => ({ ...p, [q.id]: e.target.value }))}
+                  />
+                  );
+                })()}
+              </div>
+            </div>
+          </div>
+        ))}
+      </main>
     </div>
   );
 }
+
+// ==========================================
+// 4. RESULTS VIEW (Exact Replit UI)
+// ==========================================
+function ResultsView({ result, onBack }: any) {
+  const percentage = Math.round((result.score / result.total) * 100);
+  const isPass = percentage >= 50;
+
+  const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.08 } } };
+  const item = { hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: "easeOut" } } };
+
+  return (
+    <div className="min-h-screen bg-background text-foreground pb-20">
+      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border">
+        <div className="container max-w-4xl mx-auto px-4 h-14 sm:h-16 flex items-center justify-between">
+          <Button variant="ghost" size="sm" onClick={onBack} className="text-muted-foreground hover:text-foreground -ml-2 px-2">
+            <ChevronLeft className="w-4 h-4 mr-1" />
+            <span className="text-sm">Dashboard</span>
+          </Button>
+          <div className="flex items-center gap-2">
+            <Shield className="w-4 h-4 text-primary opacity-50" />
+            <span className="font-medium text-xs sm:text-sm text-muted-foreground">Analysis Report</span>
+          </div>
+        </div>
+      </header>
+
+      <main className="container max-w-4xl mx-auto px-4 mt-6 sm:mt-8">
+        <motion.div variants={container} initial="hidden" animate="show" className="space-y-6 sm:space-y-8">
+          <div className="text-center space-y-2 mb-8 sm:mb-12">
+            <motion.div variants={item} className="inline-flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-card border border-border shadow-2xl mb-4 relative">
+              <div className={`absolute inset-0 rounded-full border-4 ${isPass ? 'border-primary' : 'border-destructive'} opacity-20`} />
+              <span className="text-2xl sm:text-3xl font-bold">{percentage}%</span>
+            </motion.div>
+            <motion.h1 variants={item} className="text-xl sm:text-3xl font-bold tracking-tight px-4">
+              {result.title}
+            </motion.h1>
+            <motion.p variants={item} className="text-muted-foreground font-mono text-xs sm:text-sm uppercase tracking-wider">
+              Status:{" "}
+              {result.violations >= 2 ? <span className="text-destructive font-bold">SECURITY BREACH</span> : isPass ? <span className="text-primary font-bold">PASSED</span> : <span className="text-destructive font-bold">FAILED</span>}
+            </motion.p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <motion.div variants={item}>
+              <Card className="bg-card border-border">
+                <CardContent className="p-4 sm:p-6 flex items-center justify-between">
+                  <div className="space-y-1">
+                    <p className="text-xs sm:text-sm text-muted-foreground font-medium">Final Score</p>
+                    <p className="text-xl sm:text-2xl font-bold">
+                      {Math.round(result.score)} <span className="text-sm sm:text-lg text-muted-foreground font-normal">/ {result.total} pts</span>
+                    </p>
+                  </div>
+                  <Award className={`w-7 h-7 sm:w-8 sm:h-8 ${isPass ? 'text-primary' : 'text-muted-foreground'}`} />
+                </CardContent>
+              </Card>
+            </motion.div>
+            <motion.div variants={item}>
+              <Card className={`bg-card ${result.violations > 0 ? 'border-destructive/30' : 'border-border'}`}>
+                <CardContent className="p-4 sm:p-6 flex items-center justify-between">
+                  <div className="space-y-1">
+                    <p className="text-xs sm:text-sm text-muted-foreground font-medium">Security Violations</p>
+                    <p className={`text-xl sm:text-2xl font-bold ${result.violations > 0 ? 'text-destructive' : 'text-primary'}`}>{result.violations}</p>
+                  </div>
+                  {result.violations > 0 ? <ShieldAlert className="w-7 h-7 sm:w-8 sm:h-8 text-destructive opacity-80" /> : <Shield className="w-7 h-7 sm:w-8 sm:h-8 text-primary opacity-80" />}
+                </CardContent>
+              </Card>
+            </motion.div>
+          </div>
+
+          {result.breakdown && (
+            <motion.div variants={item} className="space-y-4 sm:space-y-6">
+              <h2 className="text-base sm:text-xl font-medium tracking-tight flex items-center gap-2">
+                <BrainCircuit className="w-4 h-4 sm:w-5 sm:h-5 text-primary" /> Evaluation Breakdown
+              </h2>
+              <div className="space-y-3 sm:space-y-4">
+                {result.breakdown.map((b: any, i: number) => (
+                  <Card key={i} className="bg-card/50 border-border overflow-hidden">
+                    <div className="p-4 sm:p-6">
+                      <div className="flex gap-3 sm:gap-4">
+                        <div className="flex flex-col items-center gap-2 pt-0.5 shrink-0">
+                          {b.score > 0 ? <CheckCircle2 className="w-5 h-5 text-primary" /> : <XCircle className="w-5 h-5 text-destructive" />}
+                          <Badge variant="outline" className="font-mono text-[10px] px-1.5 bg-background">Q{i + 1}</Badge>
+                        </div>
+                        <div className="flex-1 min-w-0 space-y-2">
+                          <div className="flex justify-between items-start gap-3">
+                            <div className="flex-1 min-w-0 space-y-3">
+                              <div>
+                                <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Question</p>
+                                <p className="text-sm font-medium leading-relaxed">{b.question || "Unknown Question"}</p>
+                              </div>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                  <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Your Answer</p>
+                                  <div className={`p-2 rounded border text-xs sm:text-sm ${b.score > 0 ? 'bg-primary/5 border-primary/20 text-primary' : 'bg-destructive/5 border-destructive/20 text-destructive'}`}>
+                                    {b.user_answer || <span className="italic opacity-50">No answer provided</span>}
+                                  </div>
+                                </div>
+                                <div>
+                                  <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Correct Answer</p>
+                                  <div className="p-2 rounded border bg-muted/40 border-border text-xs sm:text-sm text-foreground">
+                                    {b.correct_answer || <span className="italic opacity-50">N/A</span>}
+                                  </div>
+                                </div>
+                              </div>
+                              {b.feedback && b.feedback !== "PASSED" && b.feedback !== "FAILED" && b.feedback !== "GRADE_OK" && (
+                                <div className="bg-background/50 p-2 sm:p-3 rounded border border-border/50 mt-2">
+                                  <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">AI Context & Feedback</p>
+                                  <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed break-words">{b.feedback}</p>
+                                </div>
+                              )}
+                            </div>
+                            <span className="font-mono font-bold text-xs bg-muted px-2 py-1 rounded border border-border shrink-0">{b.score} pts</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </motion.div>
+      </main>
+    </div>
+  );
+}
+
+// ==========================================
+// MAIN CONTROLLER
+// ==========================================
+export default function SphnsExmTest() {
+  const { user, loading: authLoading, signOut } = useAuth();
+  const { toast } = useToast();
+  
+  const [phase, setPhase] = useState<"auth" | "dashboard" | "exam" | "results" | "error">("auth");
+  const [insertErrorData, setInsertErrorData] = useState<string>("");
+  const [exams, setExams] = useState<any[]>([]);
+  const [submissions, setSubmissions] = useState<any[]>([]);
+  const [selectedEx, setSelectedEx] = useState<any | null>(null);
+  const [questions, setQuestions] = useState<any[]>([]);
+  const [evalResult, setEvalResult] = useState<any>(null);
+  const hasInitializedRef = useRef(false);
+
+  useEffect(() => {
+    if (!authLoading) {
+      if (user) {
+        if (!hasInitializedRef.current) {
+          hasInitializedRef.current = true;
+          setPhase("dashboard");
+          fetchData();
+        }
+      } else {
+        hasInitializedRef.current = false;
+        setPhase("auth");
+      }
+    }
+  }, [user, authLoading]);
+
+  const fetchData = async () => {
+    if (!user) return;
+    const [eRes, sRes] = await Promise.all([
+      supabase.from("exams").select("*").eq("is_active", true).order("created_at", { ascending: false }),
+      supabase.from("exam_submissions").select("*, exams(title)").eq("user_id", user.id).order("created_at", { ascending: false })
+    ]);
+    if (eRes.data) setExams(eRes.data);
+    if (sRes.data) setSubmissions(sRes.data);
+  };
+
+  const handleStartExam = async (ex: any) => {
+    const { data: qData } = await (supabaseAdmin || supabase).from("exam_questions").select("*").eq("exam_id", ex.id).order("sort_order", { ascending: true });
+    if (qData) {
+      setQuestions(shuffleArray(qData.map(q => ({ ...q, options: typeof q.options === "string" ? JSON.parse(q.options) : (q.options || []) }))));
+      setSelectedEx(ex);
+      setPhase("exam");
+    }
+  };
+
+  const handleSubmitExam = async (answers: Record<number, string>, auto: boolean, violations: number, timeTakenSeconds: number) => {
+    let score = 0; let total = 0; const results: any[] = []; const aiItems: any[] = [];
+    questions.forEach((q, i) => {
+      total += q.marks; 
+      const ans = (answers[q.id] || "").trim(); 
+      const cor = (q.correct_answer || "").trim();
+      const isMcq = q.question_type?.toLowerCase() === 'mcq' || (Array.isArray(q.options) && q.options.length > 0 && q.options[0] !== "");
+      
+      if (isMcq) {
+        const match = cor.toLowerCase().split("|").some((a: string) => a.trim() === ans.toLowerCase());
+        const s = match ? q.marks : 0; score += s;
+        // Map to exact index for breakdown UI alignment
+        results[i] = { question: q.question, user_answer: ans, correct_answer: cor, score: s, max: q.marks, feedback: s > 0 ? "PASSED" : "FAILED" };
+      } else {
+        // Only use AI if NO correct_answer matches perfectly first
+        // If they provided a correct answer and no options, standard regex first
+        if (cor && cor.toLowerCase() === ans.toLowerCase()) {
+           score += q.marks;
+           results[i] = { question: q.question, user_answer: ans, correct_answer: cor, score: q.marks, max: q.marks, feedback: "GRADE_OK" };
+        } else {
+           aiItems.push({ question: q.question, correctAnswer: cor, userAnswer: ans, maxMarks: q.marks, arrayIndex: i });
+        }
+      }
+    });
+
+    try {
+      if (aiItems.length > 0) {
+        toast({ title: "Grading Exam...", description: "AI is verifying qualitative answers." });
+        const aiResults = await gradeExam(aiItems);
+        aiItems.forEach((item, idx) => { 
+          const r = aiResults[idx]; const s = r?.score || 0; score += s; 
+          results[item.arrayIndex] = { question: item.question, user_answer: item.userAnswer, correct_answer: item.correctAnswer, score: s, max: item.maxMarks, feedback: r?.feedback || "GRADE_OK" }; 
+        });
+      }
+      
+      // Filter out any undefined slots just in case
+      const compactResults = results.filter(Boolean);
+      // Execute Supabase Insert with strict 10s timeout to prevent infinite hang on network drops
+      const insertPromise = supabase.from("exam_submissions").insert({
+        exam_id: selectedEx?.id,
+        user_id: user?.id,
+        student_name: `${user?.email?.split('@')[0] || "Student"} (${user?.email})`,
+        roll_number: "Unknown",
+        score,
+        total_marks: total,
+        time_used_seconds: timeTakenSeconds,
+        status: auto ? "auto_submitted" : "completed",
+        answers: { ...answers, _breakdown: compactResults },
+        violations: violations,
+        violations_count: violations,
+        exam_title: selectedEx?.title
+      });
+
+      const { data: _data, error: insertErr } = await Promise.race([
+        insertPromise,
+        new Promise<any>((_, reject) => setTimeout(() => reject(new Error("Database connection timed out during submission. Please try again.")), 10000))
+      ]);
+      
+      if (insertErr) {
+        console.error("Insertion error: ", insertErr);
+        setInsertErrorData(JSON.stringify(insertErr, null, 2));
+        setPhase("error");
+        return;
+      }
+      
+      setEvalResult({ score, total, violations, title: selectedEx?.title, breakdown: compactResults });
+      setPhase("results");
+      fetchData();
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Submission Failed", description: e.message });
+      setPhase("dashboard");
+    }
+  };
+
+  const handleLogout = async () => {
+    setPhase("auth");
+    await signOut();
+    window.location.reload();
+  };
+
+  if (authLoading) return <div className="min-h-screen bg-background" />;
+
+  return (
+    <>
+      {phase === "auth" && <AuthView onAuthSuccess={() => setPhase("dashboard")} />}
+      {phase === "dashboard" && <DashboardView exams={exams} submissions={submissions} onStartExam={handleStartExam} onLogout={handleLogout} user={user} />}
+      {phase === "exam" && <ExamTakingView exam={selectedEx} questions={questions} onSubmit={handleSubmitExam} user={user} />}
+      {phase === "results" && <ResultsView result={evalResult} onBack={() => { setEvalResult(null); setPhase("dashboard"); }} />}
+      {phase === "error" && (
+        <div className="min-h-screen flex flex-col items-center justify-center p-8 bg-background">
+          <div className="bg-destructive/10 text-destructive p-8 rounded-lg max-w-2xl w-full font-mono whitespace-pre-wrap break-words shadow-xl border border-destructive/30">
+            <h2 className="text-2xl font-bold mb-4 flex items-center">
+              DATABASE INSERTION ERROR
+            </h2>
+            <p>Please screenshot this and show it to the AI:</p>
+            <div className="mt-4 p-4 bg-background border border-destructive/20 rounded shadow-inner text-sm text-foreground overflow-auto">
+              {insertErrorData}
+            </div>
+            <Button className="mt-6" onClick={() => setPhase("dashboard")}>Return to Dashboard</Button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
