@@ -101,12 +101,7 @@ function AuthView({ onAuthSuccess }: { onAuthSuccess: () => void }) {
     const checkRegistration = async () => {
       if (user && !showRegistration) {
         const adminClient = supabaseAdmin || supabase;
-        const { data } = await adminClient
-          .from('user_registrations')
-          .select('*')
-          .eq('user_id', user.id)
-          .single();
-
+        const { data } = await adminClient.from('user_registrations').select('*').eq('user_id', user.id).single();
         if (!data) {
           setRegisteredUser({
             uid: user.id,
@@ -216,124 +211,31 @@ function AuthView({ onAuthSuccess }: { onAuthSuccess: () => void }) {
       >
         <div className="bg-white/80 backdrop-blur-3xl p-10 rounded-[56px] border border-white shadow-[0_50px_100px_-20px_rgba(0,0,0,0.08)]">
           <div className="text-center mb-10">
-            <motion.div 
-              whileHover={{ rotate: 10, scale: 1.1 }}
-              className="w-20 h-20 bg-indigo-600 rounded-[28px] flex items-center justify-center mx-auto mb-8 shadow-indigo-200 shadow-[0_20px_40px_-5px_rgba(79,70,229,0.3)]"
-            >
-              <Shield className="w-10 h-10 text-white" />
-            </motion.div>
+            <motion.div whileHover={{ rotate: 10, scale: 1.1 }} className="w-20 h-20 bg-indigo-600 rounded-[28px] flex items-center justify-center mx-auto mb-8 shadow-indigo-200 shadow-[0_20px_40px_-5px_rgba(79,70,229,0.3)]"><Shield className="w-10 h-10 text-white" /></motion.div>
             <h1 className="text-4xl font-[900] text-slate-900 tracking-tight mb-3">SPHN <span className="text-indigo-600">EXAMS</span></h1>
             <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em]">Authorized Portal Only</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <Label className="text-[10px] font-black text-slate-400 ml-1 tracking-widest uppercase">EMAIL ADDRESS</Label>
-              <Input
-                type="email"
-                placeholder="student@gmail.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="h-16 bg-slate-50 border-slate-100 rounded-2xl focus:border-indigo-500 focus:bg-white text-slate-900 font-bold px-6 transition-all"
-                required
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label className="text-[10px] font-black text-slate-400 ml-1 tracking-widest uppercase">PASSWORD</Label>
-              <div className="relative">
-                <Input
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="h-16 bg-slate-50 border-slate-100 rounded-2xl focus:border-indigo-500 focus:bg-white text-slate-900 font-bold px-6 transition-all"
-                  required
-                />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-300 hover:text-indigo-500">
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
-            </div>
-
-            <Button type="submit" className="w-full h-16 rounded-2xl bg-indigo-600 text-white font-black uppercase tracking-widest text-sm shadow-indigo-200 shadow-xl hover:bg-indigo-700 active:scale-95 transition-all" disabled={isLoading}>
-              {isLoading ? <Loader2 className="w-6 h-6 animate-spin" /> : isLogin ? "LOGIN ACCESS" : "REGISTER ACCOUNT"}
-            </Button>
-
-            <div className="relative py-4 text-center">
-              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-100"></div></div>
-              <span className="relative bg-white px-4 text-[10px] font-black text-slate-300 tracking-widest">OR</span>
-            </div>
-
-            <Button type="button" variant="outline" onClick={handleGoogleSignIn} className="w-full h-16 rounded-2xl border-slate-100 bg-slate-50/50 text-slate-700 hover:bg-white hover:border-slate-200 font-bold flex items-center justify-center gap-3 transition-all" disabled={isGoogleLoading}>
-              <svg className="w-5 h-5" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" /><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" /><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" /><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" /></svg>
-              GOOGLE LOGIN
-            </Button>
-
-            <div className="text-center pt-2">
-              <button type="button" onClick={() => setIsLogin(!isLogin)} className="text-indigo-600 text-[10px] font-black uppercase tracking-widest hover:text-indigo-700 underline underline-offset-8 decoration-indigo-200 transition-all">
-                {isLogin ? "NEW? CREATE ID" : "BACK TO LOGIN"}
-              </button>
-            </div>
+            <div className="space-y-2"><Label className="text-[10px] font-black text-slate-400 ml-1 tracking-widest uppercase">EMAIL ADDRESS</Label><Input type="email" placeholder="student@gmail.com" value={email} onChange={(e) => setEmail(e.target.value)} className="h-16 bg-slate-50 border-slate-100 rounded-2xl focus:border-indigo-500 focus:bg-white text-slate-900 font-bold px-6 transition-all" required /></div>
+            <div className="space-y-2"><Label className="text-[10px] font-black text-slate-400 ml-1 tracking-widest uppercase">PASSWORD</Label><div className="relative"><Input type={showPassword ? "text" : "password"} placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="h-16 bg-slate-50 border-slate-100 rounded-2xl focus:border-indigo-500 focus:bg-white text-slate-900 font-bold px-6 transition-all" required /><button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-300 hover:text-indigo-500">{showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}</button></div></div>
+            <Button type="submit" className="w-full h-16 rounded-2xl bg-indigo-600 text-white font-black uppercase tracking-widest text-sm shadow-indigo-200 shadow-xl hover:bg-indigo-700 active:scale-95 transition-all" disabled={isLoading}>{isLoading ? <Loader2 className="w-6 h-6 animate-spin" /> : isLogin ? "LOGIN ACCESS" : "REGISTER ACCOUNT"}</Button>
+            <div className="relative py-4 text-center"><div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-100"></div></div><span className="relative bg-white px-4 text-[10px] font-black text-slate-300 tracking-widest">OR</span></div>
+            <Button type="button" variant="outline" onClick={handleGoogleSignIn} className="w-full h-16 rounded-2xl border-slate-100 bg-slate-50/50 text-slate-700 hover:bg-white hover:border-slate-200 font-bold flex items-center justify-center gap-3 transition-all" disabled={isGoogleLoading}><svg className="w-5 h-5" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" /><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" /><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" /><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" /></svg> GOOGLE LOGIN</Button>
+            <div className="text-center pt-2"><button type="button" onClick={() => setIsLogin(!isLogin)} className="text-indigo-600 text-[10px] font-black uppercase tracking-widest hover:text-indigo-700 underline underline-offset-8 decoration-indigo-200 transition-all">{isLogin ? "NEW? CREATE ID" : "BACK TO LOGIN"}</button></div>
           </form>
         </div>
       </motion.div>
 
       <Dialog open={showRegistration} onOpenChange={setShowRegistration}>
         <DialogContent className="bg-white border-none text-slate-900 rounded-[56px] p-12 max-w-lg shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)]">
-          <DialogHeader className="mb-10">
-            <DialogTitle className="text-3xl font-[900] tracking-tight">Final Details</DialogTitle>
-            <DialogDescription className="text-slate-500 font-bold">Complete profile to start exam.</DialogDescription>
-          </DialogHeader>
+          <DialogHeader className="mb-10"><DialogTitle className="text-3xl font-[900] tracking-tight">Final Details</DialogTitle><DialogDescription className="text-slate-500 font-bold">Complete profile to start exam.</DialogDescription></DialogHeader>
           <form onSubmit={handleRegistrationSubmit} className="space-y-6">
-            <div className="grid grid-cols-2 gap-6">
-              <select value={registrationData.year} onChange={(e) => setRegistrationData({ ...registrationData, year: e.target.value })} className="w-full h-16 px-6 bg-slate-50 border border-slate-100 rounded-2xl text-slate-700 font-bold outline-none focus:border-indigo-500" required>
-                <option value="">YEAR</option>
-                {["1st Year", "2nd Year", "3rd Year", "4th Year", "5th Year"].map(y => <option key={y} value={y}>{y}</option>)}
-              </select>
-              <Input placeholder="SECTION" value={registrationData.section} onChange={(e) => setRegistrationData({ ...registrationData, section: e.target.value })} className="h-16 bg-slate-50 border-slate-100 rounded-2xl text-slate-900 font-bold px-6" required />
-            </div>
+            <div className="grid grid-cols-2 gap-6"><select value={registrationData.year} onChange={(e) => setRegistrationData({ ...registrationData, year: e.target.value })} className="w-full h-16 px-6 bg-slate-50 border border-slate-100 rounded-2xl text-slate-700 font-bold outline-none focus:border-indigo-500" required><option value="">YEAR</option>{["1st Year", "2nd Year", "3rd Year", "4th Year", "5th Year"].map(y => <option key={y} value={y}>{y}</option>)}</select><Input placeholder="SECTION" value={registrationData.section} onChange={(e) => setRegistrationData({ ...registrationData, section: e.target.value })} className="h-16 bg-slate-50 border-slate-100 rounded-2xl text-slate-900 font-bold px-6" required /></div>
             <Input placeholder="DEPARTMENT" value={registrationData.department} onChange={(e) => setRegistrationData({ ...registrationData, department: e.target.value })} className="h-16 bg-slate-50 border-slate-100 rounded-2xl text-slate-900 font-bold px-6" required />
             <Input placeholder="COLLEGE" value={registrationData.college} onChange={(e) => setRegistrationData({ ...registrationData, college: e.target.value })} className="h-16 bg-slate-50 border-slate-100 rounded-2xl text-slate-900 font-bold px-6" required />
             <Input placeholder="PHONE" value={registrationData.phone} onChange={(e) => setRegistrationData({ ...registrationData, phone: e.target.value })} className="h-16 bg-slate-50 border-slate-100 rounded-2xl text-slate-900 font-bold px-6" required />
-            <Button type="submit" className="w-full h-16 rounded-2xl bg-indigo-600 text-white font-black hover:bg-shadow-indigo-100 shadow-xl" disabled={isRegistering}>
-              {isRegistering ? "SAVING..." : "COMPLETE"}
-            </Button>
-          </form>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-
-      <Dialog open={showRegistration} onOpenChange={setShowRegistration}>
-        <DialogContent className="bg-slate-900 border-white/5 text-white rounded-[32px]">
-          <DialogHeader>
-            <DialogTitle className="font-black tracking-widest uppercase">Registration</DialogTitle>
-            <DialogDescription className="text-slate-400 font-bold">Please enter your details to complete setup.</DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleRegistrationSubmit} className="space-y-4 mt-4">
-            <div className="grid grid-cols-2 gap-4">
-              <select
-                value={registrationData.year}
-                onChange={(e) => setRegistrationData({ ...registrationData, year: e.target.value })}
-                className="w-full h-12 px-4 bg-black/40 border border-white/5 rounded-xl text-white outline-none focus:border-indigo-500/50"
-                required
-              >
-                <option value="" className="bg-slate-900">YEAR</option>
-                <option value="1st Year" className="bg-slate-900">1st Year</option>
-                <option value="2nd Year" className="bg-slate-900">2nd Year</option>
-                <option value="3rd Year" className="bg-slate-900">3rd Year</option>
-                <option value="4th Year" className="bg-slate-900">4th Year</option>
-                <option value="5th Year" className="bg-slate-900">5th Year</option>
-              </select>
-              <Input placeholder="SECTION" value={registrationData.section} onChange={(e) => setRegistrationData({ ...registrationData, section: e.target.value })} className="bg-black/40 border-white/5 rounded-xl h-12" required />
-            </div>
-            <Input placeholder="DEPARTMENT" value={registrationData.department} onChange={(e) => setRegistrationData({ ...registrationData, department: e.target.value })} className="bg-black/40 border-white/5 rounded-xl h-12" required />
-            <Input placeholder="COLLEGE" value={registrationData.college} onChange={(e) => setRegistrationData({ ...registrationData, college: e.target.value })} className="bg-black/40 border-white/5 rounded-xl h-12" required />
-            <Input placeholder="PHONE" value={registrationData.phone} onChange={(e) => setRegistrationData({ ...registrationData, phone: e.target.value })} className="bg-black/40 border-white/5 rounded-xl h-12" required />
-            <Button type="submit" className="w-full h-14 rounded-xl bg-white text-slate-950 font-black" disabled={isRegistering}>
-              {isRegistering ? "REGISTERING..." : "COMPLETE REGISTRATION"}
-            </Button>
+            <Button type="submit" className="w-full h-16 rounded-2xl bg-indigo-600 text-white font-black hover:bg-shadow-indigo-100 shadow-xl" disabled={isRegistering}>{isRegistering ? "SAVING..." : "COMPLETE"}</Button>
           </form>
         </DialogContent>
       </Dialog>
@@ -341,9 +243,6 @@ function AuthView({ onAuthSuccess }: { onAuthSuccess: () => void }) {
   );
 }
 
-// ============================================================
-// EXAM COMPONENTS (Selection, Form, Violation, Screens)
-// ============================================================
 function TestSelectionView({ exams, loading, onSelect, completedIds, completedTitles }: any) {
   return (
     <div className="min-h-screen bg-[#F8FAFC] px-8 py-20 relative overflow-hidden font-sans">
