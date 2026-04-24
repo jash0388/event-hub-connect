@@ -10,7 +10,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 // Deployment Ping: 2026-04-12 14:52:00
 
 // Lazy load pages for better performance
-const Home = lazy(() => import("./pages/Home"));
+import Home from "./pages/Home";
+import AdminDashboard from "./pages/AdminDashboard";
 const Feed = lazy(() => import("./pages/Feed"));
 const Events = lazy(() => import("./pages/Events"));
 const EventDetails = lazy(() => import("./pages/EventDetails"));
@@ -18,7 +19,6 @@ const Projects = lazy(() => import("./pages/Projects"));
 const About = lazy(() => import("./pages/About"));
 const Contact = lazy(() => import("./pages/Contact"));
 const AdminLogin = lazy(() => import("./pages/AdminLogin"));
-const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const Profile = lazy(() => import("./pages/Profile"));
 const UserAuth = lazy(() => import("./pages/UserAuth"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -73,6 +73,15 @@ const App = () => {
         <BrowserRouter>
           <Suspense fallback={<PageLoader />}>
             <Routes>
+              <Route path="/admin/login" element={<AdminLogin />} />
+              <Route
+                path="/admin"
+                element={<ProtectedRoute requireAdmin={true}><AdminDashboard /></ProtectedRoute>}
+              />
+              <Route
+                path="/admin/dashboard"
+                element={<ProtectedRoute requireAdmin={true}><AdminDashboard /></ProtectedRoute>}
+              />
               <Route path="/" element={<Home />} />
               <Route path="/feed" element={<Feed />} />
               <Route path="/events" element={<Events />} />
@@ -93,12 +102,6 @@ const App = () => {
               <Route path="/exams" element={<ExamPage />} />
               <Route path="/download" element={<DownloadApp />} />
               <Route path="/qr-codes" element={<EventQRCodes />} />
-              
-              <Route path="/admin/login" element={<AdminLogin />} />
-              <Route
-                path="/admin"
-                element={<ProtectedRoute requireAdmin={true}><AdminDashboard /></ProtectedRoute>}
-              />
 
               <Route path="*" element={<NotFound />} />
             </Routes>
