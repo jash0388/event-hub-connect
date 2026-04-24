@@ -73,21 +73,34 @@ const App = () => {
         <BrowserRouter>
           <Suspense fallback={<PageLoader />}>
             <Routes>
-              {/* Force Redirect for Mobile App */}
-              {/* Only show Login and Test Exam page as per request */}
-              <Route path="/" element={<SphnsExmTest />} />
+              <Route path="/" element={<Home />} />
+              <Route path="/feed" element={<Feed />} />
+              <Route path="/events" element={<Events />} />
+              <Route path="/events/:id" element={<EventDetails />} />
+              <Route path="/projects" element={<Projects />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/profile" element={<Profile />} />
               <Route path="/login" element={<UserAuth />} />
-              <Route path="/sphnsexm-test" element={<SphnsExmTest />} />
+              <Route path="/check-in" element={<CheckIn />} />
+              <Route path="/compilers" element={<Compilers />} />
+              <Route path="/internships" element={<Internships />} />
+              <Route path="/learn" element={<LearnHub />} />
+              <Route path="/tutorial" element={<Tutorial />} />
+              <Route path="/code-quest" element={<CodeQuest />} />
+              <Route path="/arcade" element={<Arcade />} />
+              <Route path="/tasks" element={<Tasks />} />
+              <Route path="/exams" element={<ExamPage />} />
+              <Route path="/download" element={<DownloadApp />} />
+              <Route path="/qr-codes" element={<EventQRCodes />} />
               
-              {/* Optional Admin access */}
               <Route path="/admin/login" element={<AdminLogin />} />
               <Route
                 path="/admin"
                 element={<ProtectedRoute requireAdmin={true}><AdminDashboard /></ProtectedRoute>}
               />
 
-              {/* Catch-all redirects to the test page */}
-              <Route path="*" element={<SphnsExmTest />} />
+              <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
           {!isMobileApp && <HubAssistant />}

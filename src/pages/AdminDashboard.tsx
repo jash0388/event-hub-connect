@@ -1576,6 +1576,35 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleClearExamSubmissions = async () => {
+    const confirmMsg = examResultsFilter === 'all'
+      ? 'Are you sure you want to clear ALL test submissions for ALL exams?'
+      : 'Are you sure you want to clear all submissions for this specific exam?';
+
+    if (!confirm(confirmMsg)) return;
+
+    setIsLoading(true);
+    try {
+      let query = supabaseAdmin.from('exam_submissions');
+
+      if (examResultsFilter !== 'all') {
+        query = query.delete().eq('exam_id', examResultsFilter);
+      } else {
+        query = query.delete().neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+      }
+
+      const { error } = await query;
+      if (error) throw error;
+
+      toast({ title: 'Submissions Cleared', description: 'Selected submissions have been permanently removed.' });
+      fetchExamSubmissions();
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleQRVerify = async (qrCode: string) => {
     setIsVerifying(true);
     setQrScanError('');
@@ -3644,31 +3673,37 @@ const AdminDashboard = () => {
                         </div>
                       </div>
 
-                      {/* Questions for this exam */}
+                      {/* Questions for this exam - Collapsible */}
                       {qCount > 0 && (
-                        <div className="mt-4 border-t pt-4 space-y-2">
-                          <h4 className="text-sm font-semibold mb-2">Questions:</h4>
-                          {examQuestions.filter(q => q.exam_id === exam.id).map((q: any, idx: number) => (
-                            <div key={q.id} className="flex items-start justify-between bg-slate-50 rounded-lg p-3 text-sm">
-                              <div className="flex-1">
-                                <span className="font-medium">Q{idx + 1}.</span> {q.question}
-                                <div className="flex gap-2 mt-1">
-                                  <Badge variant="outline" className="text-xs">{q.question_type === 'mcq' ? 'MCQ' : q.question_type === 'code' ? 'Code/Query' : 'Paragraph'}</Badge>
-                                  <Badge variant="outline" className="text-xs">{q.marks} marks</Badge>
-                                  {q.correct_answer && <Badge className="text-xs bg-green-100 text-green-700">Auto-grading: {q.correct_answer}</Badge>}
-                                </div>
-                                {q.question_type === 'mcq' && q.options && (
-                                  <div className="mt-1 text-xs text-muted-foreground">
-                                    Options: {(typeof q.options === 'string' ? JSON.parse(q.options) : q.options).join(' | ')}
+                        <details className="mt-4 border-t pt-4 space-y-2 group" open={exam.is_active}>
+                          <summary className="text-sm font-semibold mb-2 cursor-pointer flex items-center justify-between hover:bg-slate-50 p-2 rounded-lg">
+                            <span>Questions ({qCount}):</span>
+                            <span className="text-xs text-muted-foreground group-open:hidden">Click to show</span>
+                            <span className="text-xs text-muted-foreground hidden group-open:inline">Click to hide</span>
+                          </summary>
+                          <div className="space-y-2 mt-2">
+                            {examQuestions.filter(q => q.exam_id === exam.id).map((q: any, idx: number) => (
+                              <div key={q.id} className="flex items-start justify-between bg-slate-50 rounded-lg p-3 text-sm">
+                                <div className="flex-1">
+                                  <span className="font-medium">Q{idx + 1}.</span> {q.question}
+                                  <div className="flex gap-2 mt-1">
+                                    <Badge variant="outline" className="text-xs">{q.question_type === 'mcq' ? 'MCQ' : q.question_type === 'code' ? 'Code/Query' : 'Paragraph'}</Badge>
+                                    <Badge variant="outline" className="text-xs">{q.marks} marks</Badge>
+                                    {q.correct_answer && <Badge className="text-xs bg-green-100 text-green-700">Auto-grading: {q.correct_answer}</Badge>}
                                   </div>
-                                )}
+                                  {q.question_type === 'mcq' && q.options && (
+                                    <div className="mt-1 text-xs text-muted-foreground">
+                                      Options: {(typeof q.options === 'string' ? JSON.parse(q.options) : q.options).join(' | ')}
+                                    </div>
+                                  )}
+                                </div>
+                                <Button size="sm" variant="ghost" onClick={() => handleDeleteExamQuestion(q.id)}>
+                                  <Trash2 className="w-3 h-3 text-red-500" />
+                                </Button>
                               </div>
-                              <Button size="sm" variant="ghost" onClick={() => handleDeleteExamQuestion(q.id)}>
-                                <Trash2 className="w-3 h-3 text-red-500" />
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
+                            ))}
+                          </div>
+                        </details>
                       )}
 
                       <Button size="sm" variant="outline" className="mt-4" onClick={() => { setSelectedExamForQuestions(exam.id); setExamQuestionForm({ question: '', question_type: 'mcq', options: ['', '', '', ''], correct_answer: '', marks: 5 }); setExamQuestionDialogOpen(true); }}>
@@ -3690,6 +3725,9 @@ const AdminDashboard = () => {
                     <option value="all">All Exams</option>
                     {examsList.map((exam: any) => (<option key={exam.id} value={exam.id}>{exam.title}</option>))}
                   </select>
+                  <Button size="sm" variant="outline" className="bg-red-50 text-red-700 border-red-200 hover:bg-red-100" onClick={handleClearExamSubmissions}>
+                    <Trash2 className="w-3 h-3 mr-1" /> Clear Submissions
+                  </Button>
                   <Button size="sm" variant="outline" className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100" onClick={exportResultsToCSV}>
                     <Download className="w-3 h-3 mr-1" /> Export CSV (Excel)
                   </Button>
