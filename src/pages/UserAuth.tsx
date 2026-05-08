@@ -1,12 +1,25 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { supabase, supabaseAdmin } from "@/integrations/supabase/client";
-import { signInWithGoogle, hasFirebaseConfig, resendVerificationEmail } from "@/integrations/firebase/client";
-import { useAuth } from "@/hooks/useAuth";
+import {
+  requestOTPForRollNumber,
+  verifyOTPAndLogin,
+  setCurrentSession,
+  getCurrentSession,
+  logoutRollNumberUser,
+  type RollNumberStudent
+} from "@/integrations/supabase/rollnumber-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Mail, Lock, ArrowRight, Eye, EyeOff, ArrowLeft, GraduationCap, BookOpen, Users } from "lucide-react";
+import {
+  Loader2,
+  Mail,
+  ArrowRight,
+  ArrowLeft,
+  CheckCircle2,
+  AlertCircle
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -15,20 +28,24 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { motion, AnimatePresence } from "framer-motion";
+
+type AuthStep = "roll" | "otp" | "success";
 
 export default function UserAuth() {
-  const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { toast } = useToast();
+
+  // Roll Number + OTP state
+  const [step, setStep] = useState<AuthStep>("roll");
+  const [rollNumber, setRollNumber] = useState("");
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [studentInfo, setStudentInfo] = useState<RollNumberStudent | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const [isVerificationSent, setIsVerificationSent] = useState(false);
-  const [isResending, setIsResending] = useState(false);
 
   // Registration popup state
   const [showRegistration, setShowRegistration] = useState(false);
-  const [registeredUser, setRegisteredUser] = useState<any>(null);
   const [registrationData, setRegistrationData] = useState({
     year: "",
     section: "",
@@ -38,175 +55,160 @@ export default function UserAuth() {
   });
   const [isRegistering, setIsRegistering] = useState(false);
 
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { toast } = useToast();
-  const { user: authUser, firebaseUser, signIn, signUp } = useAuth();
-
-  const [isCheckingRegistration, setIsCheckingRegistration] = useState(false);
-
+  // Check if user is already logged in
   useEffect(() => {
-    const checkUserRegistration = async () => {
-      if (authUser && !showRegistration) {
-        setIsCheckingRegistration(true);
-        try {
-          const adminClient = supabaseAdmin || supabase;
-          const { data, error } = await adminClient
-            .from('user_registrations')
-            .select('*')
-            .eq('user_id', authUser.id)
-            .single();
+    const session = getCurrentSession();
+    if (session) {
+      const from = (location.state as any)?.from?.pathname || "/";
+      navigate(from, { replace: true });
+    }
+  }, [navigate, location]);
 
-          if (error && error.code !== 'PGRST116') {
-            console.error('[UserAuth] Error checking registration:', error);
-          }
+  const handleRequestOTP = async () => {
+    if (!rollNumber.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter your roll number",
+        variant: "destructive"
+      });
+      return;
+    }
 
-          if (!data) {
-            console.log('[UserAuth] No registration found, showing popup');
-            setRegisteredUser({
-              uid: authUser.id,
-              email: authUser.email,
-              displayName: firebaseUser?.displayName || authUser.email?.split('@')[0] || 'User'
-            });
-            setShowRegistration(true);
-          } else {
-            const from = (location.state as any)?.from?.pathname || "/";
-            console.log('[UserAuth] User registered, redirecting to:', from);
-            navigate(from, { replace: true });
-          }
-        } catch (err) {
-          console.error('[UserAuth] Fatal registration check error:', err);
-        } finally {
-          setIsCheckingRegistration(false);
-        }
-      }
-    };
-
-    checkUserRegistration();
-  }, [authUser, navigate, location, showRegistration]);
-
-  const handleGoogleSignIn = async () => {
-    setIsGoogleLoading(true);
+    setIsLoading(true);
     try {
-      const { user, error } = await signInWithGoogle();
+      const result = await requestOTPForRollNumber(rollNumber.toUpperCase());
 
-      if (error) {
-        const errorMessage = error.message || '';
-        const errorCode = (error as any).code;
-        if (errorMessage.includes('popup') || errorCode === 'auth/popup-closed-by-user') {
-          toast({
-            title: "Sign in cancelled",
-            description: "Please try again and complete the Google sign-in",
-          });
-          return;
-        }
-        throw error;
-      }
-
-      if (user) {
-        // Create or update profile for Firebase user using admin client (bypasses RLS)
-        const adminClient = supabaseAdmin || supabase;
-        const { error: profileError } = await adminClient
-          .from('profiles')
-          .upsert({
-            id: user.uid, // Use Firebase UID as profile ID
-            email: user.email || '',
-            full_name: user.displayName || user.email?.split('@')[0] || 'Google User',
-            avatar_url: user.photoURL || '',
-            firebase_uid: user.uid,
-            is_firebase_user: true,
-            updated_at: new Date().toISOString()
-          }, { onConflict: 'id' });
-
-        if (profileError) {
-          console.error('[UserAuth] Error creating profile:', profileError);
-        } else {
-          console.log('[UserAuth] Profile created/updated for Firebase user');
-        }
-
-        // Check if user has already registered their details (use admin client to bypass RLS)
-        const { data: existingReg, error: regCheckError } = await adminClient
-          .from('user_registrations')
-          .select('*')
-          .eq('user_id', user.uid)
-          .single();
-
-        console.log('[UserAuth] Registration check result:', { existingReg, regCheckError });
-
-        // Only show registration if it's definitely not found (PGRST116) or missing, and no other critical error
-        const notFound = regCheckError?.code === 'PGRST116';
-        
-        if (!existingReg && (notFound || !regCheckError)) {
-          // Show registration popup for new users
-          console.log('[UserAuth] User not found in registrations, showing popup');
-          setRegisteredUser(user);
-          setRegistrationData({
-            year: "",
-            section: "",
-            department: "",
-            college: "",
-            phone: ""
-          });
-          setShowRegistration(true);
-        } else if (regCheckError && !notFound) {
-          // Database error (maybe RLS?) - don't block login if possible, but warn
-          console.error('[UserAuth] Unexpected registration check error:', regCheckError);
-          toast({ title: "Welcome back!", description: "Successfully signed in with Google" });
-          const from = (location.state as any)?.from?.pathname || "/";
-          navigate(from, { replace: true });
-        } else {
-          toast({ title: "Welcome back!", description: "Successfully signed in with Google" });
-          const from = (location.state as any)?.from?.pathname || "/";
-          navigate(from, { replace: true });
-        }
+      if (result.success) {
+        toast({
+          title: "OTP Sent",
+          description: result.message
+        });
+        setStep("otp");
+      } else {
+        toast({
+          title: "Error",
+          description: result.message,
+          variant: "destructive"
+        });
       }
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message || "Failed to sign in with Google",
+        description: error.message || "Failed to request OTP",
         variant: "destructive"
       });
     } finally {
-      setIsGoogleLoading(false);
+      setIsLoading(false);
     }
   };
 
-  // Handle registration form submission
+  const handleOtpChange = (index: number, value: string) => {
+    if (value.length > 1) return;
+    const newOtp = [...otp];
+    newOtp[index] = value;
+    setOtp(newOtp);
+
+    // Auto-focus next input
+    if (value && index < 5) {
+      const nextInput = document.getElementById(`otp-${index + 1}`);
+      nextInput?.focus();
+    }
+  };
+
+  const handleVerifyOTP = async () => {
+    const otpString = otp.join("");
+    if (otpString.length !== 6) {
+      toast({
+        title: "Error",
+        description: "Please enter all 6 digits",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const result = await verifyOTPAndLogin(rollNumber.toUpperCase(), otpString);
+
+      if (result.success && result.student) {
+        setStudentInfo(result.student);
+        setCurrentSession(result.student);
+
+        // Check if user needs to complete registration
+        const adminClient = supabaseAdmin || supabase;
+        const { data: existingReg } = await adminClient
+          .from('user_registrations')
+          .select('*')
+          .eq('email', result.student.email)
+          .single();
+
+        if (!existingReg) {
+          // Show registration popup for new users
+          setShowRegistration(true);
+        } else {
+          setStep("success");
+          // Redirect after 2 seconds
+          setTimeout(() => {
+            const from = (location.state as any)?.from?.pathname || "/";
+            navigate(from, { replace: true });
+          }, 2000);
+        }
+      } else {
+        toast({
+          title: "Error",
+          description: result.message,
+          variant: "destructive"
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to verify OTP",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleRegistrationSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!studentInfo) return;
+
     setIsRegistering(true);
-
     try {
-      if (!registeredUser) return;
-
-      // Use admin client to bypass RLS for Firebase users
       const adminClient = supabaseAdmin || supabase;
-      const { error: regError } = await adminClient
-        .from('user_registrations')
-        .insert({
-          user_id: registeredUser.uid,
-          email: registeredUser.email || '',
-          full_name: registeredUser.displayName || registeredUser.email?.split('@')[0] || 'Google User',
-          year: registrationData.year,
-          section: registrationData.section,
-          department: registrationData.department,
-          college: registrationData.college,
-          phone: registrationData.phone,
-          created_at: new Date().toISOString()
-        });
 
-      if (regError) {
-        console.error('[UserAuth] Registration error:', regError);
-        throw regError;
-      }
+      // Update existing registration with additional details
+      const { error } = await adminClient
+        .from('user_registrations')
+        .upsert({
+          user_id: studentInfo.id,
+          email: studentInfo.email,
+          full_name: studentInfo.full_name,
+          phone: registrationData.phone || studentInfo.phone,
+          year: registrationData.year || studentInfo.year,
+          section: registrationData.section || studentInfo.section,
+          department: registrationData.department || studentInfo.department,
+          college: registrationData.college || studentInfo.college,
+          created_at: new Date().toISOString()
+        }, { onConflict: 'user_id' });
+
+      if (error) throw error;
 
       toast({
         title: "Registration Complete!",
-        description: "Welcome to DataNauts HUB! Your account has been created."
+        description: "Welcome to DataNauts HUB!"
       });
+
       setShowRegistration(false);
-      const from = (location.state as any)?.from?.pathname || "/";
-      navigate(from, { replace: true });
+      setStep("success");
+
+      // Redirect after 2 seconds
+      setTimeout(() => {
+        const from = (location.state as any)?.from?.pathname || "/";
+        navigate(from, { replace: true });
+      }, 2000);
     } catch (error: any) {
       toast({
         title: "Registration Error",
@@ -218,72 +220,9 @@ export default function UserAuth() {
     }
   };
 
-  const handleResendEmail = async () => {
-    setIsResending(true);
-    try {
-      const { error } = await resendVerificationEmail();
-      if (error) throw error;
-      toast({ title: "Email Sent!", description: "A new verification link has been sent to your Gmail." });
-    } catch (error: any) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    } finally {
-      setIsResending(false);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-
-    try {
-      if (isLogin) {
-        // Login - use the return values directly to avoid stale state
-        const { data, error } = await signIn(email, password);
-
-        if (error) throw error;
-        
-        // Success check - use data from return value instead of stale hook state
-        const resultUser = data?.user;
-        const resultFirebaseUser = (data as any)?.firebaseUser;
-
-        if (!resultUser && resultFirebaseUser && !resultFirebaseUser.emailVerified) {
-          console.log('[UserAuth] User needs verification');
-          setIsVerificationSent(true);
-          setIsLoading(false);
-          return;
-        }
-
-        toast({ title: "Welcome back!", description: "Login successful" });
-        const from = (location.state as any)?.from?.pathname || "/";
-        navigate(from, { replace: true });
-      } else {
-        // Sign up with Gmail restriction
-        if (!email.toLowerCase().endsWith('@gmail.com')) {
-          toast({
-            title: "Access Restricted",
-            description: "Please use a @gmail.com address to register. Temporary or other mail domains are not permitted.",
-            variant: "destructive"
-          });
-          setIsLoading(false);
-          return;
-        }
-
-        const { error } = await signUp(email, password);
-
-        if (error) throw error;
-
-        // Success - show premium verification sent screen
-        setIsVerificationSent(true);
-      }
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Something went wrong",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-    }
+  const handleBackToRoll = () => {
+    setStep("roll");
+    setOtp(["", "", "", "", "", ""]);
   };
 
   return (
@@ -322,10 +261,10 @@ export default function UserAuth() {
             <div className="flex justify-center mb-6">
               <Link to="/" className="flex items-center gap-2 group">
                 <div className="relative h-10 w-10 overflow-hidden rounded-full border border-border/50 bg-background/50 shadow-inner">
-                  <img 
-                    src="/logo.png" 
-                    alt="DataNauts" 
-                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110" 
+                  <img
+                    src="/logo.png"
+                    alt="DataNauts"
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
                   />
                 </div>
                 <span className="text-xl font-bold tracking-tight text-foreground">
@@ -334,275 +273,248 @@ export default function UserAuth() {
               </Link>
             </div>
 
-            {isVerificationSent ? (
-              <div className="text-center py-4 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className="relative mx-auto w-20 h-20 mb-8">
-                  <div className="absolute inset-0 bg-indigo-500/20 rounded-full animate-ping" />
-                  <div className="relative w-20 h-20 bg-indigo-500/10 rounded-full flex items-center justify-center border border-indigo-500/30">
-                    <Mail className="w-10 h-10 text-indigo-400" />
+            <AnimatePresence mode="wait">
+              {step === "roll" && (
+                <motion.div
+                  key="roll"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                  className="space-y-6"
+                >
+                  <div className="text-center space-y-2">
+                    <h2 className="text-2xl font-bold text-foreground">Welcome Back! 👋</h2>
+                    <p className="text-muted-foreground text-sm">
+                      Enter your roll number to get started
+                    </p>
                   </div>
-                </div>
-                
-                <div className="space-y-3">
-                  <h2 className="text-2xl font-bold text-foreground">🚀 Check Your Gmail</h2>
-                  <p className="text-muted-foreground text-[15px] leading-relaxed">
-                    A verification link has been sent to <span className="text-foreground font-semibold">{email}</span>.
-                  </p>
-                  <p className="text-indigo-400 font-medium py-2 px-4 bg-indigo-500/5 rounded-xl border border-indigo-500/10 italic">
-                    "Email verified! Please go back to datanauts.in and continue logging in."
-                  </p>
-                </div>
 
-                <div className="pt-6 border-t border-border/50 flex flex-col gap-3">
-                  <Button 
-                    onClick={() => { setIsVerificationSent(false); setIsLogin(true); }}
-                    className="w-full h-12 rounded-xl bg-foreground text-background hover:bg-foreground/90 font-semibold"
-                  >
-                    Go Back to Login
-                  </Button>
-                  <Button 
-                    variant="link"
-                    onClick={handleResendEmail}
-                    disabled={isResending}
-                    className="text-indigo-400 hover:text-indigo-300 text-sm font-medium"
-                  >
-                    {isResending ? "Sending..." : "Didn't get the link? Resend"}
-                  </Button>
-                </div>
-
-                <div className="pt-4">
-                  <p className="text-[10px] uppercase tracking-[0.2em] font-black text-slate-500/80">
-                    Appreciations from Team DataNauts
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <>
-                <div className="text-center mb-8">
-                  <h1 className="text-2xl font-bold text-foreground mb-2">
-                    {isLogin ? "Welcome Back" : "Create Account"}
-                  </h1>
-                  <p className="text-muted-foreground text-sm">
-                    {isLogin
-                      ? "Sign in to manage your events"
-                      : "Join our tech community today"}
-                  </p>
-                </div>
-
-                {/* Login/Signup Form */}
-                <form onSubmit={handleSubmit} className="space-y-5">
-                  <div className="space-y-2">
-                    <Label htmlFor="email" className="text-foreground font-medium">
-                      Email
-                    </Label>
-                    <div className="relative">
-                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="rollNumber" className="text-sm font-semibold">
+                        Roll Number
+                      </Label>
                       <Input
-                        id="email"
-                        type="email"
-                        placeholder="you@gmail.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="pl-11 h-12 rounded-xl bg-secondary border-none focus-visible:ring-2 focus-visible:ring-foreground"
-                        required
+                        id="rollNumber"
+                        type="text"
+                        placeholder="e.g., CS21001"
+                        value={rollNumber}
+                        onChange={(e) => setRollNumber(e.target.value.toUpperCase())}
+                        onKeyPress={(e) => e.key === "Enter" && handleRequestOTP()}
+                        className="h-12 text-lg font-semibold tracking-wide mt-2"
                       />
                     </div>
-                    {!isLogin && (
-                      <p className="text-[10px] text-amber-500/80 px-1">
-                        * Only @gmail.com addresses are permitted
-                      </p>
-                    )}
-                  </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="password" className="text-foreground font-medium">
-                      Password
-                    </Label>
-                    <div className="relative">
-                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        id="password"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="Enter your password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="pl-11 pr-11 h-12 rounded-xl bg-secondary border-none focus-visible:ring-2 focus-visible:ring-foreground"
-                        required
-                        minLength={6}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  <Button
-                    type="submit"
-                    className="w-full h-12 rounded-xl font-medium bg-foreground text-background hover:bg-foreground/90 transition-all shadow-lg shadow-black/5"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                      <>
-                        {isLogin ? "Login" : "Register"}
-                        <ArrowRight className="w-4 h-4 ml-2" />
-                      </>
-                    )}
-                  </Button>
-                </form>
-
-                {/* Google Divider */}
-                {hasFirebaseConfig && (
-                  <div className="relative my-8">
-                    <div className="absolute inset-0 flex items-center">
-                      <div className="w-full border-t border-border/50"></div>
-                    </div>
-                    <div className="relative flex justify-center text-[10px] uppercase tracking-widest font-bold">
-                      <span className="bg-card px-4 text-muted-foreground">
-                        {isLogin ? "OR LOGIN WITH" : "OR REGISTER WITH"}
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Google Sign In */}
-                {hasFirebaseConfig && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full h-12 rounded-xl font-semibold border-border bg-background/50 backdrop-blur-sm hover:bg-secondary transition-all flex items-center justify-center gap-3 group"
-                    onClick={handleGoogleSignIn}
-                    disabled={isGoogleLoading}
-                  >
-                    {isGoogleLoading ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                      <>
-                        <svg viewBox="0 0 24 24" className="w-5 h-5 transition-transform group-hover:scale-110" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-                          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
-                          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-                        </svg>
-                        {isLogin ? "Sign in with Google" : "Sign up with Google"}
-                      </>
-                    )}
-                  </Button>
-                )}
-
-                <div className="mt-8 text-center pt-6 border-t border-border/50">
-                  <p className="text-muted-foreground text-sm">
-                    {isLogin ? "New to DataNauts?" : "Already part of us?"}{" "}
-                    <button
-                      onClick={() => setIsLogin(!isLogin)}
-                      className="text-foreground hover:text-indigo-400 font-bold transition-colors underline-offset-4 hover:underline"
+                    <Button
+                      onClick={handleRequestOTP}
+                      disabled={isLoading}
+                      className="w-full h-12 text-base font-semibold"
                     >
-                      {isLogin ? "Register" : "Login"}
-                    </button>
-                  </p>
-                </div>
-              </>
-            )}
-            
-            <div className="mt-8 text-center pt-6 border-t border-border/50">
-              <Link
-                to="/admin/login"
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Admin Login
-              </Link>
-            </div>
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Sending OTP...
+                        </>
+                      ) : (
+                        <>
+                          Send OTP
+                          <ArrowRight className="ml-2 h-4 w-4" />
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </motion.div>
+              )}
+
+              {step === "otp" && (
+                <motion.div
+                  key="otp"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                  className="space-y-6"
+                >
+                  <div className="text-center space-y-2">
+                    <h2 className="text-2xl font-bold text-foreground">Enter OTP</h2>
+                    <p className="text-muted-foreground text-sm">
+                      Check your email for the 6-digit code
+                    </p>
+                  </div>
+
+                  <div className="space-y-6">
+                    <div className="flex gap-2 justify-center">
+                      {otp.map((digit, index) => (
+                        <Input
+                          key={index}
+                          id={`otp-${index}`}
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={1}
+                          value={digit}
+                          onChange={(e) => handleOtpChange(index, e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Backspace" && !digit && index > 0) {
+                              const prevInput = document.getElementById(`otp-${index - 1}`);
+                              prevInput?.focus();
+                            }
+                          }}
+                          className="w-12 h-14 text-center text-2xl font-bold border-2 rounded-lg"
+                        />
+                      ))}
+                    </div>
+
+                    <Button
+                      onClick={handleVerifyOTP}
+                      disabled={isLoading || otp.join("").length !== 6}
+                      className="w-full h-12 text-base font-semibold"
+                    >
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Verifying...
+                        </>
+                      ) : (
+                        <>
+                          Verify & Login
+                          <ArrowRight className="ml-2 h-4 w-4" />
+                        </>
+                      )}
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      onClick={handleBackToRoll}
+                      className="w-full h-12"
+                    >
+                      Back
+                    </Button>
+                  </div>
+                </motion.div>
+              )}
+
+              {step === "success" && (
+                <motion.div
+                  key="success"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.3 }}
+                  className="text-center space-y-4"
+                >
+                  <div className="flex justify-center">
+                    <CheckCircle2 className="h-16 w-16 text-green-500" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-foreground">
+                      Welcome, {studentInfo?.full_name}!
+                    </h2>
+                    <p className="text-muted-foreground text-sm mt-2">
+                      Redirecting to your dashboard...
+                    </p>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </main>
 
-      {/* Registration Popup Dialog */}
+      {/* Registration Dialog */}
       <Dialog open={showRegistration} onOpenChange={setShowRegistration}>
-        <DialogContent className="sm:max-w-[500px] bg-card border-border">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-foreground text-xl">Complete Your Registration</DialogTitle>
-            <DialogDescription className="text-muted-foreground">
-              Please provide your details to complete your account setup.
+            <DialogTitle>Complete Your Profile</DialogTitle>
+            <DialogDescription>
+              Help us know more about you to personalize your experience
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleRegistrationSubmit} className="space-y-4 mt-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="year" className="text-foreground">Year</Label>
-                <select
-                  id="year"
-                  value={registrationData.year}
-                  onChange={(e) => setRegistrationData({ ...registrationData, year: e.target.value })}
-                  className="w-full h-10 px-3 rounded-xl bg-secondary border-none text-foreground"
-                  required
-                >
-                  <option value="">Select Year</option>
-                  <option value="1st Year">1st Year</option>
-                  <option value="2nd Year">2nd Year</option>
-                  <option value="3rd Year">3rd Year</option>
-                  <option value="4th Year">4th Year</option>
-                  <option value="5th Year">5th Year</option>
-                </select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="section" className="text-foreground">Section</Label>
-                <Input
-                  id="section"
-                  placeholder="A, B, C..."
-                  value={registrationData.section}
-                  onChange={(e) => setRegistrationData({ ...registrationData, section: e.target.value })}
-                  className="h-10 rounded-xl bg-secondary border-none"
-                  required
-                />
-              </div>
+
+          <form onSubmit={handleRegistrationSubmit} className="space-y-4">
+            <div>
+              <Label htmlFor="year" className="text-sm font-semibold">
+                Year
+              </Label>
+              <Input
+                id="year"
+                placeholder="e.g., 2021"
+                value={registrationData.year}
+                onChange={(e) =>
+                  setRegistrationData({ ...registrationData, year: e.target.value })
+                }
+                className="mt-2"
+              />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="department" className="text-foreground">Department</Label>
+
+            <div>
+              <Label htmlFor="section" className="text-sm font-semibold">
+                Section
+              </Label>
+              <Input
+                id="section"
+                placeholder="e.g., A"
+                value={registrationData.section}
+                onChange={(e) =>
+                  setRegistrationData({ ...registrationData, section: e.target.value })
+                }
+                className="mt-2"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="department" className="text-sm font-semibold">
+                Department
+              </Label>
               <Input
                 id="department"
-                placeholder="CSE, IT, ECE, AI/ML..."
+                placeholder="e.g., Computer Science"
                 value={registrationData.department}
-                onChange={(e) => setRegistrationData({ ...registrationData, department: e.target.value })}
-                className="h-10 rounded-xl bg-secondary border-none"
-                required
+                onChange={(e) =>
+                  setRegistrationData({ ...registrationData, department: e.target.value })
+                }
+                className="mt-2"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="college" className="text-foreground">College</Label>
+
+            <div>
+              <Label htmlFor="college" className="text-sm font-semibold">
+                College
+              </Label>
               <Input
                 id="college"
-                placeholder="Your College Name"
+                placeholder="e.g., Your College Name"
                 value={registrationData.college}
-                onChange={(e) => setRegistrationData({ ...registrationData, college: e.target.value })}
-                className="h-10 rounded-xl bg-secondary border-none"
-                required
+                onChange={(e) =>
+                  setRegistrationData({ ...registrationData, college: e.target.value })
+                }
+                className="mt-2"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="phone" className="text-foreground">Phone Number</Label>
+
+            <div>
+              <Label htmlFor="phone" className="text-sm font-semibold">
+                Phone Number
+              </Label>
               <Input
                 id="phone"
-                placeholder="+91 9876543210"
+                placeholder="e.g., 9876543210"
                 value={registrationData.phone}
-                onChange={(e) => setRegistrationData({ ...registrationData, phone: e.target.value })}
-                className="h-10 rounded-xl bg-secondary border-none"
-                required
+                onChange={(e) =>
+                  setRegistrationData({ ...registrationData, phone: e.target.value })
+                }
+                className="mt-2"
               />
             </div>
+
             <Button
               type="submit"
-              className="w-full h-12 rounded-xl font-medium mt-4"
               disabled={isRegistering}
+              className="w-full"
             >
               {isRegistering ? (
                 <>
-                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                  Registering...
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Completing...
                 </>
               ) : (
                 "Complete Registration"
