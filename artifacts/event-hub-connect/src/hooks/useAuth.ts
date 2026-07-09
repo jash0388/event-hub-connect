@@ -213,6 +213,35 @@ export function useAuth() {
     try {
       console.log('[useAuth] Initializing Auth...');
 
+      // Check if roll-number student is logged in locally
+      const studentInfoStr = localStorage.getItem("studentInfo");
+      if (studentInfoStr) {
+        try {
+          const student = JSON.parse(studentInfoStr);
+          const mockUser = {
+            id: student.roll_number,
+            email: student.email,
+            user_metadata: { full_name: student.full_name },
+            role: "authenticated",
+          } as any;
+
+          setGlobalState({
+            user: mockUser,
+            session: { access_token: "mock-token", user: mockUser } as any,
+            isAdmin: true,
+            loading: false,
+            error: null,
+            isFirebaseUser: false,
+          });
+
+          if (authInitTimeout) {
+            clearTimeout(authInitTimeout);
+            authInitTimeout = null;
+          }
+          return;
+        } catch (e) {}
+      }
+
       // Set a timeout to prevent hanging forever - reduced to 8 seconds
       authInitTimeout = setTimeout(() => {
         console.warn('[useAuth] Auth initialization timeout - resolving to current state');
@@ -478,6 +507,8 @@ export function useAuth() {
       await signOutFirebase();
     }
 
+    localStorage.removeItem('studentInfo');
+    localStorage.removeItem('rollNumberSession');
     adminCache = null;
     saveFirebaseUser(null);
     localStorage.removeItem('admin_access_code');

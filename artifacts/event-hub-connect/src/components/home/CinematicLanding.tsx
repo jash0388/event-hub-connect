@@ -127,8 +127,9 @@ function BlurText({ text, className = "", el: Tag = "h2", delay = 0 }: { text: s
                 viewport={{ once: true, margin: "-50px" }}
             >
                 {words.map((word, i) => (
-                    <motion.span key={i} className="inline-block mr-[0.35em]" variants={child}>
+                    <motion.span key={i} className="inline-block" variants={child}>
                         {word}
+                        {i < words.length - 1 && "\u00A0"}
                     </motion.span>
                 ))}
             </motion.span>
