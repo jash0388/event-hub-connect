@@ -626,7 +626,7 @@ Give 1 short hint (max 1 sentence) to help them proceed. Make sure it is complet
 }
 
 export default function Tasks() {
-  const { user } = useAuth();
+  const { user, firebaseUser, isFirebaseUser } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [submitting, setSubmitting] = useState<string | null>(null);
@@ -636,26 +636,29 @@ export default function Tasks() {
   const [submissionCode, setSubmissionCode] = useState("");
   const [filterDifficulty, setFilterDifficulty] = useState<string>("All");
 
-  // user.id is the student's roll number; this both identifies and labels submissions.
-  const userId = user?.id;
+  // Use Supabase user.id primarily to correctly match historical task_submissions records!
+  const getUserId = () => user?.id || (isFirebaseUser && firebaseUser ? firebaseUser.uid : undefined);
+  const userId = getUserId();
 
-  // Backfill the student's real name onto any of their submissions still missing it.
+  // When a Firebase/Google user visits, backfill their display name onto their existing submissions
   useEffect(() => {
     if (!userId) return;
-    const displayName = user?.user_metadata?.full_name;
+    const displayName = firebaseUser?.displayName || user?.user_metadata?.full_name;
     if (!displayName) return;
 
     const backfillName = async () => {
+      // Update all submissions from this user that are missing a display name
       const { error } = await supabase.from('task_submissions' as any)
         .update({ user_display_name: displayName })
         .eq('user_id', userId)
         .is('user_display_name', null);
       if (!error) {
+        console.log("[Auth Sync] Backfilled display name on submissions for:", displayName);
         queryClient.invalidateQueries({ queryKey: ['coding_tasks_and_leaderboard'] });
       }
     };
     backfillName();
-  }, [userId, user?.user_metadata?.full_name, queryClient]);
+  }, [userId, firebaseUser?.displayName, user?.user_metadata?.full_name, queryClient]);
 
   // Fetches Tasks & Leaderboard concurrently
   const { data, isLoading: loading, refetch } = useQuery({

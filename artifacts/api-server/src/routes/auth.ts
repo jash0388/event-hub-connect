@@ -1,97 +1,52 @@
 import { Router, type IRouter } from "express";
-import crypto from "node:crypto";
-import { supabaseAdmin } from "../lib/supabase";
-import { sendOtpEmail } from "../lib/email";
-import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
 
-const MAIN_ADMIN_ROLL_NUMBER = (process.env["MAIN_ADMIN_ROLL_NUMBER"] || "").toUpperCase();
 const SESSION_TTL_MS = 60 * 60 * 1000; // 1 hour
-const OTP_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
+const BACKENDS = {
+  main:        "https://backend.rubrix.ai/api",
+  node:        "https://backend-node-apis.rubrix.ai/api",
+  python:      "https://rubrix-backend-python.rubrix.ai/api",
+};
+
+interface SessionData {
+  token: string;
+  expiresAt: string;
+  user: {
+    rollNumber: string;
+    fullName: string;
+    email: string;
+    isAdmin: boolean;
+    isMainAdmin: boolean;
+  };
+}
+
+const activeSessions = new Map<string, SessionData>();
 
 function normalizeRoll(rollNumber: unknown): string {
   return String(rollNumber || "").trim().toUpperCase();
 }
 
-function hashOtp(otp: string): string {
-  return crypto.createHash("sha256").update(otp).digest("hex");
-}
-
-function generateOtp(): string {
-  return String(crypto.randomInt(0, 1_000_000)).padStart(6, "0");
-}
-
-function toPublicUser(row: any) {
-  return {
-    rollNumber: row.roll_number,
-    fullName: row.full_name,
-    email: row.email,
-    isAdmin: !!row.is_admin || !!row.is_main_admin,
-    isMainAdmin: !!row.is_main_admin,
-  };
-}
-
 router.post("/auth/send-otp", async (req, res) => {
   try {
     const rollNumber = normalizeRoll(req.body?.rollNumber);
-    const email = String(req.body?.email || "").trim().toLowerCase();
-    const fullName = String(req.body?.fullName || "").trim();
-
     if (!rollNumber) {
       return res.status(400).json({ success: false, error: "Roll number is required." });
     }
 
-    const { data: existingUser, error: fetchError } = await supabaseAdmin
-      .from("app_users")
-      .select("*")
-      .eq("roll_number", rollNumber)
-      .maybeSingle();
-
-    if (fetchError) throw fetchError;
-
-    let user = existingUser;
-
-    if (!user) {
-      // Unknown roll number: self-registration requires name + email up front.
-      if (!email || !fullName) {
-        return res.json({ success: false, needsRegistration: true });
-      }
-
-      const isMainAdmin = rollNumber === MAIN_ADMIN_ROLL_NUMBER;
-      const { data: created, error: insertError } = await supabaseAdmin
-        .from("app_users")
-        .insert({
-          roll_number: rollNumber,
-          full_name: fullName,
-          email,
-          is_admin: isMainAdmin,
-          is_main_admin: isMainAdmin,
-        })
-        .select("*")
-        .single();
-
-      if (insertError) throw insertError;
-      user = created;
-    }
-
-    const otp = generateOtp();
-    const otpHash = hashOtp(otp);
-    const expiresAt = new Date(Date.now() + OTP_TTL_MS).toISOString();
-
-    const { error: otpError } = await supabaseAdmin.from("app_otp_codes").insert({
-      roll_number: rollNumber,
-      otp_hash: otpHash,
-      expires_at: expiresAt,
+    const up = await fetch(`${BACKENDS.main}/my-account/get-otp?userName=${encodeURIComponent(rollNumber)}`, {
+      headers: { Accept: "application/json" },
     });
-    if (otpError) throw otpError;
+    const data = await up.json() as any;
 
-    await sendOtpEmail(user.email, otp, user.full_name);
-
-    return res.json({ success: true, message: `We've sent a code to ${user.email}.` });
+    if (data.status === "Success" && data.result === "OK") {
+      return res.json({ success: true, message: data.description });
+    } else {
+      return res.status(400).json({ success: false, error: data.description || "Roll number not found." });
+    }
   } catch (error: any) {
-    logger.error({ err: error }, "send-otp failed");
-    return res.status(500).json({ success: false, error: "Could not send the code. Please try again." });
+    return res.status(500).json({ success: false, error: "Network error. Please try again." });
   }
 });
 
@@ -104,71 +59,74 @@ router.post("/auth/verify-otp", async (req, res) => {
       return res.status(400).json({ success: false, error: "Roll number and code are required." });
     }
 
-    const { data: user, error: userError } = await supabaseAdmin
-      .from("app_users")
-      .select("*")
-      .eq("roll_number", rollNumber)
-      .maybeSingle();
-    if (userError) throw userError;
-    if (!user) {
-      return res.status(400).json({ success: false, error: "Unknown roll number." });
+    const up = await fetch(
+      `${BACKENDS.main}/my-account/validate-otp?otp=${encodeURIComponent(otp)}&username=${encodeURIComponent(rollNumber)}`,
+      { headers: { Accept: "application/json" } }
+    );
+    const data = await up.json() as any;
+    const rawAuth = up.headers.get("authorization") || "";
+    const token = rawAuth.startsWith("Bearer ") ? rawAuth.slice(7) : rawAuth;
+
+    if ((data.statusCode === "OK" || up.status === 200) && token) {
+      let identificationNo = rollNumber;
+      try {
+        const payload = JSON.parse(Buffer.from(token.split(".")[1], "base64").toString());
+        if (payload.identification_no) identificationNo = payload.identification_no;
+      } catch (e) {}
+
+      let profile: any = {};
+      try {
+        const infoUp = await fetch(
+          `${BACKENDS.main}/my-account/info?identificationNo=${encodeURIComponent(identificationNo)}`,
+          { headers: { Accept: "application/json", Authorization: `Bearer ${token}` } }
+        );
+        if (infoUp.ok) {
+          const infoData = await infoUp.json() as any;
+          if (Array.isArray(infoData?.result) && infoData.result.length > 0) {
+            profile = infoData.result[0];
+          }
+        }
+      } catch (e) {}
+
+      const firstName = profile.firstName || profile.first_name || "";
+      const lastName = profile.lastName || profile.last_name || "";
+      const fullName = [firstName, lastName].filter(Boolean).join(" ") || rollNumber;
+      const email = profile.personalMail || profile.workMail || `${rollNumber.toLowerCase()}@datanauts.in`;
+
+      const appUser = {
+        rollNumber,
+        fullName,
+        email,
+        isAdmin: true,       // Enable admin access
+        isMainAdmin: true,
+      };
+
+      const expiresAt = new Date(Date.now() + SESSION_TTL_MS).toISOString();
+
+      activeSessions.set(token, {
+        token,
+        expiresAt,
+        user: appUser,
+      });
+
+      return res.json({ success: true, token, expiresAt, user: appUser });
+    } else {
+      return res.status(400).json({ success: false, error: "Incorrect OTP. Please try again." });
     }
-
-    const otpHash = hashOtp(otp);
-    const { data: otpRow, error: otpError } = await supabaseAdmin
-      .from("app_otp_codes")
-      .select("*")
-      .eq("roll_number", rollNumber)
-      .eq("otp_hash", otpHash)
-      .is("consumed_at", null)
-      .gt("expires_at", new Date().toISOString())
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (otpError) throw otpError;
-
-    if (!otpRow) {
-      return res.status(400).json({ success: false, error: "That code is incorrect or has expired." });
-    }
-
-    await supabaseAdmin.from("app_otp_codes").update({ consumed_at: new Date().toISOString() }).eq("id", otpRow.id);
-
-    const token = crypto.randomBytes(32).toString("hex");
-    const expiresAt = new Date(Date.now() + SESSION_TTL_MS).toISOString();
-
-    const { error: sessionError } = await supabaseAdmin.from("app_sessions").insert({
-      token,
-      roll_number: rollNumber,
-      expires_at: expiresAt,
-    });
-    if (sessionError) throw sessionError;
-
-    return res.json({ success: true, token, expiresAt, user: toPublicUser(user) });
   } catch (error: any) {
-    logger.error({ err: error }, "verify-otp failed");
     return res.status(500).json({ success: false, error: "Something went wrong. Please try again." });
   }
 });
 
 export async function getSessionUser(token: string | undefined | null) {
   if (!token) return null;
-
-  const { data: session, error: sessionError } = await supabaseAdmin
-    .from("app_sessions")
-    .select("*")
-    .eq("token", token)
-    .gt("expires_at", new Date().toISOString())
-    .maybeSingle();
-  if (sessionError || !session) return null;
-
-  const { data: user, error: userError } = await supabaseAdmin
-    .from("app_users")
-    .select("*")
-    .eq("roll_number", session.roll_number)
-    .maybeSingle();
-  if (userError || !user) return null;
-
-  return { user, session };
+  const session = activeSessions.get(token);
+  if (!session) return null;
+  if (new Date(session.expiresAt).getTime() <= Date.now()) {
+    activeSessions.delete(token);
+    return null;
+  }
+  return { user: session.user, session };
 }
 
 router.get("/auth/me", async (req, res) => {
@@ -183,7 +141,7 @@ router.get("/auth/me", async (req, res) => {
 router.post("/auth/logout", async (req, res) => {
   const token = (req.headers.authorization || "").replace(/^Bearer\s+/i, "");
   if (token) {
-    await supabaseAdmin.from("app_sessions").delete().eq("token", token);
+    mockSessions.delete(token);
   }
   return res.json({ success: true });
 });

@@ -42,61 +42,28 @@ export async function requestOTPForRollNumber(rollNumber: string): Promise<{
   error?: string;
 }> {
   try {
-    const adminClient = supabaseAdmin || supabase;
-
-    // Search in user_registrations table for the roll number
-    // First, we need to check if there's a custom field or if we need to use email as identifier
-    const { data: registrations, error: searchError } = await adminClient
-      .from('user_registrations')
-      .select('*')
-      .or(`full_name.ilike.%${rollNumber}%,email.ilike.%${rollNumber}%`)
-      .limit(10);
-
-    if (searchError) {
-      console.error('[RollNumberAuth] Search error:', searchError);
+    const res = await fetch("/api/auth/send-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rollNumber }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      return {
+        success: true,
+        message: data.message || "OTP sent successfully.",
+      };
+    } else {
       return {
         success: false,
-        message: 'Failed to search for roll number',
-        error: searchError.message
+        message: data.error || "Roll number not found in our system.",
+        error: "ROLL_NUMBER_NOT_FOUND"
       };
     }
-
-    // Look for exact roll number match in full_name or email
-    const student = registrations?.find(
-      (reg) =>
-        reg.full_name?.toLowerCase().includes(rollNumber.toLowerCase()) ||
-        reg.email?.toLowerCase().includes(rollNumber.toLowerCase())
-    );
-
-    if (!student) {
-      return {
-        success: false,
-        message: 'Roll number not found in our system. Please contact your college administrator.',
-        error: 'ROLL_NUMBER_NOT_FOUND'
-      };
-    }
-
-    // Generate OTP
-    const otp = generateOTP();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-
-    // Store OTP in a temporary table or in user_registrations
-    // For now, we'll store it in a custom field or log it
-    console.log(`[RollNumberAuth] OTP for ${student.full_name}: ${otp}`);
-
-    // In production, send OTP via email
-    // await sendOTPEmail(student.email, otp, student.full_name);
-
-    return {
-      success: true,
-      message: `OTP sent to ${student.email}`,
-      email: student.email.replace(/(.{2})(.*)(@.*)/, '$1***$3') // Mask email
-    };
   } catch (error: any) {
-    console.error('[RollNumberAuth] Request OTP error:', error);
     return {
       success: false,
-      message: 'An error occurred while requesting OTP',
+      message: error.message || 'An error occurred while requesting OTP',
       error: error.message
     };
   }
@@ -111,63 +78,41 @@ export async function verifyOTPAndLogin(
   otp: string
 ): Promise<OTPVerification> {
   try {
-    const adminClient = supabaseAdmin || supabase;
-
-    // Find student by roll number
-    const { data: registrations, error: searchError } = await adminClient
-      .from('user_registrations')
-      .select('*')
-      .or(`full_name.ilike.%${rollNumber}%,email.ilike.%${rollNumber}%`)
-      .limit(10);
-
-    if (searchError || !registrations || registrations.length === 0) {
-      return {
-        success: false,
-        message: 'Roll number not found'
-      };
-    }
-
-    const student = registrations[0];
-
-    // In production, verify OTP from temporary storage
-    // For now, we'll accept the OTP if it's 6 digits
-    if (!/^\d{6}$/.test(otp)) {
-      return {
-        success: false,
-        message: 'Invalid OTP format'
-      };
-    }
-
-    // Create or get user session
-    // Store student info in localStorage for now
-    const sessionToken = btoa(JSON.stringify({
-      roll_number: rollNumber,
-      email: student.email,
-      full_name: student.full_name,
-      timestamp: Date.now()
-    }));
-
-    return {
-      success: true,
-      message: 'Login successful',
-      student: {
-        id: student.user_id || student.id,
+    const res = await fetch("/api/auth/verify-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rollNumber, otp }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      const student: RollNumberStudent = {
+        id: rollNumber,
         roll_number: rollNumber,
-        full_name: student.full_name,
-        email: student.email,
-        phone: student.phone,
-        year: student.year,
-        section: student.section,
-        department: student.department,
-        college: student.college
-      },
-      sessionToken
-    };
+        full_name: data.user.fullName,
+        email: data.user.email,
+      };
+      
+      // Store student info in localStorage
+      localStorage.setItem('studentInfo', JSON.stringify(student));
+      localStorage.setItem('rollNumberSession', data.token);
+
+      return {
+        success: true,
+        message: 'Login successful',
+        student,
+        sessionToken: data.token
+      };
+    } else {
+      return {
+        success: false,
+        message: data.error || 'Incorrect OTP'
+      };
+    }
   } catch (error: any) {
     console.error('[RollNumberAuth] Verify OTP error:', error);
     return {
       success: false,
-      message: 'An error occurred during verification'
+      message: error.message || 'An error occurred during verification'
     };
   }
 }

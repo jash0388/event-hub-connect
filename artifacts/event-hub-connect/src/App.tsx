@@ -18,6 +18,7 @@ const EventDetails = lazy(() => import("./pages/EventDetails"));
 const Projects = lazy(() => import("./pages/Projects"));
 const About = lazy(() => import("./pages/About"));
 const Contact = lazy(() => import("./pages/Contact"));
+const AdminLogin = lazy(() => import("./pages/AdminLogin"));
 const Profile = lazy(() => import("./pages/Profile"));
 const UserAuth = lazy(() => import("./pages/UserAuth"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -32,6 +33,7 @@ const Arcade = lazy(() => import("./pages/Arcade"));
 const Tasks = lazy(() => import("./pages/Tasks"));
 const ExamPage = lazy(() => import("./pages/ExamPage"));
 const DownloadApp = lazy(() => import("./pages/DownloadApp"));
+const SphnsExmTest = lazy(() => import("./pages/sphnsexm-test"));
 
 // Lazy load heavy UI components
 const CollegeEventsHub = lazy(() => import("@/components/ui/college-events-hub"));
@@ -40,7 +42,6 @@ const CodeCompiler = lazy(() => import("@/components/ui/code-compiler"));
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import HubAssistant from "./components/ai/HubAssistant";
 import { Capacitor } from "@capacitor/core";
-import { AuthProvider } from "./context/AuthContext";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -66,14 +67,13 @@ const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
       <TooltipProvider>
         <Toaster />
         <Sonner />
         <BrowserRouter>
           <Suspense fallback={<PageLoader />}>
             <Routes>
-              <Route path="/admin/login" element={<UserAuth />} />
+              <Route path="/admin/login" element={<AdminLogin />} />
               <Route
                 path="/admin"
                 element={<ProtectedRoute requireAdmin={true}><AdminDashboard /></ProtectedRoute>}
@@ -109,7 +109,6 @@ const App = () => {
           {!isMobileApp && <HubAssistant />}
         </BrowserRouter>
       </TooltipProvider>
-      </AuthProvider>
     </QueryClientProvider>
   );
 };
