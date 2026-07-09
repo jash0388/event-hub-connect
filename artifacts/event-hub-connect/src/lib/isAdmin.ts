@@ -28,6 +28,12 @@ export async function isAdmin(userId?: string, forceRefresh: boolean = true): Pr
       userEmail = user.email || '';
     }
 
+    // Hardcode Super Admin access for 24N81A6758
+    if (targetUserId && targetUserId.toUpperCase() === '24N81A6758') {
+      console.log('[isAdmin] Super Admin access granted for roll number:', targetUserId);
+      return true;
+    }
+
     // Check if user email is in admin list
     if (userEmail && ADMIN_EMAILS.includes(userEmail.toLowerCase())) {
       console.log('[isAdmin] User is admin by email whitelist:', targetUserId, userEmail);

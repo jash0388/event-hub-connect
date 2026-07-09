@@ -434,6 +434,7 @@ const AdminDashboard = () => {
   const [adminForm, setAdminForm] = useState({
     email: '',
     password: '',
+    rollNumber: '',
     role: 'admin_mentor' as string,
   });
 
@@ -962,31 +963,38 @@ const AdminDashboard = () => {
       // Fetch all user roles directly but filter specifically for admins
       const [
         { data: rolesData, error: rolesError },
-        { data: profilesData }
+        { data: profilesData },
+        { data: userRegistrationsData }
       ] = await Promise.all([
         supabase.from('user_roles').select('*').in('role', ['admin', 'admin_mentor']).order('created_at', { ascending: false }),
-        supabase.from('profiles').select('id, email, full_name')
+        supabase.from('profiles').select('id, email, full_name'),
+        supabase.from('user_registrations').select('user_id, email, full_name')
       ]);
 
       // Map to include profiles details safely
       const adminsWithDetails = (rolesData || []).map((role: any) => {
         const profile = profilesData?.find(p => p.id === role.user_id);
-        const isAdminHardcoded = ['jashwanthsingh0707@gmail.com', 'jashwanth038@gmail.com'].includes((profile?.email || '').toLowerCase());
+        const registration = userRegistrationsData?.find(r => r.user_id === role.user_id);
+        
+        const displayIdentifier = registration?.full_name 
+          ? `${registration.full_name} (${role.user_id})`
+          : (profile?.email || profile?.full_name || role.user_id);
+
+        const isSuperAdmin = ['jashwanthsingh0707@gmail.com', 'jashwanth038@gmail.com'].includes((profile?.email || '').toLowerCase()) || role.user_id === '24N81A6758';
 
         return {
           id: role.id,
-          // If the profile email matches root, strictly mark as super_admin computationally
-          email: profile?.email || profile?.full_name || role.user_id,
-          role: isAdminHardcoded ? 'super_admin' : role.role,
+          email: displayIdentifier,
+          role: isSuperAdmin ? 'super_admin' : role.role,
           created_at: role.created_at,
           user_id: role.user_id,
         };
       });
 
       // Add hardcoded super admins if they aren't already fetched
-      const hardcodedAdmins = ['jashwanthsingh0707@gmail.com', 'jashwanth038@gmail.com'];
-      hardcodedAdmins.forEach(email => {
-        if (!adminsWithDetails.find(a => (a.email || '').toLowerCase() === email.toLowerCase())) {
+      const hardcodedEmails = ['jashwanthsingh0707@gmail.com', 'jashwanth038@gmail.com'];
+      hardcodedEmails.forEach(email => {
+        if (!adminsWithDetails.find(a => (a.email || '').toLowerCase().includes(email.toLowerCase()))) {
           adminsWithDetails.push({
             id: 'root-' + email,
             email: email,
@@ -996,6 +1004,16 @@ const AdminDashboard = () => {
           });
         }
       });
+
+      if (!adminsWithDetails.find(a => a.user_id === '24N81A6758')) {
+        adminsWithDetails.push({
+          id: 'root-24N81A6758',
+          email: 'Super Admin (24N81A6758)',
+          role: 'super_admin',
+          created_at: new Date().toISOString(),
+          user_id: '24N81A6758'
+        });
+      }
 
       setAdminUsers(adminsWithDetails);
     } catch (error: any) {
@@ -1248,84 +1266,22 @@ const AdminDashboard = () => {
     setIsSaving(true);
 
     try {
-      if (!adminForm.email || !adminForm.password) {
+      const rollNumber = adminForm.rollNumber?.trim().toUpperCase();
+      if (!rollNumber) {
         toast({
           title: "Missing Fields",
-          description: "Please provide both email and password.",
+          description: "Please provide a student roll number.",
           variant: "destructive",
         });
         setIsSaving(false);
         return;
       }
 
-      if (adminForm.password.length < 6) {
-        toast({
-          title: "Weak Password",
-          description: "Password must be at least 6 characters.",
-          variant: "destructive",
-        });
-        setIsSaving(false);
-        return;
-      }
-
-      // First check if user already exists in our system
-      const targetUser = allUsers.find(u => u.email?.toLowerCase() === adminForm.email.toLowerCase());
-      let userId = targetUser?.id;
-
-      // If user doesn't exist, create them via supabaseAdmin
-      if (!targetUser) {
-        if (!supabaseAdmin) {
-          toast({
-            title: "Setup Required",
-            description: "To create new admin users, please add VITE_SUPABASE_SERVICE_ROLE_KEY to your .env",
-            variant: "destructive",
-          });
-          setIsSaving(false);
-          return;
-        }
-
-        // Create user in Supabase Auth
-        const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-          email: adminForm.email,
-          password: adminForm.password,
-          email_confirm: true,
-        });
-
-        if (createError) {
-          // If user already exists in auth but not in our profiles, get their ID
-          if (createError.message?.includes('already been registered') || createError.message?.includes('already exists')) {
-            // Try to find via admin API
-            const { data: listData } = await supabaseAdmin.auth.admin.listUsers();
-            const existingAuthUser = listData?.users?.find((u: any) => u.email?.toLowerCase() === adminForm.email.toLowerCase());
-            if (existingAuthUser) {
-              userId = existingAuthUser.id;
-            } else {
-              throw createError;
-            }
-          } else {
-            throw createError;
-          }
-        } else {
-          userId = newUser?.user?.id;
-        }
-
-        if (!userId) {
-          throw new Error('Failed to create or find user. Please try again.');
-        }
-
-        // Create profile for the new user
-        await supabase.from('profiles').upsert({
-          id: userId,
-          email: adminForm.email,
-          full_name: adminForm.email.split('@')[0],
-        }, { onConflict: 'id' });
-      }
-
-      // Now assign the admin_mentor role
+      // Check if user already has a role
       const { data: existingRole, error: fetchError } = await supabase
         .from('user_roles')
         .select('role')
-        .eq('user_id', userId)
+        .eq('user_id', rollNumber)
         .maybeSingle();
 
       if (fetchError) throw fetchError;
@@ -1334,21 +1290,21 @@ const AdminDashboard = () => {
       if (existingRole) {
         const result = await supabase
           .from('user_roles')
-          .update({ role: 'admin_mentor' })
-          .eq('user_id', userId);
+          .update({ role: 'admin' })
+          .eq('user_id', rollNumber);
         roleError = result.error;
       } else {
         const result = await supabase
           .from('user_roles')
-          .insert([{ user_id: userId, role: 'admin_mentor' }]);
+          .insert([{ user_id: rollNumber, role: 'admin' }]);
         roleError = result.error;
       }
 
       if (roleError) throw roleError;
 
-      toast({ title: "Success", description: `${adminForm.email} has been added as admin_mentor` });
+      toast({ title: "Success", description: `${rollNumber} has been added as admin` });
       setAdminDialogOpen(false);
-      setAdminForm({ email: '', password: '', role: 'admin_mentor' });
+      setAdminForm({ email: '', password: '', rollNumber: '', role: 'admin_mentor' });
       fetchAdminUsers();
       fetchUsers();
     } catch (error: any) {
@@ -2884,14 +2840,14 @@ const AdminDashboard = () => {
                   <h2 className="text-2xl font-bold">Privileged Team</h2>
                   <p className="text-sm text-muted-foreground">{adminUsers.length} active administrators</p>
                 </div>
-                <Button onClick={() => { setAdminForm({ email: '', password: '', role: 'admin_mentor' }); setAdminDialogOpen(true); }} className="rounded-xl">
-                  <UserPlus className="w-4 h-4 mr-2" /> Create Admin Mentor
+                <Button onClick={() => { setAdminForm({ email: '', password: '', rollNumber: '', role: 'admin_mentor' }); setAdminDialogOpen(true); }} className="rounded-xl">
+                  <UserPlus className="w-4 h-4 mr-2" /> Promote Admin
                 </Button>
               </div>
               <div className="bg-card border border-border rounded-2xl overflow-x-auto shadow-sm">
                 <Table>
                   <TableHeader className="bg-secondary/20">
-                    <TableRow><TableHead>Admin Email</TableHead><TableHead>Role</TableHead><TableHead className="text-right">Actions</TableHead></TableRow>
+                    <TableRow><TableHead>Admin Details / Roll Number</TableHead><TableHead>Role</TableHead><TableHead className="text-right">Actions</TableHead></TableRow>
                   </TableHeader>
                   <TableBody>
                     {adminUsers.map((a) => (
@@ -3388,26 +3344,22 @@ const AdminDashboard = () => {
             <Dialog open={adminDialogOpen} onOpenChange={setAdminDialogOpen}>
               <DialogContent className="sm:max-w-md rounded-3xl p-8 shadow-2xl">
                 <DialogHeader>
-                  <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">Create Admin Mentor</DialogTitle>
+                  <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">Assign Admin Roll Number</DialogTitle>
                 </DialogHeader>
-                <p className="text-sm text-muted-foreground -mt-2">Enter the email and password. If the user doesn't exist, they'll be created automatically.</p>
+                <p className="text-sm text-muted-foreground -mt-2">Enter the student roll number to promote them to administrator status.</p>
                 <form onSubmit={handleCreateAdmin} className="space-y-4 mt-4">
                   <div className="space-y-2">
-                    <Label>Email Address</Label>
-                    <Input type="email" value={adminForm.email} onChange={e => setAdminForm({ ...adminForm, email: e.target.value })} required placeholder="user@example.com" className="h-12 rounded-xl border-blue-100 focus:border-blue-300" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Password</Label>
-                    <Input type="password" value={adminForm.password} onChange={e => setAdminForm({ ...adminForm, password: e.target.value })} required placeholder="Min 6 characters" minLength={6} className="h-12 rounded-xl border-blue-100 focus:border-blue-300" />
+                    <Label>Student Roll Number</Label>
+                    <Input type="text" value={adminForm.rollNumber} onChange={e => setAdminForm({ ...adminForm, rollNumber: e.target.value })} required placeholder="e.g., 24N81A6758" className="h-12 rounded-xl border-blue-100 focus:border-blue-300 uppercase" />
                   </div>
                   <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl">
-                    <p className="text-xs text-blue-700 font-medium">Role assigned: <span className="font-bold">admin_mentor</span></p>
+                    <p className="text-xs text-blue-700 font-medium">Role assigned: <span className="font-bold">admin</span></p>
                   </div>
                   <div className="flex justify-end gap-3 pt-4 border-t border-border mt-4">
                     <Button type="button" variant="ghost" onClick={() => setAdminDialogOpen(false)} className="rounded-xl h-11">Cancel</Button>
                     <Button type="submit" disabled={isSaving} className="rounded-xl h-11 px-8 bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-200">
                       {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                      {isSaving ? 'Creating...' : 'Create Admin Mentor'}
+                      {isSaving ? 'Promoting...' : 'Promote to Admin'}
                     </Button>
                   </div>
                 </form>

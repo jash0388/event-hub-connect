@@ -134,25 +134,31 @@ export default function UserAuth() {
         setStudentInfo(result.student);
         setCurrentSession(result.student);
 
-        // Check if user needs to complete registration
-        const adminClient = supabaseAdmin || supabase;
-        const { data: existingReg } = await adminClient
-          .from('user_registrations')
-          .select('*')
-          .eq('email', result.student.email)
-          .single();
-
-        if (!existingReg) {
-          // Show registration popup for new users
-          setShowRegistration(true);
-        } else {
-          setStep("success");
-          // Redirect after 2 seconds
-          setTimeout(() => {
-            const from = (location.state as any)?.from?.pathname || "/";
-            navigate(from, { replace: true });
-          }, 2000);
+        // Upsert student info into user_registrations
+        try {
+          const adminClient = supabaseAdmin || supabase;
+          await adminClient
+            .from('user_registrations')
+            .upsert({
+              user_id: result.student.roll_number || result.student.id,
+              email: result.student.email,
+              full_name: result.student.full_name,
+              created_at: new Date().toISOString()
+            }, { onConflict: 'user_id' });
+        } catch (e) {
+          console.warn('[UserAuth] Failed to upsert registration:', e);
         }
+
+        // Push session into global auth state so all pages recognize the user
+        const { refreshAuthFromLocalStorage } = await import('@/hooks/useAuth');
+        refreshAuthFromLocalStorage();
+
+        setStep("success");
+        // Redirect after 1.5 seconds
+        setTimeout(() => {
+          const from = (location.state as any)?.from?.pathname || "/";
+          navigate(from, { replace: true });
+        }, 1500);
       } else {
         toast({
           title: "Error",

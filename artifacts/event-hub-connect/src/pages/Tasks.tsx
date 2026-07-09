@@ -752,7 +752,14 @@ export default function Tasks() {
     try {
       setSubmitting(taskId);
       const pointsObj = tasks.find(t => t.id === taskId);
-      const displayName = firebaseUser?.displayName || user?.user_metadata?.full_name || user?.email?.split('@')[0] || firebaseUser?.email?.split('@')[0] || 'Anonymous';
+      // Build display name with roll number from student session
+      let displayName = firebaseUser?.displayName || user?.user_metadata?.full_name || user?.email?.split('@')[0] || firebaseUser?.email?.split('@')[0] || 'Anonymous';
+      try {
+        const si = JSON.parse(localStorage.getItem('studentInfo') || '{}');
+        if (si.roll_number) {
+          displayName = `${si.full_name || displayName} (${si.roll_number})`;
+        }
+      } catch {}
       const payload = {
         task_id: taskId,
         user_id: userId,

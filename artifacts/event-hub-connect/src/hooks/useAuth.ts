@@ -91,13 +91,37 @@ const notifyListeners = () => {
   globalListeners.forEach(listener => listener(globalAuthState));
 };
 
-const setGlobalState = (newState: Partial<AuthState>) => {
+export const setGlobalState = (newState: Partial<AuthState>) => {
   if (newState.isAdmin !== undefined) {
     localStorage.setItem('is-admin', String(newState.isAdmin));
   }
   globalAuthState = { ...globalAuthState, ...newState };
   notifyListeners();
 };
+
+// Call this after roll-number OTP login to push the student session into global auth
+export function refreshAuthFromLocalStorage() {
+  const studentInfoStr = localStorage.getItem('studentInfo');
+  if (studentInfoStr) {
+    try {
+      const student = JSON.parse(studentInfoStr);
+      const mockUser = {
+        id: student.roll_number || student.id,
+        email: student.email,
+        user_metadata: { full_name: student.full_name },
+        role: 'authenticated',
+      } as any;
+      setGlobalState({
+        user: mockUser,
+        session: { access_token: 'roll-number-session', user: mockUser } as any,
+        isAdmin: student.roll_number?.toUpperCase() === '24N81A6758',
+        loading: false,
+        error: null,
+        isFirebaseUser: false,
+      });
+    } catch (e) {}
+  }
+}
 
 export function useAuth() {
   const [state, setState] = useState<AuthState>(globalAuthState);
@@ -546,6 +570,7 @@ export function useAuth() {
     signUp,
     signOut,
     signInWithGoogle,
-    hasFirebaseConfig
+    hasFirebaseConfig,
+    refreshFromLocalStorage: refreshAuthFromLocalStorage,
   };
 }
