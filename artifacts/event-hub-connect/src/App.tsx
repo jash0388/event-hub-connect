@@ -62,6 +62,8 @@ const PageLoader = () => (
   </div>
 );
 
+import { SpeedInsights } from "@vercel/speed-insights/react";
+
 const App = () => {
   const isMobileApp = Capacitor.isNativePlatform();
 
@@ -108,6 +110,7 @@ const App = () => {
           </Suspense>
           {!isMobileApp && <HubAssistant />}
         </BrowserRouter>
+        <SpeedInsights />
       </TooltipProvider>
     </QueryClientProvider>
   );
