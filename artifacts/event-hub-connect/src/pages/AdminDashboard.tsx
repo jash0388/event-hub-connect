@@ -169,11 +169,10 @@ interface TaskSubmission {
 }
 
 interface AdminUser {
-  id: string;
+  roll_number: string;
+  full_name: string;
   email: string;
-  role: string;
-  created_at: string;
-  user_id: string;
+  is_main_admin: boolean;
 }
 
 const AdminDashboard = () => {
@@ -432,12 +431,12 @@ const AdminDashboard = () => {
   });
 
   const [adminForm, setAdminForm] = useState({
+    rollNumber: '',
+    fullName: '',
     email: '',
-    password: '',
-    role: 'admin_mentor' as string,
   });
 
-  const { user, signOut } = useAuth();
+  const { user, signOut, isMainAdmin, token } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -959,44 +958,11 @@ const AdminDashboard = () => {
 
   const fetchAdminUsers = async () => {
     try {
-      // Fetch all user roles directly but filter specifically for admins
-      const [
-        { data: rolesData, error: rolesError },
-        { data: profilesData }
-      ] = await Promise.all([
-        supabase.from('user_roles').select('*').in('role', ['admin', 'admin_mentor']).order('created_at', { ascending: false }),
-        supabase.from('profiles').select('id, email, full_name')
-      ]);
-
-      // Map to include profiles details safely
-      const adminsWithDetails = (rolesData || []).map((role: any) => {
-        const profile = profilesData?.find(p => p.id === role.user_id);
-        const isAdminHardcoded = ['jashwanthsingh0707@gmail.com', 'jashwanth038@gmail.com'].includes((profile?.email || '').toLowerCase());
-
-        return {
-          id: role.id,
-          // If the profile email matches root, strictly mark as super_admin computationally
-          email: profile?.email || profile?.full_name || role.user_id,
-          role: isAdminHardcoded ? 'super_admin' : role.role,
-          created_at: role.created_at,
-          user_id: role.user_id,
-        };
+      const res = await fetch('/api/admin/admins', {
+        headers: { Authorization: `Bearer ${token}` },
       });
-
-      // Add hardcoded super admins if they aren't already fetched
-      const hardcodedAdmins = ['jashwanthsingh0707@gmail.com', 'jashwanth038@gmail.com'];
-      hardcodedAdmins.forEach(email => {
-        if (!adminsWithDetails.find(a => (a.email || '').toLowerCase() === email.toLowerCase())) {
-          adminsWithDetails.push({
-            id: 'root-' + email,
-            email: email,
-            role: 'super_admin',
-            created_at: new Date().toISOString(),
-            user_id: 'root'
-          });
-        }
-      });
-
+      const data = await res.json();
+      const adminsWithDetails: AdminUser[] = data.success ? data.admins : [];
       setAdminUsers(adminsWithDetails);
     } catch (error: any) {
       console.error('Error fetching admin users:', error);
@@ -1248,109 +1214,28 @@ const AdminDashboard = () => {
     setIsSaving(true);
 
     try {
-      if (!adminForm.email || !adminForm.password) {
+      if (!adminForm.rollNumber || !adminForm.fullName || !adminForm.email) {
         toast({
           title: "Missing Fields",
-          description: "Please provide both email and password.",
+          description: "Please provide roll number, name, and email.",
           variant: "destructive",
         });
         setIsSaving(false);
         return;
       }
 
-      if (adminForm.password.length < 6) {
-        toast({
-          title: "Weak Password",
-          description: "Password must be at least 6 characters.",
-          variant: "destructive",
-        });
-        setIsSaving(false);
-        return;
-      }
+      const res = await fetch('/api/admin/create-admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(adminForm),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Failed to create admin.');
 
-      // First check if user already exists in our system
-      const targetUser = allUsers.find(u => u.email?.toLowerCase() === adminForm.email.toLowerCase());
-      let userId = targetUser?.id;
-
-      // If user doesn't exist, create them via supabaseAdmin
-      if (!targetUser) {
-        if (!supabaseAdmin) {
-          toast({
-            title: "Setup Required",
-            description: "To create new admin users, please add VITE_SUPABASE_SERVICE_ROLE_KEY to your .env",
-            variant: "destructive",
-          });
-          setIsSaving(false);
-          return;
-        }
-
-        // Create user in Supabase Auth
-        const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-          email: adminForm.email,
-          password: adminForm.password,
-          email_confirm: true,
-        });
-
-        if (createError) {
-          // If user already exists in auth but not in our profiles, get their ID
-          if (createError.message?.includes('already been registered') || createError.message?.includes('already exists')) {
-            // Try to find via admin API
-            const { data: listData } = await supabaseAdmin.auth.admin.listUsers();
-            const existingAuthUser = listData?.users?.find((u: any) => u.email?.toLowerCase() === adminForm.email.toLowerCase());
-            if (existingAuthUser) {
-              userId = existingAuthUser.id;
-            } else {
-              throw createError;
-            }
-          } else {
-            throw createError;
-          }
-        } else {
-          userId = newUser?.user?.id;
-        }
-
-        if (!userId) {
-          throw new Error('Failed to create or find user. Please try again.');
-        }
-
-        // Create profile for the new user
-        await supabase.from('profiles').upsert({
-          id: userId,
-          email: adminForm.email,
-          full_name: adminForm.email.split('@')[0],
-        }, { onConflict: 'id' });
-      }
-
-      // Now assign the admin_mentor role
-      const { data: existingRole, error: fetchError } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId)
-        .maybeSingle();
-
-      if (fetchError) throw fetchError;
-
-      let roleError = null;
-      if (existingRole) {
-        const result = await supabase
-          .from('user_roles')
-          .update({ role: 'admin_mentor' })
-          .eq('user_id', userId);
-        roleError = result.error;
-      } else {
-        const result = await supabase
-          .from('user_roles')
-          .insert([{ user_id: userId, role: 'admin_mentor' }]);
-        roleError = result.error;
-      }
-
-      if (roleError) throw roleError;
-
-      toast({ title: "Success", description: `${adminForm.email} has been added as admin_mentor` });
+      toast({ title: "Success", description: `${adminForm.rollNumber} has been added as an admin.` });
       setAdminDialogOpen(false);
-      setAdminForm({ email: '', password: '', role: 'admin_mentor' });
+      setAdminForm({ rollNumber: '', fullName: '', email: '' });
       fetchAdminUsers();
-      fetchUsers();
     } catch (error: any) {
       toast({
         title: "Error",
@@ -1362,15 +1247,15 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleRemoveAdmin = async (adminUser: any) => {
+  const handleRemoveAdmin = async (adminUser: AdminUser) => {
     try {
-      // Remove from user_roles table
-      const { error } = await supabase
-        .from('user_roles')
-        .delete()
-        .eq('id', adminUser.id);
-
-      if (error) throw error;
+      const res = await fetch('/api/admin/revoke-admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ rollNumber: adminUser.roll_number }),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Failed to revoke admin.');
 
       toast({ title: "Success", description: "Admin privileges have been revoked." });
       fetchAdminUsers();
@@ -2734,7 +2619,8 @@ const AdminDashboard = () => {
                       {taskSubmissions.length === 0 ? (
                         <TableRow><TableCell colSpan={4} className="text-center py-16 text-slate-400"><FileText className="w-8 h-8 mx-auto mb-2 opacity-30" />No submissions yet.</TableCell></TableRow>
                       ) : taskSubmissions.map((sub, idx) => {
-                        const name = (sub.profiles as any)?.full_name || 'Unknown';
+                        const name = (sub.profiles as any)?.full_name || sub.user_display_name || 'Unknown';
+                        const rollNumber = sub.user_id;
                         const initials = name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
                         const colors = ['bg-blue-500', 'bg-violet-500', 'bg-emerald-500', 'bg-rose-500', 'bg-amber-500', 'bg-cyan-500'];
                         return (
@@ -2744,7 +2630,7 @@ const AdminDashboard = () => {
                                 <div className={`w-9 h-9 ${colors[idx % colors.length]} rounded-xl flex items-center justify-center text-white text-xs font-bold shadow-sm`}>{initials}</div>
                                 <div>
                                   <p className="font-semibold text-slate-900 text-sm">{name}</p>
-                                  <p className="text-xs text-slate-400">{(sub.profiles as any)?.email || sub.user_id}</p>
+                                  <p className="text-xs text-slate-400 font-mono">{rollNumber}</p>
                                 </div>
                               </div>
                             </TableCell>
@@ -2855,7 +2741,7 @@ const AdminDashboard = () => {
                             >
                               <UserPlus className="w-3.5 h-3.5 mr-2" /> View Profile
                             </Button>
-                            {adminUsers.find(a => a.user_id === u.id) && (
+                            {adminUsers.find(a => a.email?.toLowerCase() === u.email?.toLowerCase()) && (
                               <span className="text-xs font-bold text-blue-700 bg-blue-50 px-3 py-1 rounded-full border border-blue-100">Team Admin</span>
                             )}
                             {supabaseAdmin && (
@@ -2884,27 +2770,30 @@ const AdminDashboard = () => {
                   <h2 className="text-2xl font-bold">Privileged Team</h2>
                   <p className="text-sm text-muted-foreground">{adminUsers.length} active administrators</p>
                 </div>
-                <Button onClick={() => { setAdminForm({ email: '', password: '', role: 'admin_mentor' }); setAdminDialogOpen(true); }} className="rounded-xl">
-                  <UserPlus className="w-4 h-4 mr-2" /> Create Admin Mentor
-                </Button>
+                {isMainAdmin && (
+                  <Button onClick={() => { setAdminForm({ rollNumber: '', fullName: '', email: '' }); setAdminDialogOpen(true); }} className="rounded-xl">
+                    <UserPlus className="w-4 h-4 mr-2" /> Add Admin by Roll Number
+                  </Button>
+                )}
               </div>
               <div className="bg-card border border-border rounded-2xl overflow-x-auto shadow-sm">
                 <Table>
                   <TableHeader className="bg-secondary/20">
-                    <TableRow><TableHead>Admin Email</TableHead><TableHead>Role</TableHead><TableHead className="text-right">Actions</TableHead></TableRow>
+                    <TableRow><TableHead>Roll Number</TableHead><TableHead>Name</TableHead><TableHead>Email</TableHead><TableHead className="text-right">Actions</TableHead></TableRow>
                   </TableHeader>
                   <TableBody>
                     {adminUsers.map((a) => (
-                      <TableRow key={a.id}>
-                        <TableCell className="font-medium">{a.email}</TableCell>
-                        <TableCell><span className="capitalize text-xs font-bold px-2 py-1 bg-blue-50 text-blue-700 rounded-lg">{a.role}</span></TableCell>
+                      <TableRow key={a.roll_number}>
+                        <TableCell className="font-mono font-medium">{a.roll_number}</TableCell>
+                        <TableCell>{a.full_name}</TableCell>
+                        <TableCell className="text-muted-foreground">{a.email}</TableCell>
                         <TableCell className="text-right">
-                          {a.role !== 'super_admin' ? (
+                          {!a.is_main_admin && isMainAdmin ? (
                             <Button variant="ghost" size="sm" className="text-blue-600 rounded-xl" onClick={() => handleRemoveAdmin(a)}>
                               <ShieldOff className="w-4 h-4 mr-2" /> Revoke
                             </Button>
                           ) : (
-                            <span className="text-xs font-bold text-muted-foreground mr-4 border border-border px-2 py-1 rounded-md">Permanent</span>
+                            <span className="text-xs font-bold text-muted-foreground mr-4 border border-border px-2 py-1 rounded-md">{a.is_main_admin ? 'Main Admin' : 'Admin'}</span>
                           )}
                         </TableCell>
                       </TableRow>
@@ -3388,26 +3277,27 @@ const AdminDashboard = () => {
             <Dialog open={adminDialogOpen} onOpenChange={setAdminDialogOpen}>
               <DialogContent className="sm:max-w-md rounded-3xl p-8 shadow-2xl">
                 <DialogHeader>
-                  <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">Create Admin Mentor</DialogTitle>
+                  <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">Add Admin by Roll Number</DialogTitle>
                 </DialogHeader>
-                <p className="text-sm text-muted-foreground -mt-2">Enter the email and password. If the user doesn't exist, they'll be created automatically.</p>
+                <p className="text-sm text-muted-foreground -mt-2">The new admin will log in with their roll number and an email OTP, same as students.</p>
                 <form onSubmit={handleCreateAdmin} className="space-y-4 mt-4">
+                  <div className="space-y-2">
+                    <Label>Roll Number</Label>
+                    <Input value={adminForm.rollNumber} onChange={e => setAdminForm({ ...adminForm, rollNumber: e.target.value.toUpperCase() })} required placeholder="24N81A6758" className="h-12 rounded-xl border-blue-100 focus:border-blue-300 uppercase" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Full Name</Label>
+                    <Input value={adminForm.fullName} onChange={e => setAdminForm({ ...adminForm, fullName: e.target.value })} required placeholder="Jane Doe" className="h-12 rounded-xl border-blue-100 focus:border-blue-300" />
+                  </div>
                   <div className="space-y-2">
                     <Label>Email Address</Label>
                     <Input type="email" value={adminForm.email} onChange={e => setAdminForm({ ...adminForm, email: e.target.value })} required placeholder="user@example.com" className="h-12 rounded-xl border-blue-100 focus:border-blue-300" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Password</Label>
-                    <Input type="password" value={adminForm.password} onChange={e => setAdminForm({ ...adminForm, password: e.target.value })} required placeholder="Min 6 characters" minLength={6} className="h-12 rounded-xl border-blue-100 focus:border-blue-300" />
-                  </div>
-                  <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl">
-                    <p className="text-xs text-blue-700 font-medium">Role assigned: <span className="font-bold">admin_mentor</span></p>
                   </div>
                   <div className="flex justify-end gap-3 pt-4 border-t border-border mt-4">
                     <Button type="button" variant="ghost" onClick={() => setAdminDialogOpen(false)} className="rounded-xl h-11">Cancel</Button>
                     <Button type="submit" disabled={isSaving} className="rounded-xl h-11 px-8 bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-200">
                       {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                      {isSaving ? 'Creating...' : 'Create Admin Mentor'}
+                      {isSaving ? 'Adding...' : 'Add Admin'}
                     </Button>
                   </div>
                 </form>

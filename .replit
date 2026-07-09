@@ -18,3 +18,9 @@ expertMode = true
 [postMerge]
 path = "scripts/post-merge.sh"
 timeoutMs = 20000
+
+[userenv]
+
+[userenv.shared]
+MAIN_ADMIN_ROLL_NUMBER = "24N81A6758"
+SUPABASE_URL = "https://cqjjbvccldipkqqtqzqc.supabase.co"
