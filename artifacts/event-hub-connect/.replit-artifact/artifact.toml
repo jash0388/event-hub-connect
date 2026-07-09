@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/"
+title = "Event Hub Connect"
+version = "1.0.0"
+id = "artifacts/event-hub-connect"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 25318
+
+[services.development]
+run = "pnpm --filter @workspace/event-hub-connect run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/event-hub-connect", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/event-hub-connect/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25318"
+BASE_PATH = "/"
