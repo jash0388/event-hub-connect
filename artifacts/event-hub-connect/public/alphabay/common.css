@@ -1,0 +1,54 @@
+:root {
+  color-scheme: dark;
+}
+
+body {
+  background: radial-gradient(circle at top, rgba(6, 247, 161, 0.08), transparent 40%),
+    linear-gradient(180deg, #020805 0%, #010302 100%);
+  min-height: 100vh;
+}
+
+.cyber-grid {
+  background-image: linear-gradient(rgba(6, 247, 161, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(6, 247, 161, 0.08) 1px, transparent 1px);
+  background-size: 30px 30px;
+}
+
+.neon-card {
+  border: 1px solid rgba(6, 247, 161, 0.25);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 0 0 1px rgba(6, 247, 161, 0.08), 0 0 30px rgba(6, 247, 161, 0.08);
+}
+
+.neon-btn {
+  background: #06f7a1;
+  color: #001f13;
+  transition: all 0.2s ease;
+}
+
+.neon-btn:hover {
+  box-shadow: 0 0 20px rgba(6, 247, 161, 0.5);
+  transform: translateY(-1px);
+}
+
+.neon-input {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(6, 247, 161, 0.22);
+}
+
+.logo-image {
+  width: 40px;
+  height: 40px;
+  filter: drop-shadow(0 0 10px rgba(6, 247, 161, 0.55));
+}
+
+.error-box {
+  border: 1px solid rgba(248, 113, 113, 0.5);
+  background: rgba(127, 29, 29, 0.35);
+}
+
+.success-box {
+  border: 1px solid rgba(34, 197, 94, 0.5);
+  background: rgba(20, 83, 45, 0.35);
+}

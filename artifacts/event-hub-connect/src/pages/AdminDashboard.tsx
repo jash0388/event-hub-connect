@@ -1,0 +1,3960 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Header } from '@/components/layout/Header';
+import { Footer } from '@/components/layout/Footer';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase, supabaseAdmin } from '@/integrations/supabase/client';
+
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { motion } from 'framer-motion';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  LayoutDashboard,
+  Plus,
+  Edit,
+  Trash2,
+  LogOut,
+  Loader2,
+  UserPlus,
+  Shield,
+  ShieldCheck,
+  ShieldOff,
+  UserMinus,
+  QrCode,
+  CheckCircle,
+  XCircle,
+  Camera,
+  RefreshCw,
+  Bot,
+  Terminal,
+  Sparkles,
+  Command,
+  Zap,
+  Database,
+  Users,
+  Send,
+  Mail,
+  Info,
+  Calendar,
+  FileText,
+  Settings,
+  Activity,
+  Download,
+  ClipboardCheck,
+  Lock,
+  Unlock,
+  CaseLower
+} from 'lucide-react';
+import { format } from 'date-fns';
+import { Html5Qrcode } from 'html5-qrcode';
+
+
+
+interface Event {
+  id: string;
+  title: string;
+  description: string | null;
+  category: string | null;
+  date: string;
+  time: string | null;
+  location: string | null;
+  organizer: string | null;
+  image: string | null;
+  image_url: string | null;
+  registration_link: string | null;
+  photos: string[] | null;
+  videos: string[] | null;
+  attendance_count?: number;
+  registered_count?: number;
+  popularity_score?: number;
+  trending_score?: number;
+  created_by?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  is_sip?: boolean;
+}
+
+interface Project {
+  id: string;
+  title: string;
+  description: string | null;
+  image_url: string | null;
+  github_url: string | null;
+  demo_url: string | null;
+  registration_link: string | null;
+  tags: string[] | null;
+}
+
+interface Internship {
+  id: string;
+  title: string;
+  company: string;
+  description: string | null;
+  image_url: string | null;
+  internship_link: string | null;
+  created_at: string;
+}
+
+interface Poll {
+  id: string;
+  event_id: string;
+  question: string;
+  registration_link: string | null;
+  created_at: string;
+}
+
+interface SocialLink {
+  id: string;
+  platform: string;
+  url: string;
+  icon: string | null;
+  display_order: number;
+  is_active: boolean;
+}
+
+interface ContactMessage {
+  id: string;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  reply_text: string | null;
+  replied: boolean;
+  created_at: string;
+}
+
+interface CodingTask {
+  id: string;
+  title: string;
+  description: string;
+  points: number;
+  created_at: string;
+}
+
+interface TaskSubmission {
+  id: string;
+  task_id: string;
+  user_id: string;
+  answer: string;
+  status: 'pending' | 'approved' | 'denied';
+  points_awarded: number;
+  submitted_at: string;
+  profiles: {
+    full_name: string;
+    email: string;
+  };
+  coding_tasks: {
+    title: string;
+  };
+}
+
+interface AdminUser {
+  id: string;
+  email: string;
+  role: string;
+  created_at: string;
+  user_id: string;
+}
+
+const AdminDashboard = () => {
+  const [events, setEvents] = useState<Event[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [internships, setInternships] = useState<Internship[]>([]);
+  const [polls, setPolls] = useState<Poll[]>([]);
+  const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
+  const [messages, setMessages] = useState<ContactMessage[]>([]);
+  const [codingTasks, setCodingTasks] = useState<CodingTask[]>([]);
+  const [taskSubmissions, setTaskSubmissions] = useState<TaskSubmission[]>([]);
+  const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
+  const [allUsers, setAllUsers] = useState<any[]>([]);
+  const [eventRegistrations, setEventRegistrations] = useState<any[]>([]);
+  const [sipAttendanceRecords, setSipAttendanceRecords] = useState<any[]>([]);
+  const [sipEvents, setSipEvents] = useState<any[]>([]);
+  const [sipFilterEvent, setSipFilterEvent] = useState<string>('all');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState('events');
+
+  const [examsList, setExamsList] = useState<any[]>([]);
+  const [examQuestions, setExamQuestions] = useState<any[]>([]);
+  const [examSubmissions, setExamSubmissions] = useState<any[]>([]);
+  const [examDialogOpen, setExamDialogOpen] = useState(false);
+  const [examQuestionDialogOpen, setExamQuestionDialogOpen] = useState(false);
+  const [editingExam, setEditingExam] = useState<any>(null);
+  const [selectedExamForQuestions, setSelectedExamForQuestions] = useState<string>('');
+  const [examForm, setExamForm] = useState({ title: '', description: '', duration_minutes: 30, max_violations: 2 });
+  const [examQuestionForm, setExamQuestionForm] = useState({ question: '', question_type: 'mcq' as string, options: ['', '', '', ''], correct_answer: '', marks: 5 });
+  const [examResultsFilter, setExamResultsFilter] = useState<string>('all');
+
+  const [eventDialogOpen, setEventDialogOpen] = useState(false);
+  const [projectDialogOpen, setProjectDialogOpen] = useState(false);
+  const [internshipDialogOpen, setInternshipDialogOpen] = useState(false);
+  const [pollDialogOpen, setPollDialogOpen] = useState(false);
+  const [isSyncingInternships, setIsSyncingInternships] = useState(false);
+  const [socialDialogOpen, setSocialDialogOpen] = useState(false);
+  const [replyDialogOpen, setReplyDialogOpen] = useState(false);
+  const [taskDialogOpen, setTaskDialogOpen] = useState(false);
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
+  const [adminDialogOpen, setAdminDialogOpen] = useState(false);
+  const [userProfileDialogOpen, setUserProfileDialogOpen] = useState(false);
+  const [selectedUserProfile, setSelectedUserProfile] = useState<any>(null);
+  const [scannedQRResult, setScannedQRResult] = useState<any>(null);
+  const [qrScanError, setQrScanError] = useState<string>('');
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [cameraScannerReady, setCameraScannerReady] = useState(false);
+  const [manualGradeDialogOpen, setManualGradeDialogOpen] = useState(false);
+  const [selectedSubForGrading, setSelectedSubForGrading] = useState<any>(null);
+  const [manualScore, setManualScore] = useState(0);
+
+
+  // Initialize camera QR scanner
+  useEffect(() => {
+    let html5QrCode: Html5Qrcode | null = null;
+    let isMounted = true;
+
+    if (cameraScannerReady) {
+      const timer = setTimeout(async () => {
+        if (!isMounted) return;
+
+        try {
+          // First check if camera is available
+          const devices = await Html5Qrcode.getCameras();
+          if (!devices || devices.length === 0) {
+            setQrScanError('No camera found on this device');
+            setCameraScannerReady(false);
+            return;
+          }
+
+          html5QrCode = new Html5Qrcode("qr-reader");
+          const config = {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+            aspectRatio: 1.333333
+          };
+
+          // Use the first back camera
+          const cameraId = devices.find(d => d.label.toLowerCase().includes('back'))?.id || devices[0].id;
+
+          await html5QrCode.start(
+            cameraId,
+            config,
+            (decodedText) => {
+              console.log('QR Scanned:', decodedText);
+              handleQRVerify(decodedText);
+              setCameraScannerReady(false);
+              if (html5QrCode && html5QrCode.isScanning) {
+                html5QrCode.stop().catch(err => console.error("Error stopping scanner", err));
+              }
+            },
+            (errorMessage) => {
+              // Ignore continuous scanning errors - these happen when no QR is in frame
+            }
+          );
+        } catch (err: any) {
+          console.error('Failed to initialize scanner:', err);
+          if (err.toString().includes('NotAllowedError') || err.toString().includes('Permission')) {
+            setQrScanError('Camera permission denied. Please allow camera access and try again.');
+          } else if (err.toString().includes('NotFoundError')) {
+            setQrScanError('No camera found. Please connect a camera and try again.');
+          } else {
+            setQrScanError('Could not start camera. Please refresh and try again.');
+          }
+          setCameraScannerReady(false);
+        }
+      }, 300);
+
+      return () => {
+        isMounted = false;
+        clearTimeout(timer);
+        if (html5QrCode && html5QrCode.isScanning) {
+          html5QrCode.stop().catch(err => console.error("Cleanup stop error", err));
+        }
+      };
+    }
+  }, [cameraScannerReady]);
+
+  const [editingEvent, setEditingEvent] = useState<Event | null>(null);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [editingInternship, setEditingInternship] = useState<Internship | null>(null);
+  const [editingTask, setEditingTask] = useState<CodingTask | null>(null);
+  const [selectedSubmission, setSelectedSubmission] = useState<TaskSubmission | null>(null);
+  const [editingSocial, setEditingSocial] = useState<SocialLink | null>(null);
+  const [selectedMessage, setSelectedMessage] = useState<ContactMessage | null>(null);
+  const [replyText, setReplyText] = useState('');
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingPhotos, setUploadingPhotos] = useState(false);
+
+  // Image upload function - uses Cloudinary
+  const uploadImage = async (file: File): Promise<string | null> => {
+    const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+    const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+
+    if (!cloudName || !uploadPreset) {
+      toast({ title: 'Upload not configured', description: 'Cloudinary not set up', variant: 'destructive' });
+      return null;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', uploadPreset);
+
+    try {
+      const response = await fetch(
+        `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+        {
+          method: 'POST',
+          body: formData,
+        }
+      );
+      const data = await response.json();
+      if (data.secure_url) {
+        return data.secure_url;
+      } else {
+        console.error('Cloudinary error:', data);
+        toast({ title: 'Upload failed', description: data.error?.message || 'Unknown error', variant: 'destructive' });
+        return null;
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast({ title: 'Upload failed', description: 'Network error', variant: 'destructive' });
+      return null;
+    }
+  };
+
+  // Handle main image file selection
+  const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingImage(true);
+    try {
+      const url = await uploadImage(file);
+      if (url) {
+        setEventForm({ ...eventForm, image_url: url });
+      }
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  // Handle multiple photo files selection
+  const handlePhotoFilesChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploadingPhotos(true);
+    try {
+      const urls: string[] = [];
+      for (const file of Array.from(files)) {
+        const url = await uploadImage(file);
+        if (url) urls.push(url);
+      }
+      const currentPhotos = eventForm.photos ? eventForm.photos.split(',').map(p => p.trim()).filter(p => p) : [];
+      const allPhotos = [...currentPhotos, ...urls].join(', ');
+      setEventForm({ ...eventForm, photos: allPhotos });
+    } finally {
+      setUploadingPhotos(false);
+    }
+  };
+
+  const [eventForm, setEventForm] = useState({
+    title: '',
+    description: '',
+    category: '',
+    datetime: '',
+    time: '',
+    location: '',
+    organizer: '',
+    image_url: '',
+    registration_link: '',
+    photos: '',
+    videos: '',
+    is_sip: false,
+  });
+
+  const [projectForm, setProjectForm] = useState({
+    title: '',
+    description: '',
+    image_url: '',
+    github_url: '',
+    demo_url: '',
+    registration_link: '',
+    tags: '',
+  });
+
+  const [internshipForm, setInternshipForm] = useState({
+    title: '',
+    company: '',
+    description: '',
+    image_url: '',
+    internship_link: '',
+  });
+
+  const [pollForm, setPollForm] = useState({
+    event_id: '',
+    question: '',
+    registration_link: '',
+    options: ['', ''],
+  });
+
+  const [socialForm, setSocialForm] = useState({
+    platform: '',
+    url: '',
+    icon: '',
+    display_order: 0,
+    is_active: true,
+  });
+
+  const [taskForm, setEventTaskForm] = useState({
+    title: '',
+    description: '',
+    points: 10,
+  });
+
+  const [adminForm, setAdminForm] = useState({
+    email: '',
+    password: '',
+    role: 'admin_mentor' as string,
+  });
+
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  // Track which tabs have already been loaded
+  const [loadedTabs, setLoadedTabs] = useState<Set<string>>(new Set());
+
+  // Fetch data for a specific tab
+  // === EXAM FETCH FUNCTIONS ===
+  const fetchExamsList = async () => {
+    try {
+      const { data, error } = await (supabase as any).from('exams').select('*').order('created_at', { ascending: false });
+      if (error) throw error;
+      setExamsList(data || []);
+    } catch (e: any) { console.error('Error fetching exams:', e); setExamsList([]); }
+  };
+
+  const fetchExamQuestions = async () => {
+    try {
+      // Fetch only if needed or keep it efficient
+      const { data, error } = await (supabase as any).from('exam_questions').select('*, exams(title)').order('created_at', { ascending: false });
+      if (error) throw error;
+      setExamQuestions(data || []);
+    } catch (e: any) { console.error('Error fetching exam questions:', e); setExamQuestions([]); }
+  };
+
+  const fetchExamSubmissions = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('exam_submissions')
+        .select('*, exams(title)')
+        .order('submitted_at', { ascending: false });
+      if (error) throw error;
+      setExamSubmissions(data || []);
+    } catch (err) {
+      console.error('Error fetching submissions:', err);
+    }
+  };
+
+  const handleDeleteExamSubmission = async (id: string) => {
+    if (!confirm('Are you sure you want to allow a retest for this student? This will delete their current record permanently.')) return;
+    try {
+      const { error } = await supabase.from('exam_submissions').delete().eq('id', id);
+      if (error) throw error;
+      toast({ title: "Retest Enabled", description: "Submission record removed successfully." });
+      fetchExamSubmissions();
+    } catch (err) {
+      console.error('Error deleting submission:', err);
+      toast({ title: "Error", description: "Failed to remove submission.", variant: "destructive" });
+    }
+  };
+
+  const exportResultsToCSV = () => {
+    const filtered = examSubmissions.filter((s: any) => examResultsFilter === 'all' || s.exam_id === examResultsFilter);
+    if (filtered.length === 0) {
+      toast({ title: "No data", description: "Nothing to export based on current filter.", variant: "destructive" });
+      return;
+    }
+
+    // Helper to escape values for CSV (handles commas and quotes)
+    const escapeCSV = (val: any) => {
+      const str = String(val ?? "");
+      if (str.includes(",") || str.includes("\"") || str.includes("\n") || str.includes("\r")) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
+
+    const headers = [
+      "Student Name",
+      "Email Address",
+      "Roll Number",
+      "Student Phone",
+      "Father Name",
+      "Father Phone",
+      "Exam Title",
+      "Score Obtained",
+      "Total Possible",
+      "Percentage",
+      "Total Violations",
+      "Time Spent",
+      "Status",
+      "Submission Date"
+    ];
+
+    const rows = filtered.map((s: any) => {
+      const userProfile = allUsers.find(u => u.id === s.user_id || u.firebase_uid === s.user_id);
+      
+      const nameParts = s.student_name?.match(/^(.*) \((.*)\)$/);
+      const displayName = nameParts ? nameParts[1] : s.student_name;
+      const extractedEmail = nameParts ? nameParts[2] : null;
+      const emailValue = extractedEmail || userProfile?.email || 'N/A';
+
+      return [
+        escapeCSV(displayName),
+        escapeCSV(emailValue),
+        escapeCSV(s.roll_number),
+        escapeCSV(s.student_phone),
+        escapeCSV(s.father_name),
+        escapeCSV(s.father_phone),
+        escapeCSV(s.exams?.title || 'Unknown'),
+        escapeCSV(s.score),
+        escapeCSV(s.total_marks),
+        escapeCSV(s.total_marks > 0 ? `${Math.round((s.score / s.total_marks) * 100)}%` : '0%'),
+        escapeCSV(s.violations),
+        escapeCSV(`${Math.floor((s.time_used_seconds || 0) / 60)}m ${(s.time_used_seconds || 0) % 60}s`),
+        escapeCSV(s.status),
+        escapeCSV(s.submitted_at ? format(new Date(s.submitted_at), 'PP p') : '-')
+      ];
+    });
+
+    // Add UTF-8 BOM for Excel compatibility
+    const BOM = "\ufeff";
+    const csvContent = BOM + [headers.map(escapeCSV), ...rows].map(r => r.join(',')).join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `Exam_Results_${format(new Date(), 'yyyy-MM-dd')}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast({ title: "Export Success", description: "Professional report has been generated and downloaded." });
+  };
+
+  const handleSaveExam = async () => {
+    setIsSaving(true);
+    const safetyTimeout = setTimeout(() => {
+      setIsSaving(false);
+      toast({ title: 'Sync Timeout', description: 'Exam save is taking too long. Please try again.', variant: 'destructive' });
+    }, 15000);
+
+    try {
+      if (editingExam) {
+        const { error } = await (supabase as any).from('exams').update({ ...examForm, updated_at: new Date().toISOString() }).eq('id', editingExam.id);
+        if (error) throw error;
+        toast({ title: 'Exam updated!' });
+      } else {
+        const { error } = await (supabase as any).from('exams').insert({ ...examForm, is_active: true });
+        if (error) throw error;
+        toast({ title: 'Exam created!' });
+      }
+      setExamDialogOpen(false);
+      setEditingExam(null);
+      setExamForm({ title: '', description: '', duration_minutes: 30, max_violations: 2 });
+      await fetchExamsList();
+    } catch (e: any) { toast({ title: 'Error', description: e.message, variant: 'destructive' }); }
+    finally {
+      clearTimeout(safetyTimeout);
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteExam = async (id: string) => {
+    if (!confirm('Delete this exam and ALL its questions?')) return;
+    try {
+      const { error } = await (supabase as any).from('exams').delete().eq('id', id);
+      if (error) throw error;
+      toast({ title: 'Exam deleted' });
+      await fetchExamsList();
+    } catch (e: any) { toast({ title: 'Error', description: e.message, variant: 'destructive' }); }
+  };
+
+  const handleSaveExamQuestion = async () => {
+    if (!selectedExamForQuestions) {
+      toast({ title: 'Select an exam first', variant: 'destructive' });
+      return;
+    }
+
+    setIsSaving(true);
+
+    // Safety timeout: reset button after 20 seconds if DB hangs for any reason
+    const safetyTimeout = setTimeout(() => {
+      setIsSaving(false);
+      console.warn('[AdminDashboard] Saving question timed out');
+      toast({ title: 'Sync Timeout', description: 'Database response took too long. Check your connection.', variant: 'destructive' });
+    }, 20000);
+
+    try {
+      const payload = {
+        exam_id: selectedExamForQuestions,
+        question: examQuestionForm.question,
+        question_type: examQuestionForm.question_type,
+        options: examQuestionForm.question_type === 'mcq' ? examQuestionForm.options.filter(o => o.trim()) : [],
+        // FIX: Always save correct_answer if provided (needed for paragraph/code auto-grading)
+        correct_answer: examQuestionForm.correct_answer || null,
+        marks: examQuestionForm.marks,
+        sort_order: (examQuestions || []).filter(q => q.exam_id === selectedExamForQuestions).length,
+      };
+
+      console.log('[AdminDashboard] Attempting to save question:', payload);
+
+      const { data, error } = await (supabase as any)
+        .from('exam_questions')
+        .insert(payload)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast({ title: 'Question added!' });
+
+      // OPTIMISTIC UPDATE: Add to local state
+      if (data) {
+        setExamQuestions(prev => [{
+          ...data,
+          exams: { title: (examsList || []).find(e => e.id === selectedExamForQuestions)?.title || 'Exam' }
+        }, ...prev]);
+      }
+
+      setExamQuestionDialogOpen(false);
+      setExamQuestionForm({ question: '', question_type: 'mcq', options: ['', '', '', ''], correct_answer: '', marks: 5 });
+
+      // Refresh list to update question counts in the background
+      fetchExamsList();
+    } catch (e: any) {
+      console.error('[AdminDashboard] Save error details:', e);
+      toast({ title: 'Error Saving Question', description: e.message || "Failed to save question to database", variant: 'destructive' });
+    } finally {
+      clearTimeout(safetyTimeout);
+      setIsSaving(false);
+    }
+  };
+
+  const handleUpdateScore = async () => {
+    if (!selectedSubForGrading) return;
+    setIsSaving(true);
+    try {
+      const { error } = await (supabase as any)
+        .from('exam_submissions')
+        .update({ score: manualScore })
+        .eq('id', selectedSubForGrading.id);
+
+      if (error) throw error;
+
+      toast({ title: 'Score updated successfully!' });
+      setManualGradeDialogOpen(false);
+      fetchExamSubmissions();
+    } catch (e: any) {
+      toast({ title: 'Error', description: e.message, variant: 'destructive' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteExamQuestion = async (id: string) => {
+
+    try {
+      const { error } = await (supabase as any).from('exam_questions').delete().eq('id', id);
+      if (error) throw error;
+      toast({ title: 'Question deleted' });
+      await fetchExamQuestions();
+    } catch (e: any) { toast({ title: 'Error', description: e.message, variant: 'destructive' }); }
+  };
+
+  const handleToggleExamActive = async (id: string, currentState: boolean) => {
+    try {
+      const { error } = await (supabase as any).from('exams').update({ is_active: !currentState }).eq('id', id);
+      if (error) throw error;
+      toast({ title: !currentState ? 'Exam activated' : 'Exam deactivated' });
+      await fetchExamsList();
+    } catch (e: any) { toast({ title: 'Error', description: e.message, variant: 'destructive' }); }
+  };
+
+  const fetchTabData = async (tab: string) => {
+    switch (tab) {
+      case 'events': await fetchEvents(); break;
+      case 'projects': await fetchProjects(); break;
+      case 'internships': await fetchInternships(); break;
+      case 'social': await Promise.all([fetchSocialLinks(), fetchPolls()]); break;
+      case 'submissions': await fetchTaskSubmissions(); break;
+      case 'tasks': await fetchCodingTasks(); break;
+      case 'users': await fetchUsers(); break;
+      case 'admins': await fetchAdminUsers(); break;
+      case 'attendance': await fetchRegistrations(); break;
+      case 'messages': await fetchMessages(); break;
+      case 'qrscan': await fetchRegistrations(); break;
+      case 'sip_attendance': await fetchSipAttendance(); break;
+      case 'test_questions': await Promise.all([fetchExamsList(), fetchExamQuestions()]); break;
+      case 'test_results': await Promise.all([fetchExamsList(), fetchExamSubmissions()]); break;
+    }
+  };
+
+  // Initial load: only fetch data for the default active tab
+  useEffect(() => {
+    const initLoad = async () => {
+      setIsLoading(true);
+      await fetchTabData(activeTab);
+      setLoadedTabs(new Set([activeTab]));
+      setIsLoading(false);
+    };
+    initLoad();
+  }, []);
+
+  // Lazy load tab data when switching tabs
+  useEffect(() => {
+    if (!loadedTabs.has(activeTab) && loadedTabs.size > 0) {
+      const loadTab = async () => {
+        setIsLoading(true);
+        await fetchTabData(activeTab);
+        setLoadedTabs(prev => new Set([...prev, activeTab]));
+        setIsLoading(false);
+      };
+      loadTab();
+    }
+  }, [activeTab]);
+
+  const fetchAllData = async () => {
+    setIsLoading(true);
+    await Promise.all([
+      fetchEvents(),
+      fetchProjects(),
+      fetchInternships(),
+      fetchPolls(),
+      fetchSocialLinks(),
+      fetchMessages(),
+      fetchCodingTasks(),
+      fetchTaskSubmissions(),
+      fetchAdminUsers(),
+      fetchUsers(),
+      fetchRegistrations(),
+      fetchSipAttendance()
+    ]);
+    setLoadedTabs(new Set(['events', 'projects', 'internships', 'social', 'submissions', 'tasks', 'users', 'admins', 'attendance', 'messages', 'qrscan', 'sip_attendance']));
+    setIsLoading(false);
+  };
+
+  const fetchEvents = async () => {
+    try {
+      // Simple fetch without per-event counts to improve performance
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(20); // Limit to 20 most recent
+
+      if (error) throw error;
+
+      // Map to include default values for optional fields
+      const eventsWithDefaults = (data || []).map((event: any) => ({
+        ...event,
+        photos: event.photos || null,
+        videos: event.videos || null
+      }));
+
+      setEvents(eventsWithDefaults);
+    } catch (error: any) {
+      console.error('Error fetching events:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to load events",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const fetchProjects = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      if (error) throw error;
+      setProjects(data || []);
+    } catch (error: any) {
+      console.error('Error fetching projects:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to load projects",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const fetchInternships = async () => {
+    try {
+      const { data, error } = await (supabase as any)
+        .from('internships')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      if (error) {
+        console.error('Error fetching internships:', error);
+        setInternships([]);
+        return;
+      }
+
+      setInternships(data || []);
+    } catch (error: any) {
+      console.error('Error fetching internships:', error);
+      setInternships([]);
+    }
+  };
+
+  const fetchPolls = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('polls')
+        .select('*, events(title)')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setPolls(data || []);
+    } catch (error: any) {
+      console.error('Error fetching polls:', error);
+    }
+  };
+
+  const fetchSocialLinks = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('social_links')
+        .select('*')
+        .order('display_order', { ascending: true });
+
+      if (error) throw error;
+      setSocialLinks(data || []);
+    } catch (error: any) {
+      console.error('Error fetching social links:', error);
+    }
+  };
+
+  const fetchMessages = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('contact_messages')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      const activeMessages = (data || []).filter(msg => msg.message !== '[DELETED]');
+      setMessages(activeMessages);
+    } catch (error: any) {
+      console.error('Error fetching messages:', error);
+    }
+  };
+
+  const fetchCodingTasks = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('coding_tasks' as any)
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        if (error.code === 'PGRST204' || error.message.includes('not found')) {
+          console.warn('Coding tasks table missing. You need to run the SQL migration.');
+          setCodingTasks([]);
+          return;
+        }
+        throw error;
+      }
+      setCodingTasks(data || []);
+    } catch (error: any) {
+      console.error('Error fetching tasks:', error);
+    }
+  };
+
+  const fetchTaskSubmissions = async () => {
+    try {
+      console.log("[Admin] Fetching task submissions...");
+
+      // 1. Fetch submissions first (no joins to avoid schema cache issues)
+      const [
+        { data: submissions, error: subError },
+        { data: tasks },
+        { data: profiles },
+        { data: userRegistrations }
+      ] = await Promise.all([
+        supabase.from('task_submissions' as any).select('*').order('submitted_at', { ascending: false }).limit(2000),
+        supabase.from('coding_tasks' as any).select('id, title').limit(100),
+        supabase.from('profiles').select('id, full_name, email, firebase_uid, is_firebase_user').limit(2000),
+        supabase.from('user_registrations').select('user_id, full_name, email, year, section, department, college, phone').limit(2000)
+      ]);
+
+      // 4. Calculate total points per user
+      const userPointsMap: Record<string, number> = {};
+      submissions.forEach((sub: any) => {
+        if (sub.status === 'approved' && sub.points_awarded) {
+          userPointsMap[sub.user_id] = (userPointsMap[sub.user_id] || 0) + sub.points_awarded;
+        }
+      });
+
+      // 5. Map everything together manually
+      const mappedSubmissions = submissions.map((sub: any) => {
+        const task = tasks?.find(t => t.id === sub.task_id);
+        const profile = profiles?.find(p => p.id === sub.user_id || p.firebase_uid === sub.user_id);
+        const userReg = userRegistrations?.find(r => r.user_id === sub.user_id);
+
+        // Use profile name, then user_registrations name, then fallback
+        const displayName = profile?.full_name || userReg?.full_name || 'Anonymous';
+        const displayEmail = profile?.email || userReg?.email || 'No Email';
+
+        return {
+          ...sub,
+          coding_tasks: { title: task?.title || 'Unknown Task' },
+          profiles: {
+            full_name: displayName,
+            email: displayEmail,
+            year: userReg?.year || '',
+            section: userReg?.section || '',
+            department: userReg?.department || '',
+            college: userReg?.college || '',
+            phone: userReg?.phone || ''
+          },
+          total_user_points: userPointsMap[sub.user_id] || 0
+        };
+      });
+
+      console.log("[Admin] Successfully mapped submissions:", mappedSubmissions.length);
+      setTaskSubmissions(mappedSubmissions);
+    } catch (error: any) {
+      console.error('Error fetching submissions:', error);
+    }
+  };
+
+  const fetchAdminUsers = async () => {
+    try {
+      // Fetch all user roles directly but filter specifically for admins
+      const [
+        { data: rolesData, error: rolesError },
+        { data: profilesData }
+      ] = await Promise.all([
+        supabase.from('user_roles').select('*').in('role', ['admin', 'admin_mentor']).order('created_at', { ascending: false }),
+        supabase.from('profiles').select('id, email, full_name')
+      ]);
+
+      // Map to include profiles details safely
+      const adminsWithDetails = (rolesData || []).map((role: any) => {
+        const profile = profilesData?.find(p => p.id === role.user_id);
+        const isAdminHardcoded = ['jashwanthsingh0707@gmail.com', 'jashwanth038@gmail.com'].includes((profile?.email || '').toLowerCase());
+
+        return {
+          id: role.id,
+          // If the profile email matches root, strictly mark as super_admin computationally
+          email: profile?.email || profile?.full_name || role.user_id,
+          role: isAdminHardcoded ? 'super_admin' : role.role,
+          created_at: role.created_at,
+          user_id: role.user_id,
+        };
+      });
+
+      // Add hardcoded super admins if they aren't already fetched
+      const hardcodedAdmins = ['jashwanthsingh0707@gmail.com', 'jashwanth038@gmail.com'];
+      hardcodedAdmins.forEach(email => {
+        if (!adminsWithDetails.find(a => (a.email || '').toLowerCase() === email.toLowerCase())) {
+          adminsWithDetails.push({
+            id: 'root-' + email,
+            email: email,
+            role: 'super_admin',
+            created_at: new Date().toISOString(),
+            user_id: 'root'
+          });
+        }
+      });
+
+      setAdminUsers(adminsWithDetails);
+    } catch (error: any) {
+      console.error('Error fetching admin users:', error);
+    }
+  };
+
+  const fetchUsers = async () => {
+    try {
+      // Fetch profiles, user registrations, and task submissions concurrently
+      const [
+        { data: profilesData, error: profilesError },
+        { data: userRegistrations },
+        { data: submissionsData }
+      ] = await Promise.all([
+        supabase.from('profiles').select('*').order('created_at', { ascending: false }).limit(2000),
+        supabase.from('user_registrations').select('*').limit(2000),
+        supabase.from('task_submissions').select('user_id, points_awarded, status').limit(2000)
+      ]);
+
+      // Calculate total points per user
+      const userPointsMap: Record<string, number> = {};
+      (submissionsData || []).forEach((sub: any) => {
+        if (sub.status === 'approved' && sub.points_awarded) {
+          userPointsMap[sub.user_id] = (userPointsMap[sub.user_id] || 0) + sub.points_awarded;
+        }
+      });
+
+      // Merge profiles and user_registrations uniquely
+      const allUniqueUsersMap = new Map();
+
+      // Add from profiles
+      (profilesData || []).forEach((p: any) => {
+        allUniqueUsersMap.set(p.id, {
+          id: p.id,
+          full_name: p.full_name,
+          email: p.email,
+          firebase_uid: p.firebase_uid,
+          is_firebase_user: p.is_firebase_user
+        });
+      });
+
+      // Add from registrations if missing
+      (userRegistrations || []).forEach((r: any) => {
+        if (!allUniqueUsersMap.has(r.user_id)) {
+          allUniqueUsersMap.set(r.user_id, {
+            id: r.user_id,
+            full_name: r.full_name || r.email?.split('@')[0],
+            email: r.email,
+            firebase_uid: r.user_id,
+            is_firebase_user: true
+          });
+        }
+      });
+
+      // Add points to each unified user
+      const unifiedUsers = Array.from(allUniqueUsersMap.values());
+
+      const usersWithPoints = unifiedUsers.map((user: any) => ({
+        ...user,
+        total_points: userPointsMap[user.id] || 0,
+        has_submissions: !!userPointsMap[user.id]
+      }));
+
+      // Sort by points (highest first), then by name
+      usersWithPoints.sort((a: any, b: any) => {
+        if (b.total_points !== a.total_points) {
+          return b.total_points - a.total_points;
+        }
+        return (a.full_name || '').localeCompare(b.full_name || '');
+      });
+
+      setAllUsers(usersWithPoints);
+    } catch (error: any) {
+      console.error('Error fetching users:', error);
+    }
+  };
+
+  const fetchRegistrations = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('event_registrations')
+        .select('*, events(title)')
+        .order('scanned_at', { ascending: false, nullsFirst: false })
+        .limit(1000);
+
+
+      if (error) throw error;
+      setEventRegistrations(data || []);
+    } catch (error: any) {
+      console.error('Error fetching registrations:', error);
+    }
+  };
+
+  // SIP Attendance System
+  const fetchSipAttendance = async () => {
+    try {
+      // Fetch events marked as SIP
+      const { data: sipEventsData, error: sipError } = await (supabase as any)
+        .from('events')
+        .select('id, title, date')
+        .eq('is_sip', true)
+        .order('date', { ascending: false })
+        .limit(50);
+
+      if (sipError) {
+        console.warn('is_sip column might not exist yet:', sipError.message);
+        setSipEvents([]);
+        setSipAttendanceRecords([]);
+        return;
+      }
+
+      setSipEvents(sipEventsData || []);
+
+      if (!sipEventsData || sipEventsData.length === 0) {
+        setSipAttendanceRecords([]);
+        return;
+      }
+
+      const sipEventIds = sipEventsData.map((e: any) => e.id);
+
+      // Fetch registrations for SIP events
+      // We explicitly select the new columns to avoid PostgREST schema cache issues with '*'
+      const { data: regs, error: regError } = await (supabase as any)
+        .from('event_registrations')
+        .select(`
+          id, event_id, user_id, full_name, roll_number, year, created_at, 
+          sip_approved, sip_approved_at, sip_denied, event_title, event_date,
+          events(title, date)
+        `)
+        .in('event_id', sipEventIds)
+        .order('created_at', { ascending: false })
+        .limit(2000);
+
+      if (regError) {
+        if (regError.message.includes('column') || regError.code === 'PGRST100') {
+          console.warn('Schema cache might be stale, attempting fallback fetch');
+          // Fallback to * if explicit columns fail
+          const { data: fallbackRegs } = await (supabase as any)
+            .from('event_registrations')
+            .select('*, events(title, date)')
+            .in('event_id', sipEventIds)
+            .limit(2000);
+          setSipAttendanceRecords(fallbackRegs || []);
+          return;
+        }
+        throw regError;
+      }
+      setSipAttendanceRecords(regs || []);
+    } catch (error: any) {
+      console.error('Error fetching SIP attendance:', error);
+      toast({ title: 'Error', description: 'Failed to load SIP attendance data', variant: 'destructive' });
+    }
+  };
+
+  const handleSipApprove = async (registrationId: string) => {
+    try {
+      setIsSaving(true);
+      const client = supabaseAdmin || supabase;
+      const { error } = await (client as any)
+        .from('event_registrations')
+        .update({
+          sip_approved: true,
+          sip_denied: false,
+          sip_approved_at: new Date().toISOString()
+        })
+        .eq('id', registrationId);
+
+      if (error) throw error;
+
+      const updateFn = (r: any) => r.id === registrationId ? { ...r, sip_approved: true, sip_denied: false, sip_approved_at: new Date().toISOString() } : r;
+      setSipAttendanceRecords(prev => prev.map(updateFn));
+      setEventRegistrations(prev => prev.map(updateFn));
+
+      toast({ title: 'Approved', description: 'SIP attendance approved permanently.' });
+      await Promise.all([fetchSipAttendance(), fetchRegistrations()]);
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSipDeny = async (registrationId: string) => {
+    try {
+      const record = sipAttendanceRecords.find(r => r.id === registrationId);
+      if (record?.sip_approved) {
+        toast({ title: 'Cannot Modify', description: 'Approved SIP attendance is permanent and cannot be changed.', variant: 'destructive' });
+        return;
+      }
+      setIsSaving(true);
+      const client = supabaseAdmin || supabase;
+      const { error } = await (client as any)
+        .from('event_registrations')
+        .update({ sip_denied: true, sip_approved: false })
+        .eq('id', registrationId);
+
+      if (error) throw error;
+
+      const updateFn = (r: any) => r.id === registrationId ? { ...r, sip_denied: true, sip_approved: false } : r;
+      setSipAttendanceRecords(prev => prev.map(updateFn));
+      setEventRegistrations(prev => prev.map(updateFn));
+
+      toast({ title: 'Denied', description: 'SIP attendance has been denied.' });
+      await Promise.all([fetchSipAttendance(), fetchRegistrations()]);
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handlePromoteToAdmin = async (userId: string, email: string) => {
+    if (!confirm(`Promote ${email} to admin?`)) return;
+
+    try {
+      // First check if user already has a role
+      const { data: existingRole } = await supabase
+        .from('user_roles')
+        .select('id')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (existingRole) {
+        const { error } = await supabase
+          .from('user_roles')
+          .update({ role: 'admin' })
+          .eq('user_id', userId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('user_roles')
+          .insert([{ user_id: userId, role: 'admin' }]);
+        if (error) throw error;
+      }
+
+      toast({ title: "Success", description: `${email} is now an admin` });
+      fetchAdminUsers();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCreateAdmin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+
+    try {
+      if (!adminForm.email || !adminForm.password) {
+        toast({
+          title: "Missing Fields",
+          description: "Please provide both email and password.",
+          variant: "destructive",
+        });
+        setIsSaving(false);
+        return;
+      }
+
+      if (adminForm.password.length < 6) {
+        toast({
+          title: "Weak Password",
+          description: "Password must be at least 6 characters.",
+          variant: "destructive",
+        });
+        setIsSaving(false);
+        return;
+      }
+
+      // First check if user already exists in our system
+      const targetUser = allUsers.find(u => u.email?.toLowerCase() === adminForm.email.toLowerCase());
+      let userId = targetUser?.id;
+
+      // If user doesn't exist, create them via supabaseAdmin
+      if (!targetUser) {
+        if (!supabaseAdmin) {
+          toast({
+            title: "Setup Required",
+            description: "To create new admin users, please add VITE_SUPABASE_SERVICE_ROLE_KEY to your .env",
+            variant: "destructive",
+          });
+          setIsSaving(false);
+          return;
+        }
+
+        // Create user in Supabase Auth
+        const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+          email: adminForm.email,
+          password: adminForm.password,
+          email_confirm: true,
+        });
+
+        if (createError) {
+          // If user already exists in auth but not in our profiles, get their ID
+          if (createError.message?.includes('already been registered') || createError.message?.includes('already exists')) {
+            // Try to find via admin API
+            const { data: listData } = await supabaseAdmin.auth.admin.listUsers();
+            const existingAuthUser = listData?.users?.find((u: any) => u.email?.toLowerCase() === adminForm.email.toLowerCase());
+            if (existingAuthUser) {
+              userId = existingAuthUser.id;
+            } else {
+              throw createError;
+            }
+          } else {
+            throw createError;
+          }
+        } else {
+          userId = newUser?.user?.id;
+        }
+
+        if (!userId) {
+          throw new Error('Failed to create or find user. Please try again.');
+        }
+
+        // Create profile for the new user
+        await supabase.from('profiles').upsert({
+          id: userId,
+          email: adminForm.email,
+          full_name: adminForm.email.split('@')[0],
+        }, { onConflict: 'id' });
+      }
+
+      // Now assign the admin_mentor role
+      const { data: existingRole, error: fetchError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (fetchError) throw fetchError;
+
+      let roleError = null;
+      if (existingRole) {
+        const result = await supabase
+          .from('user_roles')
+          .update({ role: 'admin_mentor' })
+          .eq('user_id', userId);
+        roleError = result.error;
+      } else {
+        const result = await supabase
+          .from('user_roles')
+          .insert([{ user_id: userId, role: 'admin_mentor' }]);
+        roleError = result.error;
+      }
+
+      if (roleError) throw roleError;
+
+      toast({ title: "Success", description: `${adminForm.email} has been added as admin_mentor` });
+      setAdminDialogOpen(false);
+      setAdminForm({ email: '', password: '', role: 'admin_mentor' });
+      fetchAdminUsers();
+      fetchUsers();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleRemoveAdmin = async (adminUser: any) => {
+    try {
+      // Remove from user_roles table
+      const { error } = await supabase
+        .from('user_roles')
+        .delete()
+        .eq('id', adminUser.id);
+
+      if (error) throw error;
+
+      toast({ title: "Success", description: "Admin privileges have been revoked." });
+      fetchAdminUsers();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteUser = async (userId: string, userEmail: string) => {
+    if (!confirm(`Are you sure you want to permanently DELETE user ${userEmail}? This cannot be undone!`)) return;
+
+    if (!supabaseAdmin) {
+      toast({
+        title: "Setup Required",
+        description: "To delete users, please add VITE_SUPABASE_SERVICE_ROLE_KEY to your .env",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+
+      // Delete from Supabase Auth
+      const { error: authError } = await (supabaseAdmin as any).auth.admin.deleteUser(userId);
+      if (authError) throw authError;
+
+      // Delete from user_roles table
+      const { error: roleError } = await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', userId);
+      if (roleError) throw roleError;
+
+      // Delete from profiles table if exists
+      await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', userId);
+
+      toast({ title: "Success", description: `User ${userEmail} has been permanently deleted` });
+      fetchAdminUsers();
+      fetchUsers();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteAdminUser = async (adminUser: any) => {
+    if (!confirm(`Permanently delete user ${adminUser.email}? This cannot be undone.`)) return;
+
+    try {
+      // Delete from user_roles first
+      await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', adminUser.user_id);
+
+      // Delete user from auth using admin client
+      const { error } = await supabaseAdmin.auth.admin.deleteUser(adminUser.user_id);
+
+      if (error) throw error;
+
+      toast({ title: "Success", description: "User deleted permanently" });
+      fetchAdminUsers();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleTaskDialog = (task?: CodingTask) => {
+    if (task) {
+      setEditingTask(task);
+      setEventTaskForm({
+        title: task.title,
+        description: task.description,
+        points: task.points,
+      });
+    } else {
+      setEditingTask(null);
+      setEventTaskForm({
+        title: '',
+        description: '',
+        points: 10,
+      });
+    }
+    setTaskDialogOpen(true);
+  };
+
+  const handleReviewDialog = (submission: TaskSubmission) => {
+    setSelectedSubmission(submission);
+    setReviewDialogOpen(true);
+  };
+
+  const saveTask = async () => {
+    if (!taskForm.title || !taskForm.description) {
+      toast({ title: 'Validation Error', description: 'Please fill in all required fields', variant: 'destructive' });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      if (editingTask) {
+        const { error } = await supabase
+          .from('coding_tasks' as any)
+          .update({
+            title: taskForm.title,
+            description: taskForm.description,
+            points: taskForm.points,
+          })
+          .eq('id', editingTask.id);
+
+        if (error) throw error;
+        toast({ title: 'Task Updated', description: 'The task has been updated successfully' });
+      } else {
+        const { error } = await supabase
+          .from('coding_tasks' as any)
+          .insert({
+            title: taskForm.title,
+            description: taskForm.description,
+            points: taskForm.points,
+            // Removed created_by as it might be missing in the schema
+          });
+
+        if (error) throw error;
+        toast({ title: 'Task Created', description: 'A new task has been created successfully' });
+      }
+
+      setTaskDialogOpen(false);
+      fetchCodingTasks();
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const deleteTask = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this task?')) return;
+
+    try {
+      const { error } = await supabase.from('coding_tasks' as any).delete().eq('id', id);
+      if (error) throw error;
+      toast({ title: 'Task Deleted', description: 'Task removed successfully' });
+      fetchCodingTasks();
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    }
+  };
+
+  const reviewSubmission = async (status: 'approved' | 'denied') => {
+    if (!selectedSubmission) return;
+
+    setIsSaving(true);
+    try {
+      const points = status === 'approved' ? codingTasks.find(t => t.id === selectedSubmission.task_id)?.points || 0 : 0;
+
+      const { error } = await supabase
+        .from('task_submissions' as any)
+        .update({
+          status,
+          points_awarded: points,
+          // Removed reviewed_by/reviewed_at if they don't exist
+        })
+        .eq('id', selectedSubmission.id);
+
+      if (error) throw error;
+      toast({ title: 'Submission Reviewed', description: `Task has been ${status}` });
+      setReviewDialogOpen(false);
+      fetchTaskSubmissions();
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const deleteSubmission = async () => {
+    if (!selectedSubmission) return;
+
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('task_submissions' as any)
+        .delete().eq('id', selectedSubmission.id);
+
+      if (error) throw error;
+      toast({ title: 'Submission Deleted', description: 'The answer has been permanently deleted' });
+      setReviewDialogOpen(false);
+      fetchTaskSubmissions();
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleClearExamSubmissions = async () => {
+    const confirmMsg = examResultsFilter === 'all'
+      ? 'Are you sure you want to clear ALL test submissions for ALL exams?'
+      : 'Are you sure you want to clear all submissions for this specific exam?';
+
+    if (!confirm(confirmMsg)) return;
+
+    setIsLoading(true);
+    try {
+      let query = supabaseAdmin.from('exam_submissions');
+
+      if (examResultsFilter !== 'all') {
+        query = query.delete().eq('exam_id', examResultsFilter);
+      } else {
+        query = query.delete().neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+      }
+
+      const { error } = await query;
+      if (error) throw error;
+
+      toast({ title: 'Submissions Cleared', description: 'Selected submissions have been permanently removed.' });
+      fetchExamSubmissions();
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleQRVerify = async (qrCode: string) => {
+    setIsVerifying(true);
+    setQrScanError('');
+    console.log('Verifying QR code:', qrCode);
+    try {
+      // Accept any QR code format - try multiple approaches
+      let trimmedCode = qrCode.trim();
+
+      // Handle EVENT: prefix from generated QR codes
+      if (trimmedCode.startsWith('EVENT:')) {
+        trimmedCode = trimmedCode.replace('EVENT:', '');
+      }
+
+      console.log('Trimmed QR:', trimmedCode);
+
+      // If it's empty
+      if (!trimmedCode) {
+        setQrScanError('QR code is empty');
+        setScannedQRResult(null);
+        return;
+      }
+
+      // First, try to look up by ID directly (QR contains registration ID)
+      let registration: any = null;
+
+      try {
+        // First try: look up by ID directly (most efficient)
+        const idResult = await (supabase as any)
+          .from('event_registrations')
+          .select('*, events(title, date, location)')
+          .eq('id', trimmedCode)
+          .maybeSingle();
+
+        console.log('ID lookup result:', idResult);
+        if (idResult.data) {
+          registration = idResult.data;
+        }
+      } catch (e) {
+        console.log('ID lookup error:', e);
+      }
+
+      // Second try: look up by qr_code field
+      if (!registration) {
+        try {
+          const regResult = await (supabase as any)
+            .from('event_registrations')
+            .select('*, events(title, date, location)')
+            .eq('qr_code', trimmedCode)
+            .maybeSingle();
+
+          console.log('QR code lookup result:', regResult);
+          if (regResult.data) {
+            registration = regResult.data;
+          }
+        } catch (e) {
+          console.log('QR code lookup error:', e);
+        }
+      }
+
+      // If found in event_registrations, use that
+      if (registration) {
+        // Check if already scanned
+        const alreadyScanned = registration.scanned_at ? true : false;
+        const firstScanTime = registration.scanned_at;
+
+        // Mark as scanned (only if not already scanned)
+        if (!alreadyScanned) {
+          await (supabase as any)
+            .from('event_registrations')
+            .update({ scanned_at: new Date().toISOString() })
+            .eq('id', registration.id);
+        }
+
+        // Send to Make.com webhook
+        try {
+          await fetch('https://hook.eu1.make.com/tiv9b7rdoy8bykkgyj3gvghsduu5fvfp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              timestamp: new Date().toISOString(),
+              full_name: registration.full_name,
+              roll_number: registration.roll_number,
+              year: registration.year,
+              event_title: registration.events?.title,
+              event_id: registration.event_id,
+              qr_code: registration.qr_code,
+              already_scanned: alreadyScanned
+            })
+          });
+        } catch (webhookError) {
+          console.log('Webhook error:', webhookError);
+        }
+
+        setScannedQRResult({
+          valid: !alreadyScanned,
+          attendee: {
+            profiles: {
+              full_name: registration.full_name,
+              email: registration.roll_number || 'N/A',
+              college: registration.year
+            }
+          },
+          event: registration.events,
+          verifiedAt: alreadyScanned ? firstScanTime : new Date().toISOString(),
+          alreadyScanned: alreadyScanned,
+          firstScannedAt: firstScanTime
+        });
+        setIsVerifying(false);
+        return;
+      }
+
+      // Fall back to event_attendees table
+      let attendee: any = null;
+
+      try {
+        const qrResult = await (supabase as any)
+          .from('event_attendees')
+          .select('*, profiles(full_name, email, college)')
+          .eq('qr_code', trimmedCode)
+          .eq('rsvp_status', 'going')
+          .single();
+
+        console.log('QR lookup result:', qrResult);
+        attendee = qrResult.data;
+      } catch (e) {
+        console.log('QR lookup error:', e);
+      }
+
+      // If not found, try parsing as event_id-user_id or event_id-user_id-timestamp
+      if (!attendee) {
+        const parts = trimmedCode.split('-');
+
+        if (parts.length >= 2) {
+          // Format: event_id-user_id[-timestamp]
+          const eventId = parts[0];
+          const userId = parts[1];
+
+          console.log('Looking for event:', eventId, 'user:', userId);
+
+          try {
+            const partsResult = await (supabase as any)
+              .from('event_attendees')
+              .select('*, profiles(full_name, email, college)')
+              .eq('event_id', eventId)
+              .eq('user_id', userId)
+              .eq('rsvp_status', 'going')
+              .single();
+
+            console.log('Parts lookup result:', partsResult);
+            attendee = partsResult.data;
+          } catch (e) {
+            console.log('Parts lookup error:', e);
+          }
+        }
+      }
+
+      if (!attendee) {
+        setQrScanError('Invalid QR code - No matching registration found. Make sure the user has registered for this event.');
+        setScannedQRResult(null);
+        return;
+      }
+
+      // Get event details - use event_id from attendee if available
+      const eventIdToUse = attendee?.event_id;
+      const { data: event } = await (supabase as any)
+        .from('events')
+        .select('title, date, location')
+        .eq('id', eventIdToUse)
+        .single();
+
+      setScannedQRResult({
+        valid: true,
+        attendee,
+        event,
+        verifiedAt: new Date().toISOString()
+      });
+
+      toast({ title: "Success", description: "QR Code verified successfully!" });
+    } catch (error: any) {
+      setQrScanError(error.message || 'Failed to verify QR code');
+      setScannedQRResult(null);
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const handleLogout = () => {
+    // Fire and forget - never await this, otherwise stale tokens will freeze the UI
+    signOut().catch(e => console.warn("Background logout error:", e));
+
+    // Visually logout instantly while backend processes
+    localStorage.removeItem('sb-' + import.meta.env.VITE_SUPABASE_URL + '-auth-token');
+    window.location.href = '/';
+  };
+
+  const handleEventDialog = (event?: Event) => {
+    if (event) {
+      setEditingEvent(event);
+      const localDateTime = format(new Date(event.date), "yyyy-MM-dd'T'HH:mm");
+      setEventForm({
+        title: event.title,
+        description: event.description || '',
+        category: event.category || '',
+        datetime: localDateTime,
+        time: event.time || format(new Date(event.date), 'HH:mm'),
+        location: event.location || '',
+        organizer: event.organizer || '',
+        image_url: event.image_url || event.image || '',
+        registration_link: event.registration_link || '',
+        photos: event.photos ? event.photos.join(', ') : '',
+        videos: event.videos ? event.videos.join(', ') : '',
+        is_sip: event.is_sip || false,
+      });
+    } else {
+      setEditingEvent(null);
+      setEventForm({
+        title: '',
+        description: '',
+        category: '',
+        datetime: '',
+        time: '',
+        location: '',
+        organizer: '',
+        image_url: '',
+        registration_link: '',
+        photos: '',
+        videos: '',
+        is_sip: false,
+      });
+    }
+    setEventDialogOpen(true);
+  };
+
+  const handleEventSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+
+    // Safety timeout: reset button after 20 seconds if DB hangs for any reason
+    const safetyTimeout = setTimeout(() => {
+      setIsSaving(false);
+      console.warn('[AdminDashboard] Event submission timed out');
+      toast({ title: 'Sync Timeout', description: 'Database response took too long. Check your connection.', variant: 'destructive' });
+    }, 20000);
+
+    try {
+      let dateISO: string;
+      try {
+        if (!eventForm.datetime) throw new Error("Please provide a date and time");
+        const parsedDate = new Date(eventForm.datetime);
+        if (isNaN(parsedDate.getTime())) throw new Error("Invalid date format");
+        dateISO = parsedDate.toISOString();
+      } catch (dateErr: any) {
+        toast({ title: "Invalid Date", description: dateErr.message, variant: "destructive" });
+        setIsSaving(false);
+        clearTimeout(safetyTimeout);
+        return;
+      }
+      const photosArray = eventForm.photos ? eventForm.photos.split(',').map(url => url.trim()).filter(url => url) : [];
+      const videosArray = eventForm.videos ? eventForm.videos.split(',').map(url => url.trim()).filter(url => url) : [];
+
+      const payload = {
+        title: eventForm.title,
+        description: eventForm.description || null,
+        category: eventForm.category || null,
+        date: dateISO,
+        time: eventForm.time || null,
+        location: eventForm.location || null,
+        organizer: eventForm.organizer || null,
+        image: eventForm.image_url || null,
+        image_url: eventForm.image_url || null,
+        registration_link: eventForm.registration_link || null,
+        photos: photosArray,
+        videos: videosArray,
+        created_by: user?.id,
+        is_sip: eventForm.is_sip || false,
+      };
+
+      if (editingEvent) {
+        const { error } = await supabase
+          .from('events')
+          .update(payload)
+          .eq('id', editingEvent.id);
+        if (error) throw error;
+        toast({ title: "Success", description: "Event updated" });
+      } else {
+        const { error } = await supabase.from('events').insert([payload]);
+        if (error) throw error;
+        toast({ title: "Success", description: "Event created" });
+      }
+
+      setEventDialogOpen(false);
+      fetchEvents();
+    } catch (error: any) {
+      console.error('[AdminDashboard] Event save error:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save event. Check if the database columns exist.",
+        variant: "destructive",
+      });
+    } finally {
+      clearTimeout(safetyTimeout);
+      setIsSaving(false);
+    }
+  };
+
+  const handleEventDelete = async (id: string) => {
+    if (!confirm('Delete this event?')) return;
+
+    try {
+      const { error } = await supabase.from('events').delete().eq('id', id);
+      if (error) throw error;
+      toast({ title: "Success", description: "Event deleted" });
+      fetchEvents();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleProjectDialog = (project?: Project) => {
+    if (project) {
+      setEditingProject(project);
+      setProjectForm({
+        title: project.title,
+        description: project.description || '',
+        image_url: project.image_url || '',
+        github_url: project.github_url || '',
+        demo_url: project.demo_url || '',
+        registration_link: project.registration_link || '',
+        tags: project.tags?.join(', ') || '',
+      });
+    } else {
+      setEditingProject(null);
+      setProjectForm({
+        title: '',
+        description: '',
+        image_url: '',
+        github_url: '',
+        demo_url: '',
+        registration_link: '',
+        tags: '',
+      });
+    }
+    setProjectDialogOpen(true);
+  };
+
+  const handleProjectSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+
+    // Safety timeout: reset button after 15 seconds if DB hangs
+    const safetyTimeout = setTimeout(() => {
+      setIsSaving(false);
+      toast({ title: 'Sync Timeout', description: 'Database response took too long. Please try submitting again.', variant: 'destructive' });
+    }, 15000);
+
+    try {
+      const payload = {
+        title: projectForm.title,
+        description: projectForm.description || null,
+        image_url: projectForm.image_url || null,
+        github_url: projectForm.github_url || null,
+        demo_url: projectForm.demo_url || null,
+        registration_link: projectForm.registration_link || null,
+        tags: projectForm.tags ? projectForm.tags.split(',').map(t => t.trim()) : null,
+        created_by: user?.id,
+      };
+
+      if (editingProject) {
+        const { error } = await supabase
+          .from('projects')
+          .update(payload)
+          .eq('id', editingProject.id);
+        
+        if (error) {
+           // Help the user if it is a schema error
+           if (error.message.includes('schema cache')) {
+             throw new Error("Supabase is out of sync. Please reload schema in Supabase Dashboard UI.");
+           }
+           throw error;
+        }
+        toast({ title: "Success", description: "Project updated" });
+      } else {
+        const { error } = await supabase.from('projects').insert([payload]);
+        if (error) {
+           if (error.message.includes('schema cache')) {
+             throw new Error("BRO! Your database schema is out of sync. Go to Supabase > API > Reload Schema. For now, I have hardcoded your LLM project as a backup.");
+           }
+           throw error;
+        }
+        toast({ title: "Success", description: "Project created" });
+      }
+
+      setProjectDialogOpen(false);
+      fetchProjects();
+    } catch (error: any) {
+      console.error('[AdminDashboard] Project save error:', error);
+      toast({
+        title: "Database Error",
+        description: error.message || "Failed to save project. Check your Supabase connection.",
+        variant: "destructive",
+      });
+    } finally {
+      if (safetyTimeout) clearTimeout(safetyTimeout);
+      setIsSaving(false);
+    }
+  };
+
+  const handleProjectDelete = async (id: string) => {
+    if (!confirm('Delete this project?')) return;
+
+    try {
+      const { error } = await supabase.from('projects').delete().eq('id', id);
+      if (error) throw error;
+      toast({ title: "Success", description: "Project deleted" });
+      fetchProjects();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleInternshipDialog = (internship?: Internship) => {
+    if (internship) {
+      setEditingInternship(internship);
+      setInternshipForm({
+        title: internship.title,
+        company: internship.company,
+        description: internship.description || '',
+        image_url: internship.image_url || '',
+        internship_link: internship.internship_link || '',
+      });
+    } else {
+      setEditingInternship(null);
+      setInternshipForm({
+        title: '',
+        company: '',
+        description: '',
+        image_url: '',
+        internship_link: '',
+      });
+    }
+
+    setInternshipDialogOpen(true);
+  };
+
+  const handleInternshipSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+
+    const safetyTimeout = setTimeout(() => {
+      setIsSaving(false);
+      toast({ title: 'Sync Timeout', description: 'Database response took too long. Please try again.', variant: 'destructive' });
+    }, 15000);
+
+    try {
+      const payload = {
+        title: internshipForm.title,
+        company: internshipForm.company,
+        description: internshipForm.description || null,
+        image_url: internshipForm.image_url || null,
+        internship_link: internshipForm.internship_link || null,
+      };
+
+      if (editingInternship) {
+        const { error } = await (supabase as any)
+          .from('internships')
+          .update(payload)
+          .eq('id', editingInternship.id);
+
+        if (error) throw error;
+        toast({ title: "Success", description: "Internship updated" });
+      } else {
+        const { error } = await (supabase as any)
+          .from('internships')
+          .insert([payload]);
+
+        if (error) throw error;
+        toast({ title: "Success", description: "Internship created" });
+      }
+
+      setInternshipDialogOpen(false);
+      fetchInternships();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      clearTimeout(safetyTimeout);
+      setIsSaving(false);
+    }
+  };
+
+  const handleInternshipDelete = async (id: string) => {
+    if (!confirm('Delete this internship?')) return;
+
+    try {
+      const { error } = await (supabase as any).from('internships').delete().eq('id', id);
+      if (error) throw error;
+      toast({ title: "Success", description: "Internship deleted" });
+      fetchInternships();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Sync internships from external APIs
+  const handleSyncInternships = async () => {
+    setIsSyncingInternships(true);
+    try {
+      const internships: any[] = [];
+
+      // Fetch from Remotive API (free, no key needed)
+      try {
+        const remotiveResponse = await fetch(
+          "https://remotive.com/api/remote-jobs?category=software-dev-jobs&limit=20"
+        );
+        const remotiveData = await remotiveResponse.json();
+
+        if (remotiveData.jobs) {
+          for (const job of remotiveData.jobs.slice(0, 10)) {
+            internships.push({
+              title: job.title,
+              company: job.company_name,
+              description: job.description?.substring(0, 500) || "Remote internship opportunity",
+              image_url: null,
+              internship_link: job.url,
+            });
+          }
+        }
+      } catch (e) {
+        console.log("Remotive API error:", e);
+      }
+
+      // Add sample internships as fallback
+      if (internships.length === 0) {
+        internships.push(
+          {
+            title: "Software Development Intern",
+            company: "Google",
+            description: "Join Google as a software development intern. Work on real projects with experienced mentors.",
+            image_url: "https://images.unsplash.com/photo-1667372393119-3d4c48d07fc9?w=400",
+            internship_link: "https://careers.google.com/internships/",
+          },
+          {
+            title: "Frontend Development Internship",
+            company: "Meta",
+            description: "Meta offers internship programs for frontend developers. Build products used by billions.",
+            image_url: "https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=400",
+            internship_link: "https://www.metacareers.com/internships/",
+          },
+          {
+            title: "Full Stack Developer Intern",
+            company: "Amazon",
+            description: "Amazon Web Services internship for full stack developers. Scale cloud solutions globally.",
+            image_url: "https://images.unsplash.com/photo-1523474253046-8cd2748b5fd2?w=400",
+            internship_link: "https://www.amazon.jobs/en/landing_pages/internships/",
+          },
+          {
+            title: "Machine Learning Internship",
+            company: "Microsoft",
+            description: "Work on cutting-edge AI and ML projects at Microsoft Research.",
+            image_url: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=400",
+            internship_link: "https://careers.microsoft.com/students/internship",
+          },
+          {
+            title: "Cloud Engineering Intern",
+            company: "IBM",
+            description: "Learn cloud computing and enterprise solutions at IBM.",
+            image_url: "https://images.unsplash.com/photo-1551434678-e076c223a692?w=400",
+            internship_link: "https://www.ibm.com/careers/internship",
+          }
+        );
+      }
+
+      // Insert into database
+      for (const internship of internships) {
+        const { error } = await (supabase as any)
+          .from('internships')
+          .upsert({
+            title: internship.title,
+            company: internship.company,
+            description: internship.description,
+            image_url: internship.image_url,
+            internship_link: internship.internship_link,
+          }, { onConflict: 'title,company' });
+
+        if (error) {
+          console.error('Error inserting internship:', error);
+        }
+      }
+
+      toast({
+        title: "Success",
+        description: `Successfully synced ${internships.length} internships`
+      });
+      fetchInternships();
+    } catch (error: any) {
+      console.error('Sync error:', error);
+      toast({
+        title: "Sync Failed",
+        description: error.message || "Failed to sync internships",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSyncingInternships(false);
+    }
+  };
+
+  const handlePollDialog = () => {
+    setPollForm({ event_id: '', question: '', registration_link: '', options: ['', ''] });
+    setPollDialogOpen(true);
+  };
+
+  const handlePollDelete = async (id: string) => {
+    if (!confirm('Delete this poll and all its options?')) return;
+    try {
+      const { error } = await supabase.from('polls').delete().eq('id', id);
+      if (error) throw error;
+      toast({ title: "Success", description: "Poll deleted" });
+      fetchPolls();
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const handlePollSubmit = async (e: React.FormEvent) => {
+
+    e.preventDefault();
+    setIsSaving(true);
+
+    try {
+      const { data: pollData, error: pollError } = await supabase
+        .from('polls')
+        .insert([{
+          event_id: pollForm.event_id,
+          question: pollForm.question,
+          registration_link: pollForm.registration_link || null,
+        }])
+        .select()
+        .single();
+
+      if (pollError) throw pollError;
+
+      const optionsData = pollForm.options
+        .filter(opt => opt.trim())
+        .map(option_text => ({
+          poll_id: pollData.id,
+          option_text,
+          votes: 0,
+        }));
+
+      const { error: optionsError } = await supabase
+        .from('poll_options')
+        .insert(optionsData);
+
+      if (optionsError) throw optionsError;
+
+      toast({ title: "Success", description: "Poll created" });
+      setPollDialogOpen(false);
+      setPollForm({ event_id: '', question: '', registration_link: '', options: ['', ''] });
+      fetchPolls();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSocialDialog = (social?: SocialLink) => {
+    if (social) {
+      setEditingSocial(social);
+      setSocialForm({
+        platform: social.platform,
+        url: social.url,
+        icon: social.icon || '',
+        display_order: social.display_order,
+        is_active: social.is_active,
+      });
+    } else {
+      setEditingSocial(null);
+      setSocialForm({
+        platform: '',
+        url: '',
+        icon: '',
+        display_order: 0,
+        is_active: true,
+      });
+    }
+    setSocialDialogOpen(true);
+  };
+
+  const handleSocialSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+
+    const safetyTimeout = setTimeout(() => {
+      setIsSaving(false);
+      toast({ title: 'Sync Timeout', description: 'Saving social link is taking too long. Please try again.', variant: 'destructive' });
+    }, 15000);
+
+    try {
+      const payload = {
+        platform: socialForm.platform,
+        url: socialForm.url,
+        icon: socialForm.icon || null,
+        display_order: socialForm.display_order,
+        is_active: socialForm.is_active,
+      };
+
+      if (editingSocial) {
+        const { error } = await supabase
+          .from('social_links')
+          .update(payload)
+          .eq('id', editingSocial.id);
+        if (error) throw error;
+        toast({ title: "Success", description: "Social link updated" });
+      } else {
+        const { error } = await supabase.from('social_links').insert([payload]);
+        if (error) throw error;
+        toast({ title: "Success", description: "Social link added" });
+      }
+
+      setSocialDialogOpen(false);
+      fetchSocialLinks();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      clearTimeout(safetyTimeout);
+      setIsSaving(false);
+    }
+  };
+
+  const handleSocialDelete = async (id: string) => {
+    if (!confirm('Delete this social link?')) return;
+
+    try {
+      const { error } = await supabase.from('social_links').delete().eq('id', id);
+      if (error) throw error;
+      toast({ title: "Success", description: "Social link deleted" });
+      fetchSocialLinks();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleMessageDelete = async (id: string) => {
+    try {
+      const { error } = await supabase.from('contact_messages').update({ message: '[DELETED]' }).eq('id', id);
+      if (error) throw error;
+      toast({ title: "Success", description: "Message removed from inbox" });
+      fetchMessages();
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const handleReplyDialog = (message: ContactMessage) => {
+    setSelectedMessage(message);
+    setReplyText(message.reply_text || '');
+    setReplyDialogOpen(true);
+  };
+
+  const handleReplySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedMessage) return;
+    setIsSaving(true);
+
+    try {
+      const { error } = await supabase
+        .from('contact_messages')
+        .update({
+          reply_text: replyText,
+          replied: true,
+        })
+        .eq('id', selectedMessage.id);
+
+      if (error) throw error;
+      toast({ title: "Success", description: "Reply saved" });
+      setReplyDialogOpen(false);
+      fetchMessages();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Compute live stats for header
+  const pendingCount = taskSubmissions.filter(s => s.status === 'pending').length;
+  const approvedCount = taskSubmissions.filter(s => s.status === 'approved').length;
+  const totalUsersCount = allUsers.length;
+  const totalEventsCount = events.length;
+
+  return (
+    <div className="min-h-screen bg-[#f0f2f5] flex flex-col">
+      <Header />
+      <main className="flex-1 pt-28 pb-16">
+        <div className="container mx-auto px-6 max-w-7xl">
+          {/* Admin Header - Clean & Compact */}
+          <div className="mb-6">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center">
+                  <LayoutDashboard className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold text-slate-900">Admin Dashboard</h1>
+                  <p className="text-slate-500 text-sm">{user?.email}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button onClick={() => fetchAllData()} variant="outline" className="rounded-xl border-slate-200 text-slate-600 hover:bg-slate-50 h-10 px-5">
+                  <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} /> Refresh
+                </Button>
+                <Button onClick={handleLogout} variant="outline" className="rounded-xl border-slate-200 text-slate-600 hover:bg-slate-50 h-10 px-5">
+                  <LogOut className="w-4 h-4 mr-2" /> Logout
+                </Button>
+              </div>
+            </div>
+
+            {/* Stats Cards */}
+            <div className="grid grid-cols-4 gap-3">
+              {[
+                { label: 'Users', value: totalUsersCount, icon: Users, color: 'bg-blue-500' },
+                { label: 'Events', value: totalEventsCount, icon: Calendar, color: 'bg-violet-500' },
+                { label: 'Pending', value: pendingCount, icon: FileText, color: 'bg-amber-500' },
+                { label: 'Approved', value: approvedCount, icon: CheckCircle, color: 'bg-emerald-500' },
+              ].map((stat) => (
+                <div key={stat.label} className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex items-center gap-3">
+                  <div className={`w-9 h-9 ${stat.color} rounded-lg flex items-center justify-center flex-shrink-0`}>
+                    <stat.icon className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-xl font-bold text-slate-900">{stat.value}</p>
+                    <p className="text-[11px] text-slate-400 font-medium uppercase tracking-wide">{stat.label}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-6">
+            <div className="overflow-x-auto no-scrollbar -mx-6 px-6">
+              <TabsList className="inline-flex gap-1 bg-transparent p-0 h-auto">
+                {[
+                  { value: 'events', label: 'Events' },
+                  { value: 'projects', label: 'Projects' },
+                  { value: 'internships', label: 'Internships' },
+                  { value: 'social', label: 'Social' },
+                  { value: 'submissions', label: 'Reviews' },
+                  { value: 'tasks', label: 'Tasks' },
+                  { value: 'users', label: 'Users' },
+                  { value: 'admins', label: 'Admins' },
+                  { value: 'qrscan', label: 'QR Scan' },
+                  { value: 'attendance', label: 'Attendance' },
+                  { value: 'sip_attendance', label: '📋 SIP Attendance' },
+                  { value: 'test_questions', label: '📝 Test Questions' },
+                  { value: 'test_results', label: '📊 Test Results' },
+                  { value: 'messages', label: 'Messages' },
+                ].map((tab) => (
+                  <TabsTrigger key={tab.value} value={tab.value} className="rounded-full px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-900 hover:bg-white data-[state=active]:bg-slate-900 data-[state=active]:text-white data-[state=active]:shadow-md transition-all whitespace-nowrap">
+                    {tab.label}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </div>
+
+            {/* Events Tab */}
+            <TabsContent value="events" className="mt-0">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold">Event Management</h2>
+                <Button onClick={() => handleEventDialog()} className="rounded-xl">
+                  <Plus className="w-4 h-4 mr-2" /> Create Event
+                </Button>
+              </div>
+              {/* Event Table Implementation ... */}
+              <div className="bg-card border border-border rounded-2xl overflow-x-auto shadow-sm">
+                <Table>
+                  <TableHeader className="bg-secondary/20">
+                    <TableRow>
+                      <TableHead className="font-bold">Title</TableHead>
+                      <TableHead className="font-bold">Date</TableHead>
+                      <TableHead className="font-bold">Location</TableHead>
+                      <TableHead className="text-right font-bold">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {events.map((event) => (
+                      <TableRow key={event.id}>
+                        <TableCell className="font-medium">{event.title}</TableCell>
+                        <TableCell>{format(new Date(event.date), 'PP')}</TableCell>
+                        <TableCell>{event.location}</TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="sm" onClick={() => handleEventDialog(event)} className="rounded-xl mr-1"><Edit className="w-4 h-4" /></Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleEventDelete(event.id)} className="text-destructive rounded-xl"><Trash2 className="w-4 h-4 text-blue-500" /></Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </TabsContent>
+
+            {/* Other tabs follow similar clean structure ... */}
+            <TabsContent value="projects" className="mt-0">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold">Project Showcase</h2>
+                <Button onClick={() => handleProjectDialog()} className="rounded-xl">
+                  <Plus className="w-4 h-4 mr-2" /> Add Project
+                </Button>
+              </div>
+              <div className="bg-card border border-border rounded-2xl overflow-x-auto shadow-sm">
+                <Table>
+                  <TableHeader className="bg-secondary/20">
+                    <TableRow>
+                      <TableHead className="font-bold">Project Display Name</TableHead>
+                      <TableHead className="font-bold">Stack/Tags</TableHead>
+                      <TableHead className="text-right font-bold">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {projects.map((project) => (
+                      <TableRow key={project.id} className="hover:bg-secondary/10">
+                        <TableCell className="font-medium text-blue-600">{project.title}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            {project.tags?.map((tag, idx) => (
+                              <span key={idx} className="text-[10px] px-2 py-0.5 bg-secondary rounded-full border border-border">{tag}</span>
+                            ))}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="sm" onClick={() => handleProjectDialog(project)} className="rounded-xl mr-2"><Edit className="w-4 h-4" /></Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleProjectDelete(project.id)} className="text-destructive rounded-xl"><Trash2 className="w-4 h-4" /></Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="internships" className="mt-0">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold">Career Opportunities</h2>
+                <Button onClick={() => handleInternshipDialog()} className="rounded-xl">
+                  <Plus className="w-4 h-4 mr-2" /> Post Internship
+                </Button>
+              </div>
+              <div className="bg-card border border-border rounded-2xl overflow-x-auto shadow-sm">
+                <Table>
+                  <TableHeader className="bg-secondary/20">
+                    <TableRow><TableHead className="font-bold">Organization</TableHead><TableHead className="font-bold">Opportunity</TableHead><TableHead className="text-right font-bold">Actions</TableHead></TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {internships.map((intern) => (
+                      <TableRow key={intern.id} className="hover:bg-secondary/10">
+                        <TableCell className="font-medium">{intern.company}</TableCell>
+                        <TableCell>{intern.title}</TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="sm" onClick={() => handleInternshipDialog(intern)} className="rounded-xl mr-2 text-blue-600"><Edit className="w-4 h-4" /></Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleInternshipDelete(intern.id)} className="text-destructive rounded-xl"><Trash2 className="w-4 h-4" /></Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="polls" className="mt-0">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold">Community Polls</h2>
+                <Button onClick={() => handlePollDialog()} className="rounded-xl">
+                  <Plus className="w-4 h-4 mr-2" /> Create Poll
+                </Button>
+              </div>
+              <div className="bg-card border border-border rounded-2xl overflow-x-auto shadow-sm">
+                <Table>
+                  <TableHeader className="bg-secondary/20">
+                    <TableRow><TableHead className="font-bold">Active Inquiry Question</TableHead><TableHead className="font-bold">Created Date</TableHead><TableHead className="text-right font-bold">Actions</TableHead></TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {polls.map((poll) => (
+                      <TableRow key={poll.id} className="hover:bg-secondary/10">
+                        <TableCell className="font-medium text-blue-600">{poll.question}</TableCell>
+                        <TableCell className="text-muted-foreground">{format(new Date(poll.created_at), 'PP')}</TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="sm" onClick={() => handlePollDelete(poll.id)} className="text-destructive rounded-xl"><Trash2 className="w-4 h-4 text-blue-500" /></Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="social" className="mt-0">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold">Social Connect</h2>
+                <Button onClick={() => handleSocialDialog()} className="rounded-xl">
+                  <Plus className="w-4 h-4 mr-2" /> Add Link
+                </Button>
+              </div>
+              <div className="bg-card border border-border rounded-2xl overflow-x-auto shadow-sm">
+                <Table>
+                  <TableHeader className="bg-secondary/20">
+                    <TableRow>
+                      <TableHead className="font-bold">Platform</TableHead>
+                      <TableHead className="font-bold">URL</TableHead>
+                      <TableHead className="text-right font-bold">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {socialLinks.map((link) => (
+                      <TableRow key={link.id} className="hover:bg-secondary/10">
+                        <TableCell className="font-medium text-blue-700">{link.platform}</TableCell>
+                        <TableCell className="truncate max-w-xs text-muted-foreground">{link.url}</TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="sm" onClick={() => handleSocialDialog(link)} className="rounded-xl mr-1"><Edit className="w-4 h-4" /></Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleSocialDelete(link.id)} className="text-destructive rounded-xl"><Trash2 className="w-4 h-4" /></Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="tasks" className="mt-0">
+              <div>
+                <div className="flex justify-between items-center mb-6">
+                  <div>
+                    <h2 className="text-2xl font-bold">Coding Tasks</h2>
+                    <p className="text-sm text-muted-foreground">Manage the technical challenges assigned to students.</p>
+                  </div>
+                  <Button onClick={() => handleTaskDialog()} className="rounded-xl bg-blue-600 hover:bg-blue-700">
+                    <Plus className="w-4 h-4 mr-2" /> Create Task
+                  </Button>
+                </div>
+                <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+                  <Table>
+                    <TableHeader className="bg-secondary/20">
+                      <TableRow>
+                        <TableHead className="font-bold">Title</TableHead>
+                        <TableHead className="font-bold">Points</TableHead>
+                        <TableHead className="font-bold text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {codingTasks.length === 0 ? (
+                        <TableRow><TableCell colSpan={3} className="text-center py-10 text-muted-foreground">No tasks created yet.</TableCell></TableRow>
+                      ) : codingTasks.map((task) => (
+                        <TableRow key={task.id}>
+                          <TableCell className="font-medium">{task.title}</TableCell>
+                          <TableCell><Badge variant="secondary" className="bg-blue-100 text-blue-700">{task.points} XP</Badge></TableCell>
+                          <TableCell className="text-right">
+                            <Button variant="ghost" size="sm" onClick={() => handleTaskDialog(task)} className="rounded-xl mr-1"><Edit className="w-4 h-4" /></Button>
+                            <Button variant="ghost" size="sm" onClick={() => deleteTask(task.id)} className="text-destructive rounded-xl"><Trash2 className="w-4 h-4" /></Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="submissions" className="mt-0">
+              <div>
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h2 className="text-2xl font-bold text-slate-900">Code Reviews</h2>
+                    <p className="text-sm text-slate-500">Review student solutions and award points.</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-xs font-semibold"><span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />{pendingCount} Pending</span>
+                    <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-50 border border-green-200 text-green-700 text-xs font-semibold"><span className="w-2 h-2 rounded-full bg-green-400" />{approvedCount} Approved</span>
+                  </div>
+                </div>
+                <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                  <Table>
+                    <TableHeader className="bg-slate-50">
+                      <TableRow>
+                        <TableHead className="font-semibold text-slate-600">Student</TableHead>
+                        <TableHead className="font-semibold text-slate-600">Challenge</TableHead>
+                        <TableHead className="font-semibold text-slate-600">Status</TableHead>
+                        <TableHead className="font-semibold text-slate-600 text-right">Action</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {taskSubmissions.length === 0 ? (
+                        <TableRow><TableCell colSpan={4} className="text-center py-16 text-slate-400"><FileText className="w-8 h-8 mx-auto mb-2 opacity-30" />No submissions yet.</TableCell></TableRow>
+                      ) : taskSubmissions.map((sub, idx) => {
+                        const name = (sub.profiles as any)?.full_name || 'Unknown';
+                        const initials = name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
+                        const colors = ['bg-blue-500', 'bg-violet-500', 'bg-emerald-500', 'bg-rose-500', 'bg-amber-500', 'bg-cyan-500'];
+                        return (
+                          <TableRow key={sub.id} className="hover:bg-slate-50/80 transition-colors">
+                            <TableCell>
+                              <div className="flex items-center gap-3">
+                                <div className={`w-9 h-9 ${colors[idx % colors.length]} rounded-xl flex items-center justify-center text-white text-xs font-bold shadow-sm`}>{initials}</div>
+                                <div>
+                                  <p className="font-semibold text-slate-900 text-sm">{name}</p>
+                                  <p className="text-xs text-slate-400">{(sub.profiles as any)?.email || sub.user_id}</p>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-sm text-slate-700 font-medium max-w-[300px] truncate">{(sub.coding_tasks as any)?.title || 'Deleted Task'}</TableCell>
+                            <TableCell>
+                              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${sub.status === 'approved' ? 'bg-green-50 text-green-700 border border-green-200' :
+                                sub.status === 'denied' ? 'bg-red-50 text-red-600 border border-red-200' :
+                                  'bg-amber-50 text-amber-700 border border-amber-200'
+                                }`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${sub.status === 'approved' ? 'bg-green-500' : sub.status === 'denied' ? 'bg-red-500' : 'bg-amber-500'}`} />
+                                {sub.status === 'approved' ? 'Approved' : sub.status === 'denied' ? 'Rejected' : 'Pending'}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleReviewDialog(sub)}
+                                className="rounded-xl border-slate-200 text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200 transition-colors text-xs h-8 px-3"
+                              >
+                                Review →
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="messages" className="mt-0">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold">Inquiry Inbox</h2>
+              </div>
+              <div className="bg-card border border-border rounded-2xl overflow-x-auto shadow-sm">
+                <Table>
+                  <TableHeader className="bg-secondary/20">
+                    <TableRow>
+                      <TableHead className="font-bold">From</TableHead>
+                      <TableHead className="font-bold">Subject</TableHead>
+                      <TableHead className="font-bold">Date</TableHead>
+                      <TableHead className="text-right font-bold">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {messages.map((msg) => (
+                      <TableRow key={msg.id} className="hover:bg-secondary/10">
+                        <TableCell className="font-medium">{msg.name}</TableCell>
+                        <TableCell>{msg.subject}</TableCell>
+                        <TableCell className="text-muted-foreground">{format(new Date(msg.created_at), 'PP')}</TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="sm" onClick={() => handleReplyDialog(msg)} className={`rounded-xl mr-1 ${msg.replied ? 'text-green-600' : 'text-blue-600'}`}>
+                            <Mail className="w-4 h-4 mr-2" /> {msg.replied ? 'Viewed' : 'Reply'}
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleMessageDelete(msg.id)} className="text-destructive rounded-xl">
+                            <Trash2 className="w-4 h-4 text-blue-500" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="users" className="mt-0">
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold">Platform Community</h2>
+                  <p className="text-sm text-muted-foreground">{allUsers.length} total members registered</p>
+                </div>
+              </div>
+              <div className="bg-card border border-border rounded-2xl overflow-x-auto shadow-sm">
+                <Table>
+                  <TableHeader className="bg-secondary/20">
+                    <TableRow>
+                      <TableHead className="w-12">#</TableHead>
+                      <TableHead>Student Name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead className="text-center">Points</TableHead>
+                      <TableHead className="text-right">Access Role</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {allUsers.map((u, index) => (
+                      <TableRow key={u.id} className="hover:bg-secondary/10">
+                        <TableCell className="font-mono text-muted-foreground">{index + 1}</TableCell>
+                        <TableCell className="font-medium">{u.full_name || '—'}</TableCell>
+                        <TableCell className="text-blue-600">{u.email}</TableCell>
+                        <TableCell className="text-center">
+                          {u.total_points > 0 ? (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              {u.total_points} XP
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">No submissions</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="rounded-xl border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100"
+                              onClick={() => { setSelectedUserProfile(u); setUserProfileDialogOpen(true); }}
+                            >
+                              <UserPlus className="w-3.5 h-3.5 mr-2" /> View Profile
+                            </Button>
+                            {adminUsers.find(a => a.user_id === u.id) && (
+                              <span className="text-xs font-bold text-blue-700 bg-blue-50 px-3 py-1 rounded-full border border-blue-100">Team Admin</span>
+                            )}
+                            {supabaseAdmin && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-destructive hover:text-destructive rounded-xl"
+                                onClick={() => handleDeleteUser(u.id, u.email)}
+                                title="Delete this user permanently"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="admins" className="mt-0">
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold">Privileged Team</h2>
+                  <p className="text-sm text-muted-foreground">{adminUsers.length} active administrators</p>
+                </div>
+                <Button onClick={() => { setAdminForm({ email: '', password: '', role: 'admin_mentor' }); setAdminDialogOpen(true); }} className="rounded-xl">
+                  <UserPlus className="w-4 h-4 mr-2" /> Create Admin Mentor
+                </Button>
+              </div>
+              <div className="bg-card border border-border rounded-2xl overflow-x-auto shadow-sm">
+                <Table>
+                  <TableHeader className="bg-secondary/20">
+                    <TableRow><TableHead>Admin Email</TableHead><TableHead>Role</TableHead><TableHead className="text-right">Actions</TableHead></TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {adminUsers.map((a) => (
+                      <TableRow key={a.id}>
+                        <TableCell className="font-medium">{a.email}</TableCell>
+                        <TableCell><span className="capitalize text-xs font-bold px-2 py-1 bg-blue-50 text-blue-700 rounded-lg">{a.role}</span></TableCell>
+                        <TableCell className="text-right">
+                          {a.role !== 'super_admin' ? (
+                            <Button variant="ghost" size="sm" className="text-blue-600 rounded-xl" onClick={() => handleRemoveAdmin(a)}>
+                              <ShieldOff className="w-4 h-4 mr-2" /> Revoke
+                            </Button>
+                          ) : (
+                            <span className="text-xs font-bold text-muted-foreground mr-4 border border-border px-2 py-1 rounded-md">Permanent</span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="attendance" className="mt-0">
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold text-gradient">Live Attendance Log</h2>
+                  <p className="text-sm text-muted-foreground">{eventRegistrations.filter(r => r.scanned_at || r.sip_approved).length} students verified so far</p>
+                </div>
+                <Button variant="outline" className="rounded-xl" onClick={() => {
+                  const headers = ["Name", "Roll Number", "Year", "Event", "Registered At", "Scanned At"];
+                  const rows = eventRegistrations.map(r => [
+                    r.full_name,
+                    r.roll_number,
+                    r.year,
+                    r.events?.title || 'Unknown',
+                    format(new Date(r.created_at), 'yyyy-MM-dd HH:mm'),
+                    r.scanned_at ? format(new Date(r.scanned_at), 'yyyy-MM-dd HH:mm') : 'Not Scanned'
+                  ]);
+                  const csvContent = [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
+                  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                  const url = URL.createObjectURL(blob);
+                  const link = document.createElement("a");
+                  link.setAttribute("href", url);
+                  link.setAttribute("download", `attendance_${new Date().toISOString().split('T')[0]}.csv`);
+                  link.style.visibility = 'hidden';
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                }}>
+                  <Download className="w-4 h-4 mr-2" /> Export CSV
+                </Button>
+              </div>
+              <div className="bg-card border border-border rounded-2xl overflow-x-auto shadow-sm">
+                <Table>
+                  <TableHeader className="bg-secondary/20">
+                    <TableRow>
+                      <TableHead className="font-bold">Student Name</TableHead>
+                      <TableHead className="font-bold">Roll Number</TableHead>
+                      <TableHead className="font-bold">Event</TableHead>
+                      <TableHead className="font-bold">Status</TableHead>
+                      <TableHead className="font-bold text-right">Scan Time</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {eventRegistrations.map((reg) => (
+                      <TableRow key={reg.id} className="hover:bg-secondary/5">
+                        <TableCell className="font-medium">{reg.full_name}</TableCell>
+                        <TableCell className="font-mono text-xs">{reg.roll_number}</TableCell>
+                        <TableCell className="text-blue-600 font-medium">{reg.events?.title}</TableCell>
+                        <TableCell>
+                          {reg.scanned_at ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-800">
+                              <CheckCircle className="w-3 h-3 mr-1" /> Scanned
+                            </span>
+                          ) : reg.sip_approved ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-indigo-100 text-indigo-800">
+                              <Lock className="w-3 h-3 mr-1" /> SIP Approved
+                            </span>
+                          ) : reg.sip_denied ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-800">
+                              <XCircle className="w-3 h-3 mr-1" /> SIP Denied
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-secondary text-muted-foreground font-mono">
+                              Waiting...
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right text-xs text-muted-foreground">
+                          {reg.scanned_at ? format(new Date(reg.scanned_at), 'pp') : '—'}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </TabsContent>
+
+            {/* SIP Attendance Tab */}
+            <TabsContent value="sip_attendance" className="mt-0">
+              <div className="flex flex-col gap-6">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <div>
+                    <h2 className="text-2xl font-bold flex items-center gap-2">
+                      <ClipboardCheck className="w-6 h-6 text-indigo-600" />
+                      SIP Attendance Management
+                    </h2>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {sipAttendanceRecords.filter(r => r.sip_approved).length} approved • {sipAttendanceRecords.filter(r => !r.sip_approved && !r.sip_denied).length} pending • {sipAttendanceRecords.filter(r => r.sip_denied).length} denied
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <select
+                      value={sipFilterEvent}
+                      onChange={e => setSipFilterEvent(e.target.value)}
+                      className="bg-white border border-slate-200 rounded-xl h-10 px-4 text-sm font-medium text-slate-700 focus:border-indigo-400 focus:outline-none"
+                    >
+                      <option value="all">All SIP Events</option>
+                      {sipEvents.map((ev: any) => (
+                        <option key={ev.id} value={ev.id}>{ev.title}</option>
+                      ))}
+                    </select>
+                    <Button variant="outline" className="rounded-xl" onClick={() => {
+                      const records = sipFilterEvent === 'all' ? sipAttendanceRecords : sipAttendanceRecords.filter(r => r.event_id === sipFilterEvent);
+                      const headers = ["Name", "Roll Number", "Year", "Event", "Status", "Approved At"];
+                      const rows = records.map((r: any) => [
+                        r.full_name,
+                        r.roll_number,
+                        r.year,
+                        r.events?.title || 'Unknown',
+                        r.sip_approved ? 'APPROVED' : r.sip_denied ? 'DENIED' : 'PENDING',
+                        r.sip_approved_at ? format(new Date(r.sip_approved_at), 'yyyy-MM-dd HH:mm') : '-'
+                      ]);
+                      const csvContent = [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
+                      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                      const url = URL.createObjectURL(blob);
+                      const link = document.createElement("a");
+                      link.setAttribute("href", url);
+                      link.setAttribute("download", `sip_attendance_${new Date().toISOString().split('T')[0]}.csv`);
+                      link.style.visibility = 'hidden';
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                    }}>
+                      <Download className="w-4 h-4 mr-2" /> Export SIP CSV
+                    </Button>
+                  </div>
+                </div>
+
+                {sipEvents.length === 0 ? (
+                  <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center shadow-sm">
+                    <ClipboardCheck className="w-12 h-12 mx-auto mb-4 text-slate-300" />
+                    <h3 className="text-lg font-bold text-slate-700 mb-2">No SIP Events Found</h3>
+                    <p className="text-sm text-slate-500">Create an event and mark it as a SIP event to start tracking SIP attendance.</p>
+                  </div>
+                ) : (
+                  <div className="bg-white border border-slate-200 rounded-2xl overflow-x-auto shadow-sm">
+                    <Table>
+                      <TableHeader className="bg-indigo-50/50">
+                        <TableRow>
+                          <TableHead className="font-bold text-indigo-900">Student Name</TableHead>
+                          <TableHead className="font-bold text-indigo-900">Roll Number</TableHead>
+                          <TableHead className="font-bold text-indigo-900">Year</TableHead>
+                          <TableHead className="font-bold text-indigo-900">SIP Event</TableHead>
+                          <TableHead className="font-bold text-indigo-900">Registered</TableHead>
+                          <TableHead className="font-bold text-indigo-900 text-center">Status</TableHead>
+                          <TableHead className="font-bold text-indigo-900 text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {(sipFilterEvent === 'all' ? sipAttendanceRecords : sipAttendanceRecords.filter(r => r.event_id === sipFilterEvent)).length === 0 ? (
+                          <TableRow><TableCell colSpan={7} className="text-center py-12 text-slate-400">No registrations for this SIP event yet.</TableCell></TableRow>
+                        ) : (sipFilterEvent === 'all' ? sipAttendanceRecords : sipAttendanceRecords.filter(r => r.event_id === sipFilterEvent)).map((reg: any) => (
+                          <TableRow key={reg.id} className={`hover:bg-slate-50/80 transition-colors ${reg.sip_approved ? 'bg-green-50/30' : reg.sip_denied ? 'bg-red-50/30' : ''}`}>
+                            <TableCell className="font-semibold text-slate-900">{reg.full_name || 'N/A'}</TableCell>
+                            <TableCell className="font-mono text-xs text-slate-600">{reg.roll_number || 'N/A'}</TableCell>
+                            <TableCell className="text-slate-600">{reg.year || 'N/A'}</TableCell>
+                            <TableCell className="text-indigo-600 font-medium">{reg.events?.title || 'Unknown'}</TableCell>
+                            <TableCell className="text-xs text-slate-500">{reg.created_at ? format(new Date(reg.created_at), 'PP') : '-'}</TableCell>
+                            <TableCell className="text-center">
+                              {reg.sip_approved ? (
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-800 border border-green-200">
+                                  <Lock className="w-3 h-3" /> Approved (Permanent)
+                                </span>
+                              ) : reg.sip_denied ? (
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-200">
+                                  <XCircle className="w-3 h-3" /> Denied
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-700 border border-amber-200">
+                                  <Unlock className="w-3 h-3" /> Pending
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {reg.sip_approved ? (
+                                <span className="text-xs font-semibold text-green-600 bg-green-50 px-3 py-1.5 rounded-lg border border-green-200 inline-flex items-center gap-1">
+                                  <Lock className="w-3 h-3" /> Locked
+                                </span>
+                              ) : (
+                                <div className="flex items-center justify-end gap-2">
+                                  <Button
+                                    size="sm"
+                                    className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white h-8 px-4 text-xs shadow-sm"
+                                    onClick={() => {
+                                      if (confirm('Approve this SIP attendance? This action is PERMANENT and cannot be undone.')) {
+                                        handleSipApprove(reg.id);
+                                      }
+                                    }}
+                                    disabled={isSaving}
+                                  >
+                                    <CheckCircle className="w-3.5 h-3.5 mr-1" /> Approve
+                                  </Button>
+                                  {!reg.sip_denied && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="rounded-xl border-red-200 text-red-600 hover:bg-red-50 h-8 px-4 text-xs"
+                                      onClick={() => handleSipDeny(reg.id)}
+                                      disabled={isSaving}
+                                    >
+                                      <XCircle className="w-3.5 h-3.5 mr-1" /> Deny
+                                    </Button>
+                                  )}
+                                </div>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="qrscan" className="mt-0">
+              <div className="flex flex-col gap-6">
+                <div className="flex items-center gap-3">
+                  <QrCode className="w-8 h-8 text-blue-600" />
+                  <span className="text-2xl font-bold tracking-tight text-gradient">
+                    Sphoorhty
+                  </span>
+                </div>
+                <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-lg min-h-[350px] md:min-h-[450px] flex items-center justify-center relative">
+                  {scannedQRResult ? (
+                    <div className="p-8 text-center space-y-6 animate-in zoom-in-95 duration-300">
+                      <div className={`w-20 h-20 mx-auto rounded-full flex items-center justify-center ${scannedQRResult.alreadyScanned ? 'bg-amber-100 text-amber-600' : 'bg-blue-100 text-blue-600'}`}>
+                        {scannedQRResult.alreadyScanned ? <RefreshCw className="w-10 h-10" /> : <CheckCircle className="w-10 h-10" />}
+                      </div>
+                      <div className="space-y-2">
+                        <h3 className="text-2xl font-black">{scannedQRResult.alreadyScanned ? 'Already Checked In' : 'Entry Verified!'}</h3>
+                        <p className="text-muted-foreground text-lg font-medium">{scannedQRResult.attendee.profiles.full_name}</p>
+                        <p className="text-sm text-muted-foreground">{scannedQRResult.event?.title || 'Unknown Event'}</p>
+                      </div>
+                      <div className="p-4 bg-secondary/30 rounded-xl text-left space-y-2 max-w-sm mx-auto">
+                        <div className="flex justify-between text-sm"><span className="opacity-60">Roll Number:</span> <span>{scannedQRResult.attendee.profiles.email}</span></div>
+                        <div className="flex justify-between text-sm"><span className="opacity-60">Year/Branch:</span> <span>{scannedQRResult.attendee.profiles.college}</span></div>
+                        <div className="flex justify-between text-sm"><span className="opacity-60">Time:</span> <span>{format(new Date(), 'pp')}</span></div>
+                      </div>
+                      <Button className="w-full h-12 rounded-xl text-lg bg-blue-600 hover:bg-blue-500" onClick={() => { setScannedQRResult(null); setCameraScannerReady(true); }}>Scan Next Entry</Button>
+                    </div>
+                  ) : !cameraScannerReady ? (
+                    <div className="p-8 text-center space-y-4 max-w-md mx-auto">
+                      <Camera className="w-16 h-16 mx-auto text-blue-200" />
+                      <h3 className="text-xl font-bold">Ready to Scan</h3>
+                      <p className="text-muted-foreground">Verify event entries instantly with the QR scanner.</p>
+                      {qrScanError && <p className="text-blue-500 text-sm font-medium bg-blue-50 p-3 rounded-lg border border-blue-100">{qrScanError}</p>}
+                      <Button className="w-full h-12 rounded-xl text-lg bg-blue-600 shadow-lg shadow-blue-500/20 hover:bg-blue-500" onClick={() => { setQrScanError(''); setCameraScannerReady(true); }}>Activate Camera</Button>
+                    </div>
+                  ) : (
+                    <div className="w-full flex flex-col items-center">
+                      <div id="qr-reader" className="w-full max-w-md aspect-square overflow-hidden bg-black shadow-inner relative">
+                        {/* Visual overlay for the scan area */}
+                        <div className="absolute inset-0 border-[60px] border-black/40 pointer-events-none z-10 flex items-center justify-center">
+                          <div className="w-[220px] h-[220px] border-2 border-blue-500 rounded-2xl relative shadow-[0_0_0_max(100vh,100vw)_rgba(0,0,0,0.5)]">
+                            <div className="absolute top-0 left-0 w-4 h-4 border-t-4 border-l-4 border-white -ml-1 -mt-1 rounded-tl-sm"></div>
+                            <div className="absolute top-0 right-0 w-4 h-4 border-t-4 border-r-4 border-white -mr-1 -mt-1 rounded-tr-sm"></div>
+                            <div className="absolute bottom-0 left-0 w-4 h-4 border-b-4 border-l-4 border-white -ml-1 -mb-1 rounded-bl-sm"></div>
+                            <div className="absolute bottom-0 right-0 w-4 h-4 border-b-4 border-r-4 border-white -mr-1 -mb-1 rounded-br-sm"></div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="p-4 flex gap-4 w-full justify-center bg-white border-t border-border z-20">
+                        <Button variant="outline" className="rounded-xl h-12 px-8" onClick={() => setCameraScannerReady(false)}>
+                          <XCircle className="w-4 h-4 mr-2" /> Stop
+                        </Button>
+                        <Button variant="ghost" className="rounded-xl h-12 px-8 text-blue-600" onClick={() => { setCameraScannerReady(false); setTimeout(() => setCameraScannerReady(true), 100); }}>
+                          <RefreshCw className="w-4 h-4 mr-2" /> Reset
+                        </Button>
+                      </div>
+                    </div>
+                  )
+                  }
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* AI Command Center Removed */}
+            {/* Event Management Dialog */}
+            <Dialog open={eventDialogOpen} onOpenChange={setEventDialogOpen}>
+              <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto rounded-2xl">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-bold">{editingEvent ? 'Edit Event' : 'Create New Event'}</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleEventSubmit} className="space-y-4 mt-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Title</Label>
+                      <Input value={eventForm.title} onChange={e => setEventForm({ ...eventForm, title: e.target.value })} required className="rounded-xl h-12" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Category</Label>
+                      <Input value={eventForm.category} onChange={e => setEventForm({ ...eventForm, category: e.target.value })} className="rounded-xl h-12" />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Description</Label>
+                    <Textarea value={eventForm.description} onChange={e => setEventForm({ ...eventForm, description: e.target.value })} className="rounded-xl min-h-[100px]" />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Date & Time</Label>
+                      <Input type="datetime-local" value={eventForm.datetime} onChange={e => setEventForm({ ...eventForm, datetime: e.target.value })} required className="rounded-xl h-12" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Location</Label>
+                      <Input value={eventForm.location} onChange={e => setEventForm({ ...eventForm, location: e.target.value })} className="rounded-xl h-12" />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Image URL</Label>
+                    <Input value={eventForm.image_url} onChange={e => setEventForm({ ...eventForm, image_url: e.target.value })} className="rounded-xl h-12" placeholder="https://..." />
+                  </div>
+                  {/* SIP Event Toggle */}
+                  <div className="flex items-center gap-3 p-4 bg-indigo-50 border border-indigo-200 rounded-xl">
+                    <input
+                      type="checkbox"
+                      id="is_sip"
+                      checked={eventForm.is_sip}
+                      onChange={e => setEventForm({ ...eventForm, is_sip: e.target.checked })}
+                      className="w-5 h-5 rounded border-indigo-300 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <Label htmlFor="is_sip" className="text-indigo-800 font-semibold cursor-pointer flex items-center gap-2">
+                      <ClipboardCheck className="w-4 h-4" />
+                      Mark as SIP Event
+                    </Label>
+                    <span className="text-xs text-indigo-500 ml-auto">Enables SIP Attendance tracking</span>
+                  </div>
+                  <div className="flex justify-end gap-3 pt-4">
+                    <Button type="button" variant="outline" onClick={() => setEventDialogOpen(false)} className="rounded-xl h-12 px-8">Cancel</Button>
+                    <Button type="submit" disabled={isSaving} className="rounded-xl h-12 px-8 min-w-[140px]">
+                      {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : (editingEvent ? 'Update' : 'Create')}
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+
+            {/* Project Management Dialog */}
+            <Dialog open={projectDialogOpen} onOpenChange={setProjectDialogOpen}>
+              <DialogContent className="sm:max-w-xl rounded-2xl">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-bold">{editingProject ? 'Edit Project' : 'Showcase New Project'}</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleProjectSubmit} className="space-y-4 mt-4">
+                  <div className="space-y-2">
+                    <Label>Project Title</Label>
+                    <Input value={projectForm.title} onChange={e => setProjectForm({ ...projectForm, title: e.target.value })} required className="rounded-xl h-12" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Description</Label>
+                    <Textarea value={projectForm.description} onChange={e => setProjectForm({ ...projectForm, description: e.target.value })} className="rounded-xl min-h-[100px]" />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>GitHub URL</Label>
+                      <Input value={projectForm.github_url} onChange={e => setProjectForm({ ...projectForm, github_url: e.target.value })} className="rounded-xl h-12" placeholder="https://github.com/..." />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Live Demo</Label>
+                      <Input value={projectForm.demo_url} onChange={e => setProjectForm({ ...projectForm, demo_url: e.target.value })} className="rounded-xl h-12" placeholder="https://..." />
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-3 pt-4">
+                    <Button type="button" variant="outline" onClick={() => setProjectDialogOpen(false)} className="rounded-xl h-12 px-8">Cancel</Button>
+                    <Button type="submit" disabled={isSaving} className="rounded-xl h-12 px-8 min-w-[140px]">
+                      {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : (editingProject ? 'Update' : 'Add Project')}
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+
+            {/* Internship Management Dialog */}
+            <Dialog open={internshipDialogOpen} onOpenChange={setInternshipDialogOpen}>
+              <DialogContent className="sm:max-w-xl rounded-2xl">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-bold">{editingInternship ? 'Edit Opportunity' : 'New Career Opportunity'}</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleInternshipSubmit} className="space-y-4 mt-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Company Name</Label>
+                      <Input value={internshipForm.company} onChange={e => setInternshipForm({ ...internshipForm, company: e.target.value })} required className="rounded-xl h-12" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Role Title</Label>
+                      <Input value={internshipForm.title} onChange={e => setInternshipForm({ ...internshipForm, title: e.target.value })} required className="rounded-xl h-12" />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Brief Description</Label>
+                    <Textarea value={internshipForm.description} onChange={e => setInternshipForm({ ...internshipForm, description: e.target.value })} className="rounded-xl min-h-[100px]" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Application Link</Label>
+                    <Input value={internshipForm.internship_link} onChange={e => setInternshipForm({ ...internshipForm, internship_link: e.target.value })} className="rounded-xl h-12" placeholder="https://..." />
+                  </div>
+                  <div className="flex justify-end gap-3 pt-4">
+                    <Button type="button" variant="outline" onClick={() => setInternshipDialogOpen(false)} className="rounded-xl h-12 px-8">Cancel</Button>
+                    <Button type="submit" disabled={isSaving} className="rounded-xl h-12 px-8 min-w-[140px]">
+                      {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : (editingInternship ? 'Update' : 'Post Now')}
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+
+            {/* Poll Creation Dialog */}
+            <Dialog open={pollDialogOpen} onOpenChange={setPollDialogOpen}>
+              <DialogContent className="sm:max-w-xl rounded-2xl">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-bold text-gradient">Create Community Poll</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handlePollSubmit} className="space-y-4 mt-4">
+                  <div className="space-y-2">
+                    <Label>Poll Inquiry / Question</Label>
+                    <Input value={pollForm.question} onChange={e => setPollForm({ ...pollForm, question: e.target.value })} required className="rounded-xl h-12" placeholder="What kind of events do you want?" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Associated Event (ID)</Label>
+                    <Input value={pollForm.event_id} onChange={e => setPollForm({ ...pollForm, event_id: e.target.value })} className="rounded-xl h-12" placeholder="uuid-of-event" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Poll Options (Choose carefully)</Label>
+                    <div className="grid grid-cols-2 gap-3">
+                      {pollForm.options.map((opt, idx) => (
+                        <Input key={idx} value={opt} onChange={e => {
+                          const newOpts = [...pollForm.options];
+                          newOpts[idx] = e.target.value;
+                          setPollForm({ ...pollForm, options: newOpts });
+                        }} className="rounded-xl" placeholder={`Option ${idx + 1}`} />
+                      ))}
+                    </div>
+                    <Button type="button" variant="ghost" onClick={() => setPollForm({ ...pollForm, options: [...pollForm.options, ''] })} className="text-xs text-blue-600 mt-2 hover:bg-blue-50">+ Add more options</Button>
+                  </div>
+                  <div className="flex justify-end gap-3 pt-4">
+                    <Button type="button" variant="outline" onClick={() => setPollDialogOpen(false)} className="rounded-xl h-12 px-8">Cancel</Button>
+                    <Button type="submit" disabled={isSaving} className="rounded-xl h-12 px-8 min-w-[140px]">
+                      {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : 'Launch Poll'}
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+
+            {/* Social Link Dialog */}
+            <Dialog open={socialDialogOpen} onOpenChange={setSocialDialogOpen}>
+              <DialogContent className="sm:max-w-md rounded-2xl">
+                <DialogHeader>
+                  <DialogTitle className="text-xl font-bold">Social Ecosystem</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleSocialSubmit} className="space-y-4 mt-2">
+                  <div className="space-y-2">
+                    <Label>Platform Name</Label>
+                    <Input value={socialForm.platform} onChange={e => setSocialForm({ ...socialForm, platform: e.target.value })} required className="rounded-xl h-12" placeholder="Instagram, GitHub..." />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Profile URL</Label>
+                    <Input value={socialForm.url} onChange={e => setSocialForm({ ...socialForm, url: e.target.value })} required className="rounded-xl h-12" placeholder="https://..." />
+                  </div>
+                  <div className="flex justify-end gap-2 pt-4">
+                    <Button type="button" variant="outline" onClick={() => setSocialDialogOpen(false)} className="rounded-xl h-11 px-6">Cancel</Button>
+                    <Button type="submit" disabled={isSaving} className="rounded-xl h-11 px-6">
+                      {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : (editingSocial ? 'Save Changes' : 'Add Account')}
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+
+            {/* Admin Management Creation */}
+            <Dialog open={adminDialogOpen} onOpenChange={setAdminDialogOpen}>
+              <DialogContent className="sm:max-w-md rounded-3xl p-8 shadow-2xl">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">Create Admin Mentor</DialogTitle>
+                </DialogHeader>
+                <p className="text-sm text-muted-foreground -mt-2">Enter the email and password. If the user doesn't exist, they'll be created automatically.</p>
+                <form onSubmit={handleCreateAdmin} className="space-y-4 mt-4">
+                  <div className="space-y-2">
+                    <Label>Email Address</Label>
+                    <Input type="email" value={adminForm.email} onChange={e => setAdminForm({ ...adminForm, email: e.target.value })} required placeholder="user@example.com" className="h-12 rounded-xl border-blue-100 focus:border-blue-300" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Password</Label>
+                    <Input type="password" value={adminForm.password} onChange={e => setAdminForm({ ...adminForm, password: e.target.value })} required placeholder="Min 6 characters" minLength={6} className="h-12 rounded-xl border-blue-100 focus:border-blue-300" />
+                  </div>
+                  <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl">
+                    <p className="text-xs text-blue-700 font-medium">Role assigned: <span className="font-bold">admin_mentor</span></p>
+                  </div>
+                  <div className="flex justify-end gap-3 pt-4 border-t border-border mt-4">
+                    <Button type="button" variant="ghost" onClick={() => setAdminDialogOpen(false)} className="rounded-xl h-11">Cancel</Button>
+                    <Button type="submit" disabled={isSaving} className="rounded-xl h-11 px-8 bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-200">
+                      {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                      {isSaving ? 'Creating...' : 'Create Admin Mentor'}
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+
+            {/* Inquiry Reply Dialog */}
+            <Dialog open={replyDialogOpen} onOpenChange={setReplyDialogOpen}>
+              <DialogContent className="sm:max-w-lg rounded-2xl">
+                <DialogHeader>
+                  <DialogTitle className="text-xl font-bold">Compose Response</DialogTitle>
+                </DialogHeader>
+                {selectedMessage && (
+                  <div className="space-y-4 mt-4">
+                    <div className="p-4 bg-secondary/30 rounded-xl border border-border">
+                      <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Incoming Message:</p>
+                      <p className="text-sm italic">"{selectedMessage.message}"</p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Administrator Response</Label>
+                      <Textarea value={replyText} onChange={e => setReplyText(e.target.value)} className="min-h-[150px] rounded-xl" placeholder="Type your response here..." />
+                    </div>
+                    <div className="flex justify-end gap-3 pt-2">
+                      <Button variant="outline" onClick={() => setReplyDialogOpen(false)} className="rounded-xl">Close</Button>
+                      <Button onClick={handleReplySubmit} disabled={isSaving} className="rounded-xl bg-blue-600 hover:bg-blue-500">Send Response</Button>
+                    </div>
+                  </div>
+                )}
+              </DialogContent>
+            </Dialog>
+
+            {/* Task Management Dialog */}
+            <Dialog open={taskDialogOpen} onOpenChange={setTaskDialogOpen}>
+              <DialogContent className="sm:max-w-lg rounded-2xl">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-bold">{editingTask ? 'Modify Challenge' : 'Initialize New Challenge'}</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 mt-4">
+                  <div className="space-y-2">
+                    <Label>Task Title</Label>
+                    <Input value={taskForm.title} onChange={e => setEventTaskForm({ ...taskForm, title: e.target.value })} required className="rounded-xl h-12" placeholder="e.g., Implement Linked List" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Points (XP)</Label>
+                    <Input type="number" value={taskForm.points} onChange={e => setEventTaskForm({ ...taskForm, points: parseInt(e.target.value) })} required className="rounded-xl h-12" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Detailed Description</Label>
+                    <Textarea value={taskForm.description} onChange={e => setEventTaskForm({ ...taskForm, description: e.target.value })} className="rounded-xl min-h-[150px]" placeholder="Explain the requirements..." />
+                  </div>
+                  <div className="flex justify-end gap-3 pt-4">
+                    <Button variant="outline" onClick={() => setTaskDialogOpen(false)} className="rounded-xl h-12 px-8">Cancel</Button>
+                    <Button onClick={saveTask} disabled={isSaving} className="rounded-xl h-12 px-8 bg-blue-600 hover:bg-blue-700">
+                      {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : (editingTask ? 'Synchronize' : 'Broadcast')}
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            {/* Submission Review Dialog - Premium */}
+            <Dialog open={reviewDialogOpen} onOpenChange={setReviewDialogOpen}>
+              <DialogContent className="sm:max-w-2xl rounded-3xl p-0 overflow-hidden border-0 shadow-2xl">
+                {/* Dialog Header with gradient */}
+                <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 px-8 py-6">
+                  <DialogHeader>
+                    <DialogTitle className="text-xl font-bold text-white flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-indigo-500/30 flex items-center justify-center"><FileText className="w-4 h-4 text-indigo-300" /></div>
+                      Submission Review
+                    </DialogTitle>
+                  </DialogHeader>
+                </div>
+                {selectedSubmission && (
+                  <div className="p-8 space-y-6">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100">
+                        <p className="text-[10px] font-bold uppercase text-slate-400 tracking-wider mb-2">Student</p>
+                        <p className="font-bold text-slate-900">{(selectedSubmission.profiles as any)?.full_name}</p>
+                        <p className="text-xs text-slate-500">{(selectedSubmission.profiles as any)?.email}</p>
+                        <div className="mt-3 flex items-center gap-2">
+                          <span className="px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-700 text-xs font-bold">{(selectedSubmission as any).total_user_points || 0} XP Total</span>
+                        </div>
+                        {((selectedSubmission.profiles as any)?.year || (selectedSubmission.profiles as any)?.department) && (
+                          <div className="mt-3 pt-3 border-t border-slate-200 space-y-1">
+                            {(selectedSubmission.profiles as any)?.year && <p className="text-xs text-slate-500">📚 {(selectedSubmission.profiles as any)?.year}</p>}
+                            {(selectedSubmission.profiles as any)?.section && <p className="text-xs text-slate-500">Section: {(selectedSubmission.profiles as any)?.section}</p>}
+                            {(selectedSubmission.profiles as any)?.department && <p className="text-xs text-slate-500">🏛️ {(selectedSubmission.profiles as any)?.department}</p>}
+                            {(selectedSubmission.profiles as any)?.college && <p className="text-xs text-slate-500">🎓 {(selectedSubmission.profiles as any)?.college}</p>}
+                            {(selectedSubmission.profiles as any)?.phone && <p className="text-xs text-slate-500">📱 {(selectedSubmission.profiles as any)?.phone}</p>}
+                          </div>
+                        )}
+                      </div>
+                      <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100">
+                        <p className="text-[10px] font-bold uppercase text-slate-400 tracking-wider mb-2">Challenge</p>
+                        <p className="font-bold text-slate-900">{(selectedSubmission.coding_tasks as any)?.title}</p>
+                        <p className="text-xs text-slate-500 mt-1">{new Date(selectedSubmission.submitted_at).toLocaleString()}</p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <p className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Solution Code</p>
+                      <div className="p-5 bg-[#0d1117] text-[#7ee787] font-mono text-sm rounded-2xl border border-[#30363d] overflow-auto max-h-[280px] whitespace-pre-wrap leading-relaxed">
+                        {selectedSubmission.answer}
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between items-center pt-4 border-t border-slate-100">
+                      <Button variant="ghost" onClick={deleteSubmission} disabled={isSaving} className="rounded-xl text-red-500 hover:bg-red-50 h-10 px-4 text-sm">
+                        <Trash2 className="w-3.5 h-3.5 mr-1.5" /> Delete
+                      </Button>
+                      <div className="flex gap-3">
+                        <Button variant="outline" onClick={() => reviewSubmission('denied')} disabled={isSaving} className="rounded-xl border-red-200 text-red-600 hover:bg-red-50 h-10 px-5 text-sm">
+                          <XCircle className="w-3.5 h-3.5 mr-1.5" /> Reject
+                        </Button>
+                        <Button onClick={() => reviewSubmission('approved')} disabled={isSaving} className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white h-10 px-5 text-sm shadow-lg shadow-emerald-500/20">
+                          <CheckCircle className="w-3.5 h-3.5 mr-1.5" /> Approve
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </DialogContent>
+            </Dialog>
+
+            {/* User Profile Dialog */}
+            <Dialog open={userProfileDialogOpen} onOpenChange={setUserProfileDialogOpen}>
+              <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl p-6 bg-background">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-bold flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                      <Users className="w-5 h-5" />
+                    </div>
+                    Student Profile
+                  </DialogTitle>
+                </DialogHeader>
+                {selectedUserProfile && (
+                  <div className="space-y-6 mt-4">
+                    {/* Basic Info Card */}
+                    <div className="bg-secondary/20 border border-border rounded-2xl p-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <p className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-1">Identity Details</p>
+                          <h3 className="text-xl font-bold text-foreground">{selectedUserProfile.full_name || 'Anonymous User'}</h3>
+                          <p className="text-blue-600 font-medium mb-1">{selectedUserProfile.email}</p>
+
+                          {/* Login Provider Badge */}
+                          {selectedUserProfile.is_firebase_user ? (
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-red-50 text-red-700 border border-red-200 mt-2">
+                              Google Authenticated (Firebase)
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 mt-2">
+                              Native Secure Login (Supabase)
+                            </span>
+                          )}
+                        </div>
+                        <div className="md:text-right">
+                          <p className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-1">Performance Matrix</p>
+                          <div className="inline-flex flex-col items-center md:items-end">
+                            <span className="text-3xl font-black text-blue-600">{selectedUserProfile.total_points || 0}</span>
+                            <span className="text-xs text-muted-foreground font-bold">TOTAL XP SECURED</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Task Submissions History */}
+                    <div>
+                      <h4 className="text-lg font-bold mb-4 flex items-center gap-2">
+                        <Terminal className="w-5 h-5" /> Challenge Submissions History
+                      </h4>
+                      <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+                        {taskSubmissions.filter(s => s.user_id === selectedUserProfile.id || s.user_id === selectedUserProfile.firebase_uid).length === 0 ? (
+                          <div className="p-8 text-center text-muted-foreground">
+                            No coding challenges submitted by this student yet.
+                          </div>
+                        ) : (
+                          <Table>
+                            <TableHeader className="bg-secondary/30">
+                              <TableRow>
+                                <TableHead>Challenge Name</TableHead>
+                                <TableHead>Submitted At</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead className="text-right">Points Array</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {taskSubmissions
+                                .filter(s => s.user_id === selectedUserProfile.id || s.user_id === selectedUserProfile.firebase_uid)
+                                .map((sub: any) => (
+                                  <React.Fragment key={sub.id}>
+                                    <TableRow>
+                                      <TableCell className="font-bold">{sub.coding_tasks?.title || 'Unknown Task'}</TableCell>
+                                      <TableCell className="text-muted-foreground text-sm">{format(new Date(sub.submitted_at), 'PP p')}</TableCell>
+                                      <TableCell>
+                                        {sub.status === 'approved' && <span className="text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-md text-xs font-bold">Approved</span>}
+                                        {sub.status === 'pending' && <span className="text-amber-600 bg-amber-50 px-2.5 py-1 rounded-md text-xs font-bold">Pending Review</span>}
+                                        {sub.status === 'denied' && <span className="text-red-600 bg-red-50 px-2.5 py-1 rounded-md text-xs font-bold">Denied</span>}
+                                      </TableCell>
+                                      <TableCell className="text-right font-mono font-bold text-blue-600">+{sub.points_awarded || 0}</TableCell>
+                                    </TableRow>
+                                    {sub.answer && (
+                                      <TableRow className="bg-slate-50 border-none">
+                                        <TableCell colSpan={4} className="py-0">
+                                          <div className="p-4 mb-4 bg-slate-900 rounded-xl overflow-x-auto">
+                                            <p className="text-[10px] font-bold text-slate-500 uppercase mb-2">Submitted Answer Code</p>
+                                            <pre className="text-xs text-emerald-400 font-mono">
+                                              {sub.answer}
+                                            </pre>
+                                          </div>
+                                        </TableCell>
+                                      </TableRow>
+                                    )}
+                                  </React.Fragment>
+                                ))}
+                            </TableBody>
+                          </Table>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </DialogContent>
+            </Dialog>
+
+            {/* ==================== TEST QUESTIONS TAB ==================== */}
+            <TabsContent value="test_questions" className="mt-0">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold">Test Management</h2>
+                <div className="flex gap-2">
+                  <Button onClick={() => { setEditingExam(null); setExamForm({ title: '', description: '', duration_minutes: 30, max_violations: 2 }); setExamDialogOpen(true); }} className="rounded-xl">
+                    <Plus className="w-4 h-4 mr-2" /> Create Exam
+                  </Button>
+                </div>
+              </div>
+
+              {/* Exam List */}
+              <div className="space-y-4 mb-8">
+                {examsList.length === 0 ? (
+                  <div className="text-center py-12 bg-card border border-border rounded-2xl"><p className="text-muted-foreground">No exams created yet.</p></div>
+                ) : examsList.map((exam: any) => {
+                  const qCount = examQuestions.filter(q => q.exam_id === exam.id).length;
+                  return (
+                    <div key={exam.id} className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="text-lg font-bold">{exam.title}</h3>
+                            <Badge variant={exam.is_active ? 'default' : 'secondary'}>{exam.is_active ? 'Active' : 'Inactive'}</Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-2">{exam.description || 'No description'}</p>
+                          <div className="flex gap-4 text-xs text-muted-foreground">
+                            <span>⏱ {exam.duration_minutes} min</span>
+                            <span>⚠️ Max {exam.max_violations} violations</span>
+                            <span>📝 {qCount} questions</span>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="outline" onClick={() => handleToggleExamActive(exam.id, exam.is_active)}>
+                            {exam.is_active ? <Lock className="w-3 h-3 mr-1" /> : <Unlock className="w-3 h-3 mr-1" />}
+                            {exam.is_active ? 'Deactivate' : 'Activate'}
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => { setEditingExam(exam); setExamForm({ title: exam.title, description: exam.description || '', duration_minutes: exam.duration_minutes, max_violations: exam.max_violations }); setExamDialogOpen(true); }}>
+                            <Edit className="w-3 h-3" />
+                          </Button>
+                          <Button size="sm" variant="destructive" onClick={() => handleDeleteExam(exam.id)}>
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Questions for this exam - Collapsible */}
+                      {qCount > 0 && (
+                        <details className="mt-4 border-t pt-4 space-y-2 group" open={exam.is_active}>
+                          <summary className="text-sm font-semibold mb-2 cursor-pointer flex items-center justify-between hover:bg-slate-50 p-2 rounded-lg">
+                            <span>Questions ({qCount}):</span>
+                            <span className="text-xs text-muted-foreground group-open:hidden">Click to show</span>
+                            <span className="text-xs text-muted-foreground hidden group-open:inline">Click to hide</span>
+                          </summary>
+                          <div className="space-y-2 mt-2">
+                            {examQuestions.filter(q => q.exam_id === exam.id).map((q: any, idx: number) => (
+                              <div key={q.id} className="flex items-start justify-between bg-slate-50 rounded-lg p-3 text-sm">
+                                <div className="flex-1">
+                                  <span className="font-medium">Q{idx + 1}.</span> {q.question}
+                                  <div className="flex gap-2 mt-1">
+                                    <Badge variant="outline" className="text-xs">{q.question_type === 'mcq' ? 'MCQ' : q.question_type === 'code' ? 'Code/Query' : 'Paragraph'}</Badge>
+                                    <Badge variant="outline" className="text-xs">{q.marks} marks</Badge>
+                                    {q.correct_answer && <Badge className="text-xs bg-green-100 text-green-700">Auto-grading: {q.correct_answer}</Badge>}
+                                  </div>
+                                  {q.question_type === 'mcq' && q.options && (
+                                    <div className="mt-1 text-xs text-muted-foreground">
+                                      Options: {(typeof q.options === 'string' ? JSON.parse(q.options) : q.options).join(' | ')}
+                                    </div>
+                                  )}
+                                </div>
+                                <Button size="sm" variant="ghost" onClick={() => handleDeleteExamQuestion(q.id)}>
+                                  <Trash2 className="w-3 h-3 text-red-500" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        </details>
+                      )}
+
+                      <Button size="sm" variant="outline" className="mt-4" onClick={() => { setSelectedExamForQuestions(exam.id); setExamQuestionForm({ question: '', question_type: 'mcq', options: ['', '', '', ''], correct_answer: '', marks: 5 }); setExamQuestionDialogOpen(true); }}>
+                        <Plus className="w-3 h-3 mr-1" /> Add Question
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+
+            </TabsContent>
+
+            {/* ==================== TEST RESULTS TAB ==================== */}
+            <TabsContent value="test_results" className="mt-0">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold">Test Results</h2>
+                <div className="flex gap-2 items-center">
+                  <select value={examResultsFilter} onChange={e => setExamResultsFilter(e.target.value)} className="p-2 border rounded-lg text-sm bg-white">
+                    <option value="all">All Exams</option>
+                    {examsList.map((exam: any) => (<option key={exam.id} value={exam.id}>{exam.title}</option>))}
+                  </select>
+                  <Button size="sm" variant="outline" className="bg-red-50 text-red-700 border-red-200 hover:bg-red-100" onClick={handleClearExamSubmissions}>
+                    <Trash2 className="w-3 h-3 mr-1" /> Clear Submissions
+                  </Button>
+                  <Button size="sm" variant="outline" className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100" onClick={exportResultsToCSV}>
+                    <Download className="w-3 h-3 mr-1" /> Export CSV (Excel)
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => fetchExamSubmissions()}><RefreshCw className="w-3 h-3 mr-1" /> Refresh</Button>
+                </div>
+              </div>
+
+              <div className="bg-card border border-border rounded-2xl overflow-x-auto shadow-sm">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Student Name</TableHead>
+                      <TableHead>Email ID</TableHead>
+                      <TableHead>Roll Number</TableHead>
+                      <TableHead>Exam</TableHead>
+                      <TableHead>Score</TableHead>
+                      <TableHead>Violations</TableHead>
+                      <TableHead>Time Used</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(() => {
+                      // BUILD MAPS ONCE OUTSIDE THE LOOP
+                      const userMap = new Map((allUsers || []).map(u => [u.id, u]));
+                      const fbUserMap = new Map((allUsers || []).map(u => [u.firebase_uid, u]));
+                      
+                      const filteredSubs = (examSubmissions || []).filter((s: any) => examResultsFilter === 'all' || s.exam_id === examResultsFilter);
+                      
+                      if (filteredSubs.length === 0) {
+                        return <TableRow><TableCell colSpan={10} className="text-center py-8 text-muted-foreground">No submissions yet.</TableCell></TableRow>;
+                      }
+
+                      return filteredSubs.map((sub: any) => {
+                        const studentProfile = userMap.get(sub.user_id) || fbUserMap.get(sub.user_id);
+                        
+                        // Extract email from name if it was appended: "Name (email@domain.com)"
+                        const nameParts = sub.student_name?.match(/^(.*) \((.*)\)$/);
+                        const displayName = nameParts ? nameParts[1] : sub.student_name;
+                        const extractedEmail = nameParts ? nameParts[2] : null;
+                        const emailDisp = extractedEmail || studentProfile?.email || 'N/A';
+
+                        return (
+                          <TableRow key={sub.id}>
+                            <TableCell className="font-bold">{displayName || 'Unknown Student'}</TableCell>
+                            <TableCell className="text-xs text-blue-600 font-medium">{emailDisp}</TableCell>
+                            <TableCell>{sub.roll_number}</TableCell>
+                            <TableCell>{sub.exams?.title || 'Unknown'}</TableCell>
+                            <TableCell>
+                              <span className={`font-bold ${sub.total_marks > 0 && (sub.score / sub.total_marks) >= 0.4 ? 'text-green-600' : 'text-red-600'}`}>
+                                {sub.score}/{sub.total_marks}
+                              </span>
+                              <span className="text-xs text-muted-foreground ml-1">({sub.total_marks > 0 ? Math.round((sub.score / sub.total_marks) * 100) : 0}%)</span>
+                            </TableCell>
+                            <TableCell>
+                              <span className={sub.violations > 0 ? 'text-red-600 font-bold' : 'text-green-600'}>{sub.violations}</span>
+                            </TableCell>
+                            <TableCell>{Math.floor((sub.time_used_seconds || 0) / 60)}m {(sub.time_used_seconds || 0) % 60}s</TableCell>
+                            <TableCell>
+                              <Badge variant={sub.status === 'auto_submitted' ? 'destructive' : 'default'}>
+                                {sub.status === 'auto_submitted' ? 'Auto-Submitted' : 'Completed'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-xs text-muted-foreground">{sub.submitted_at ? format(new Date(sub.submitted_at), 'PP p') : '-'}</TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-1">
+                                <Button size="sm" variant="ghost" className="text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50"
+                                  onClick={() => {
+                                    setSelectedSubForGrading(sub);
+                                    setManualScore(sub.score);
+                                    setManualGradeDialogOpen(true);
+                                  }}>
+                                  <Edit className="w-3 h-3 mr-1" /> Edit Score
+                                </Button>
+                                <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-700 hover:bg-red-50" onClick={() => handleDeleteExamSubmission(sub.id)}>
+                                  <RefreshCw className="w-3 h-3 mr-1" /> Allow Retest
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      });
+                    })()}
+                  </TableBody>
+                </Table>
+              </div>
+            </TabsContent>
+          </Tabs>
+
+          {/* Create/Edit Exam Dialog */}
+          <Dialog open={examDialogOpen} onOpenChange={setExamDialogOpen}>
+            <DialogContent className="max-w-lg">
+              <DialogHeader><DialogTitle>{editingExam ? 'Edit Exam' : 'Create New Exam'}</DialogTitle></DialogHeader>
+              <div className="space-y-4">
+                <div><Label>Title *</Label><Input value={examForm.title} onChange={e => setExamForm({ ...examForm, title: e.target.value })} placeholder="e.g. Data Structures Test 1" /></div>
+                <div><Label>Description</Label><Textarea value={examForm.description} onChange={e => setExamForm({ ...examForm, description: e.target.value })} placeholder="Brief description..." /></div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div><Label>Duration (minutes)</Label><Input type="number" value={examForm.duration_minutes} onChange={e => setExamForm({ ...examForm, duration_minutes: parseInt(e.target.value) || 30 })} /></div>
+                  <div><Label>Max Violations</Label><Input type="number" value={examForm.max_violations} onChange={e => setExamForm({ ...examForm, max_violations: parseInt(e.target.value) || 2 })} /></div>
+                </div>
+                <Button onClick={handleSaveExam} disabled={!examForm.title.trim() || isSaving} className="w-full">
+                  {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
+                  {editingExam ? 'Update Exam' : 'Create Exam'}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Add Question Dialog */}
+          <Dialog open={examQuestionDialogOpen} onOpenChange={setExamQuestionDialogOpen}>
+            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+              <DialogHeader><DialogTitle>Add Question</DialogTitle></DialogHeader>
+              <div className="space-y-4">
+                <div><Label>Question *</Label><Textarea value={examQuestionForm.question} onChange={e => setExamQuestionForm({ ...examQuestionForm, question: e.target.value })} placeholder="Enter the question..." /></div>
+                <div>
+                  <Label>Type</Label>
+                  <select value={examQuestionForm.question_type} onChange={e => setExamQuestionForm({ ...examQuestionForm, question_type: e.target.value })} className="w-full p-2 border rounded-lg">
+                    <option value="mcq">Multiple Choice</option>
+                    <option value="paragraph">Paragraph Answer</option>
+                    <option value="code">Query / Code Challenge</option>
+                  </select>
+                </div>
+                <div><Label>Marks</Label><Input type="number" value={examQuestionForm.marks} onChange={e => setExamQuestionForm({ ...examQuestionForm, marks: parseInt(e.target.value) || 5 })} /></div>
+
+                {examQuestionForm.question_type === 'mcq' ? (
+                  <>
+                    <div>
+                      <Label>Options</Label>
+                      {examQuestionForm.options.map((opt, idx) => (
+                        <div key={idx} className="flex gap-2 mt-2">
+                          <Input value={opt} onChange={e => { const newOpts = [...examQuestionForm.options]; newOpts[idx] = e.target.value; setExamQuestionForm({ ...examQuestionForm, options: newOpts }); }} placeholder={`Option ${String.fromCharCode(65 + idx)}`} />
+                          {idx >= 2 && <Button size="sm" variant="ghost" onClick={() => { const newOpts = examQuestionForm.options.filter((_, i) => i !== idx); setExamQuestionForm({ ...examQuestionForm, options: newOpts }); }}><Trash2 className="w-3 h-3" /></Button>}
+                        </div>
+                      ))}
+                      {examQuestionForm.options.length < 6 && (
+                        <Button size="sm" variant="outline" className="mt-2" onClick={() => setExamQuestionForm({ ...examQuestionForm, options: [...examQuestionForm.options, ''] })}>
+                          <Plus className="w-3 h-3 mr-1" /> Add Option
+                        </Button>
+                      )}
+                    </div>
+                    <div>
+                      <Label>Correct Answer *</Label>
+                      <select value={examQuestionForm.correct_answer} onChange={e => setExamQuestionForm({ ...examQuestionForm, correct_answer: e.target.value })} className="w-full p-2 border rounded-lg bg-slate-900 border-white/5 text-white">
+                        <option value="">Select correct answer...</option>
+                        {examQuestionForm.options.filter(o => o.trim()).map((opt, idx) => (
+                          <option key={idx} value={opt}>{String.fromCharCode(65 + idx)}. {opt}</option>
+                        ))}
+                      </select>
+                      <p className="text-[10px] text-indigo-400 mt-1 flex items-center gap-1">
+                        <Zap className="w-3 h-3" />
+                        Multi-Correct Support: You can manualy edit the Answer Key after adding to include alternatives with |.
+                      </p>
+                    </div>
+
+                  </>
+                ) : (
+                  <div>
+                    <Label>Correct Answer (AI Answer Key)</Label>
+                    <Input
+                      value={examQuestionForm.correct_answer}
+                      onChange={e => setExamQuestionForm({ ...examQuestionForm, correct_answer: e.target.value })}
+                      placeholder="e.g. 2 | 22 or keyword1, keyword2"
+                      className="bg-slate-900 border-white/5 text-white"
+                    />
+                    <p className="text-[10px] text-indigo-400 mt-1 flex items-center gap-1">
+                      <Bot className="w-3 h-3" />
+                      AI Auto-marking: Use | for alternative correct answers. Use , for required keywords.
+                    </p>
+                  </div>
+
+                )}
+
+                <Button onClick={handleSaveExamQuestion} disabled={!examQuestionForm.question.trim() || isSaving || (examQuestionForm.question_type === 'mcq' && !examQuestionForm.correct_answer)} className="w-full">
+                  {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
+                  Add Question
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Manual Grade Dialog */}
+          <Dialog open={manualGradeDialogOpen} onOpenChange={setManualGradeDialogOpen}>
+            <DialogContent className="max-w-sm">
+              <DialogHeader><DialogTitle>Manual Score Override</DialogTitle></DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-4">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Student</p>
+                  <p className="text-sm font-black text-slate-900">{selectedSubForGrading?.student_name}</p>
+                  <p className="text-[10px] text-slate-400 mt-2 font-bold uppercase tracking-tighter">Current Score</p>
+                  <p className="text-base font-black text-indigo-600">{selectedSubForGrading?.score} / {selectedSubForGrading?.total_marks}</p>
+                </div>
+
+                <div>
+                  <Label>Adjusted Score (Max: {selectedSubForGrading?.total_marks})</Label>
+                  <Input
+                    type="number"
+                    value={manualScore}
+                    onChange={e => setManualScore(Number(e.target.value))}
+                    max={selectedSubForGrading?.total_marks}
+                    className="mt-2 text-lg font-bold"
+                  />
+                </div>
+
+                <Button onClick={handleUpdateScore} disabled={isSaving} className="w-full h-12 bg-indigo-600 hover:bg-indigo-700">
+                  {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <ShieldCheck className="w-4 h-4 mr-2" />}
+                  Confirm Manual Grade
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+
+        </div>
+      </main>
+      <Footer />
+    </div>
+  );
+};
+
+export default AdminDashboard;
+
+
