@@ -3458,8 +3458,29 @@ const AdminDashboard = () => {
                     <div className="grid grid-cols-2 gap-4">
                       <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100">
                         <p className="text-[10px] font-bold uppercase text-slate-400 tracking-wider mb-2">Student</p>
-                        <p className="font-bold text-slate-900">{(selectedSubmission.profiles as any)?.full_name}</p>
-                        <p className="text-xs text-slate-500">{(selectedSubmission.profiles as any)?.email}</p>
+                        {(() => {
+                          const rawName = (selectedSubmission.profiles as any)?.full_name || '';
+                          const rawEmail = (selectedSubmission.profiles as any)?.email || '';
+                          // Parse "Name (RollNumber)" format
+                          const match = rawName.match(/^(.+?)\s*\(([^)]+)\)$/);
+                          const studentName = match ? match[1].trim() : rawName;
+                          const rollNumber = match ? match[2].trim() : '';
+                          // Title-case the name
+                          const titleCase = (s: string) => s.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+                          const displayName = titleCase(studentName);
+                          const displayEmail = rawEmail.includes('@') ? rawEmail : (rollNumber || rawEmail);
+                          return (
+                            <>
+                              <p className="font-bold text-slate-900 text-base">{displayName}</p>
+                              {rollNumber && (
+                                <p className="text-xs font-mono text-indigo-600 font-semibold mt-0.5">{rollNumber}</p>
+                              )}
+                              {displayEmail.includes('@') && (
+                                <p className="text-xs text-slate-500 mt-0.5">{displayEmail}</p>
+                              )}
+                            </>
+                          );
+                        })()}
                         <div className="mt-3 flex items-center gap-2">
                           <span className="px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-700 text-xs font-bold">{(selectedSubmission as any).total_user_points || 0} XP Total</span>
                         </div>
