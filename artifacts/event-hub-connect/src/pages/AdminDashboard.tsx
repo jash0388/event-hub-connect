@@ -931,9 +931,9 @@ const AdminDashboard = () => {
         const profile = profiles?.find(p => p.id === sub.user_id || p.firebase_uid === sub.user_id);
         const userReg = userRegistrations?.find(r => r.user_id === sub.user_id);
 
-        // Use profile name, then user_registrations name, then fallback
-        const displayName = profile?.full_name || userReg?.full_name || 'Anonymous';
-        const displayEmail = profile?.email || userReg?.email || 'No Email';
+        // Use submission's display name first (contains roll number for OTP users), then profile, then registration
+        const displayName = sub.user_display_name || profile?.full_name || userReg?.full_name || 'Anonymous';
+        const displayEmail = profile?.email || userReg?.email || sub.user_display_name || 'No Email';
 
         return {
           ...sub,
@@ -1064,7 +1064,28 @@ const AdminDashboard = () => {
             full_name: r.full_name || r.email?.split('@')[0],
             email: r.email,
             firebase_uid: r.user_id,
-            is_firebase_user: true
+            is_firebase_user: false
+          });
+        }
+      });
+
+      // Also extract OTP roll-number users from task_submissions
+      // These users have user_id = roll_number and user_display_name = "Name (RollNumber)"
+      const { data: allSubs } = await supabase.from('task_submissions').select('user_id, user_display_name').limit(5000);
+      (allSubs || []).forEach((sub: any) => {
+        if (!allUniqueUsersMap.has(sub.user_id) && sub.user_display_name) {
+          // Parse "Name (RollNumber)" format
+          const match = sub.user_display_name.match(/^(.+?)\s*\(([^)]+)\)$/);
+          const name = match ? match[1].trim() : sub.user_display_name;
+          const rollNum = match ? match[2].trim() : sub.user_id;
+          allUniqueUsersMap.set(sub.user_id, {
+            id: sub.user_id,
+            full_name: name,
+            email: rollNum,
+            roll_number: rollNum,
+            firebase_uid: null,
+            is_firebase_user: false,
+            is_roll_number_user: true
           });
         }
       });
@@ -3504,9 +3525,16 @@ const AdminDashboard = () => {
                           <p className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-1">Identity Details</p>
                           <h3 className="text-xl font-bold text-foreground">{selectedUserProfile.full_name || 'Anonymous User'}</h3>
                           <p className="text-blue-600 font-medium mb-1">{selectedUserProfile.email}</p>
+                          {selectedUserProfile.roll_number && (
+                            <p className="text-sm text-muted-foreground font-mono">Roll: {selectedUserProfile.roll_number}</p>
+                          )}
 
                           {/* Login Provider Badge */}
-                          {selectedUserProfile.is_firebase_user ? (
+                          {selectedUserProfile.is_roll_number_user ? (
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-purple-50 text-purple-700 border border-purple-200 mt-2">
+                              Roll Number + OTP Verified
+                            </span>
+                          ) : selectedUserProfile.is_firebase_user ? (
                             <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-red-50 text-red-700 border border-red-200 mt-2">
                               Google Authenticated (Firebase)
                             </span>

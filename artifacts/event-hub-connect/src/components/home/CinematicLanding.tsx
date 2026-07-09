@@ -231,7 +231,7 @@ function Navbar({ openCodeModal }: { openCodeModal?: () => void }) {
                                 Enter Code
                             </button>
                         )}
-                        <Link to="/login" className="bg-white inline-flex text-[#02040A] font-body flex-shrink-0 font-semibold text-sm px-5 py-2.5 rounded-full items-center gap-2 hover:bg-white/90 transition-all duration-300 hover:scale-105">
+                        <Link to="/login" className="bg-white inline-flex font-body flex-shrink-0 font-semibold text-sm px-5 py-2.5 rounded-full items-center gap-2 hover:bg-white/90 transition-all duration-300 hover:scale-105" style={{ color: '#02040A' }}>
                             Join Now
                             <ArrowUpRight className="w-4 h-4" />
                         </Link>
@@ -267,7 +267,7 @@ function HeroSection() {
     }, []);
 
     return (
-        <section ref={ref} id="home" className="relative h-[100dvh] overflow-hidden bg-slate-950">
+        <section ref={ref} id="home" className="relative overflow-hidden bg-slate-950" style={{ height: '100dvh' }}>
             {/* Parallax video */}
             <motion.div className="absolute inset-0 w-full h-full" style={{ y, scale }}>
                 <motion.div style={{ opacity }} className="w-full h-full">
@@ -283,7 +283,7 @@ function HeroSection() {
             </motion.div>
 
             {/* Gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-b from-[#02040A]/30 via-[#02040A]/50 to-[#02040A]" />
+            <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, rgba(2,4,10,0.3), rgba(2,4,10,0.5), #02040A)' }} />
 
             {/* Content */}
             <div className="relative z-10 h-full flex flex-col items-center justify-center text-center px-6">
@@ -417,7 +417,7 @@ function VesselSpecs() {
                                 alt="Sphoorthy Engineering College"
                                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                             />
-                            <div className="absolute inset-0 bg-gradient-to-t from-[#02040A] via-[#02040A]/30 to-transparent" />
+                            <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, #02040A, rgba(2,4,10,0.3), transparent)' }} />
                             <div className="absolute bottom-8 left-8 right-8">
                                 <span className="font-body text-xs uppercase tracking-[0.25em] text-white/50 mb-2 block">
                                     Featured Platform
@@ -671,7 +671,7 @@ function Destinations() {
                                     alt={dest.name}
                                     className="w-full h-full object-cover transition-transform duration-[1.2s] group-hover:scale-110"
                                 />
-                                <div className="absolute inset-0 bg-gradient-to-t from-[#02040A] via-[#02040A]/20 to-transparent" />
+                                <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, #02040A, rgba(2,4,10,0.2), transparent)' }} />
                                 <div className="absolute bottom-6 left-6 right-6">
                                     <span className="font-body text-xs uppercase tracking-[0.2em] text-white/40 mb-2 block">
                                         {dest.tagline}
@@ -802,7 +802,7 @@ function Footer() {
                                         className="bg-transparent w-full font-body text-sm text-white placeholder-white/30 outline-none"
                                     />
                                 </div>
-                                <Link to="/login" className="bg-white text-[#02040A] font-body font-semibold text-sm px-6 py-3 rounded-full hover:bg-white/90 transition-all duration-300 inline-flex items-center gap-2 hover:scale-105">
+                                <Link to="/login" className="bg-white font-body font-semibold text-sm px-6 py-3 rounded-full hover:bg-white/90 transition-all duration-300 inline-flex items-center gap-2 hover:scale-105" style={{ color: '#02040A' }}>
                                     <Mail className="w-4 h-4" />
                                     Subscribe
                                 </Link>
@@ -912,7 +912,7 @@ export default function CinematicLanding() {
     };
 
     return (
-        <div className="bg-[#02040A] text-white min-h-[100dvh] font-body selection:bg-white/30 selection:text-white overflow-x-hidden">
+        <div className="text-white font-body overflow-x-hidden" style={{ backgroundColor: '#02040A', minHeight: '100dvh' }}>
             <style dangerouslySetInnerHTML={{ __html: globalStyles }} />
             <Navbar openCodeModal={openCodeModal} />
             <main>
@@ -945,7 +945,7 @@ export default function CinematicLanding() {
                             onClick={(e) => e.stopPropagation()}
                         >
                             <div className="flex items-center justify-between mb-6">
-                                <h3 className="text-2xl font-bold text-[#02040A]">Enter Code</h3>
+                                <h3 className="text-2xl font-bold" style={{ color: '#02040A' }}>Enter Code</h3>
                                 <button
                                     onClick={closeCodeModal}
                                     className="p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -959,12 +959,14 @@ export default function CinematicLanding() {
                                     value={enteredCode}
                                     onChange={(e) => setEnteredCode(e.target.value)}
                                     placeholder="Enter your access code"
-                                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-[#02040A] placeholder-gray-400 focus:border-[#02040A] focus:outline-none transition-colors text-lg"
+                                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl placeholder-gray-400 focus:outline-none transition-colors text-lg"
+                                    style={{ color: '#02040A', borderColor: undefined }}
                                     autoFocus
                                 />
                                 <button
                                     type="submit"
-                                    className="w-full mt-4 bg-[#02040A] text-white py-3 rounded-xl font-semibold hover:bg-[#02040A]/90 transition-colors"
+                                    className="w-full mt-4 text-white py-3 rounded-xl font-semibold transition-colors"
+                                    style={{ backgroundColor: '#02040A' }}
                                 >
                                     Submit
                                 </button>
