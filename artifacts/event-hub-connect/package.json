@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "pnpm --filter @workspace/api-server build && vite build && mkdir -p api && cp -r ../api-server/dist/*.mjs api/ && rm -f api/index.mjs",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",

@@ -247,6 +247,7 @@ function Navbar({ openCodeModal }: { openCodeModal?: () => void }) {
 ────────────────────────────────────────────── */
 function HeroSection() {
     const ref = useRef(null);
+    const { user } = useAuth();
     const { scrollYProgress } = useScroll({
         target: ref,
         offset: ["start start", "end start"],
@@ -292,14 +293,14 @@ function HeroSection() {
                     <div className="liquid-glass rounded-full px-5 py-2 mb-8 inline-flex items-center gap-2">
                         <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
                         <span className="font-body text-xs uppercase tracking-[0.25em] text-white/80">
-                            Sphoorthy Engineering College
+                            DataNauts × Sphoorthy Engineering College
                         </span>
                     </div>
                 </ScrollReveal>
 
                 {/* Heading */}
                 <BlurText
-                    text="Your Campus Life Starts Here at the Hub"
+                    text="Skill Development Program (SIP)"
                     el="h1"
                     className="font-heading italic text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-[6.5rem] text-white tracking-tight text-balance max-w-5xl leading-[1.05]"
                     delay={0.3}
@@ -308,23 +309,23 @@ function HeroSection() {
                 {/* Sub */}
                 <ScrollReveal delay={0.6}>
                     <p className="font-body text-white/60 text-lg md:text-xl max-w-2xl leading-relaxed mt-8">
-                        The ultimate hub for college hackathons, career-shifting internships,
-                        innovative projects, and everything happening on campus.
+                        Master in-demand skills through structured tracks, hands-on projects,
+                        industry mentorship, and earn certifications that launch your career.
                     </p>
                 </ScrollReveal>
 
                 {/* CTAs */}
                 <ScrollReveal delay={0.8}>
                     <div className="flex flex-col sm:flex-row items-center gap-4 mt-10">
-                        <Link to="/events" className="liquid-glass-strong rounded-full px-8 py-4 font-body font-semibold text-white inline-flex items-center gap-3 hover:scale-105 transition-transform duration-300">
+                        <Link to={user ? "/tasks" : "/login"} className="liquid-glass-strong rounded-full px-8 py-4 font-body font-semibold text-white inline-flex items-center gap-3 hover:scale-105 transition-transform duration-300">
                             <Rocket className="w-5 h-5" />
-                            Explore Events
+                            Explore Tasks
                         </Link>
-                        <Link to="/projects" className="font-body text-white/70 hover:text-white inline-flex items-center gap-3 px-6 py-4 rounded-full hover:bg-white/5 transition-all duration-300">
+                        <Link to="/learn" className="font-body text-white/70 hover:text-white inline-flex items-center gap-3 px-6 py-4 rounded-full hover:bg-white/5 transition-all duration-300">
                             <div className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center">
                                 <Play className="w-4 h-4 ml-0.5" />
                             </div>
-                            View Projects
+                            Explore Tracks
                         </Link>
                         <a
                             href={typeof navigator !== 'undefined' && navigator.userAgent.toLowerCase().includes('mac')
@@ -379,7 +380,7 @@ function MissionStatement() {
 
             <div className="max-w-4xl mx-auto text-center relative z-10">
                 <BlurText
-                    text="We are not just hosting events. We are shaping the future leaders of tomorrow."
+                    text="SIP transforms curious students into industry-ready professionals through structured skill tracks, hands-on projects, and expert mentorship."
                     el="h2"
                     className="font-heading italic text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-white tracking-tight text-balance leading-[1.15]"
                 />
@@ -397,12 +398,12 @@ function MissionStatement() {
 ────────────────────────────────────────────── */
 function VesselSpecs() {
     const specs = [
-        { icon: Zap, label: "Events", value: "50+", desc: "Hosted per year" },
-        { icon: Shield, label: "Uptime", value: "99.9%", desc: "Platform reliability" },
-        { icon: Users, label: "Students", value: "3,000+", desc: "Active members" },
-        { icon: Heart, label: "Clubs", value: "25+", desc: "Student organizations" },
-        { icon: Lock, label: "Security", value: "A+", desc: "Data protection" },
-        { icon: Radio, label: "Updates", value: "Real-time", desc: "Instant notifications" },
+        { icon: Zap, label: "Skill Tracks", value: "12+", desc: "Curated learning paths" },
+        { icon: Shield, label: "Completion", value: "94%", desc: "Program success rate" },
+        { icon: Users, label: "SIP Members", value: "3,000+", desc: "Active learners" },
+        { icon: Heart, label: "Projects", value: "200+", desc: "Built by students" },
+        { icon: Lock, label: "Mentors", value: "30+", desc: "Industry professionals" },
+        { icon: Radio, label: "Certifications", value: "1,500+", desc: "Issued to students" },
     ];
 
     return (
@@ -420,12 +421,12 @@ function VesselSpecs() {
                             <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, #02040A, rgba(2,4,10,0.3), transparent)' }} />
                             <div className="absolute bottom-8 left-8 right-8">
                                 <span className="font-body text-xs uppercase tracking-[0.25em] text-white/50 mb-2 block">
-                                    Featured Platform
+                                    Powered by BigBrains
                                 </span>
                                 <h3 className="font-heading italic text-4xl md:text-5xl text-white mb-1">
-                                    Event Hub
+                                    DataNauts SIP
                                 </h3>
-                                <p className="font-body text-white/50 text-lg">Connect · Learn · Grow</p>
+                                <p className="font-body text-white/50 text-lg">Learn · Build · Launch</p>
                             </div>
                         </div>
                     </div>
@@ -435,7 +436,7 @@ function VesselSpecs() {
                 <div className="flex flex-col justify-center">
                     <ScrollReveal>
                         <span className="font-body text-xs uppercase tracking-[0.25em] text-white/40 mb-4 block">
-                            Platform Stats
+                            Program Overview
                         </span>
                         <BlurText
                             text="Built for Students"
@@ -469,12 +470,12 @@ function VesselSpecs() {
 ────────────────────────────────────────────── */
 function FeaturesGrid() {
     const features = [
-        { icon: Rocket, title: "Event Discovery", desc: "Find hackathons, workshops, seminars, and cultural events happening across campus — all in one place." },
-        { icon: Shield, title: "QR Check-In", desc: "Seamless attendance tracking with instant QR code scanning at every event entrance." },
-        { icon: Globe, title: "Project Showcase", desc: "Share your innovations with the entire college. Get feedback, collaborate, and gain visibility." },
-        { icon: Cpu, title: "Learn Hub", desc: "Access curated tutorials, coding challenges, and study resources built by students for students." },
-        { icon: Satellite, title: "Live Feed", desc: "Real-time announcements, updates, and discussions keeping you connected to campus life 24/7." },
-        { icon: Navigation, title: "Smart Profiles", desc: "Track your event participation, project contributions, and achievements in one unified dashboard." },
+        { icon: Rocket, title: "Structured Skill Tracks", desc: "Follow curated learning paths in Full-Stack, AI/ML, Cloud, Data Science, and more — from fundamentals to advanced mastery." },
+        { icon: Shield, title: "Hands-On Projects", desc: "Build real-world applications and portfolio-worthy projects with guided mentorship at every step." },
+        { icon: Globe, title: "Industry Mentorship", desc: "Learn directly from industry professionals, startup founders, and senior engineers through 1-on-1 sessions and group workshops." },
+        { icon: Cpu, title: "Live Workshops", desc: "Attend weekly hands-on workshops covering cutting-edge technologies, best practices, and interview preparation." },
+        { icon: Satellite, title: "Progress Dashboard", desc: "Track your skill growth, completed modules, project submissions, and achievements in a unified personal dashboard." },
+        { icon: Navigation, title: "Certificates & Portfolio", desc: "Earn verified completion certificates and build a professional portfolio that stands out to recruiters and companies." },
     ];
 
     return (
@@ -486,11 +487,11 @@ function FeaturesGrid() {
                 <div className="text-center mb-16">
                     <ScrollReveal>
                         <span className="font-body text-xs uppercase tracking-[0.25em] text-white/40 mb-4 block">
-                            Platform Features
+                            What You'll Get
                         </span>
                     </ScrollReveal>
                     <BlurText
-                        text="Everything You Need"
+                        text="Everything You Need to Succeed"
                         el="h2"
                         className="font-heading italic text-4xl md:text-5xl lg:text-6xl text-white tracking-tight"
                     />
@@ -521,27 +522,27 @@ function JourneyTimeline() {
     const steps = [
         {
             phase: "Step 01",
-            title: "Sign Up & Explore",
-            desc: "Create your student profile in seconds. Browse upcoming events, hackathons, workshops, and campus activities.",
+            title: "Enroll & Pick Your Track",
+            desc: "Sign up with your roll number, browse available skill tracks like Full-Stack, AI/ML, Cloud, or Data Science, and choose the one that excites you most.",
             time: "Takes 2 minutes",
         },
         {
             phase: "Step 02",
-            title: "Register & Participate",
-            desc: "One-click registration for events. Get QR codes for check-in, add events to your calendar, and join team formations.",
-            time: "Instant confirmation",
+            title: "Dive Into Learning",
+            desc: "Access structured modules, video tutorials, and reading materials. Attend live workshops every week and get your doubts cleared by mentors.",
+            time: "Self-paced learning",
         },
         {
             phase: "Step 03",
-            title: "Learn & Build",
-            desc: "Access coding tutorials, work on projects, enter coding challenges, and collaborate with peers across departments.",
-            time: "Available 24/7",
+            title: "Build Real Projects",
+            desc: "Apply what you learn by building real-world projects. Get code reviews from mentors, collaborate with peers, and push to your portfolio.",
+            time: "Guided mentorship",
         },
         {
             phase: "Step 04",
-            title: "Grow & Connect",
-            desc: "Build your portfolio, earn participation certificates, track achievements, and connect with opportunities.",
-            time: "Ongoing",
+            title: "Get Certified & Hired",
+            desc: "Complete your track, earn a verified SIP certificate, build a polished portfolio, and get connected to internship and placement opportunities.",
+            time: "Career-ready",
         },
     ];
 
@@ -551,11 +552,11 @@ function JourneyTimeline() {
                 <div className="text-center mb-20">
                     <ScrollReveal>
                         <span className="font-body text-xs uppercase tracking-[0.25em] text-white/40 mb-4 block">
-                            How It Works
+                            Your SIP Journey
                         </span>
                     </ScrollReveal>
                     <BlurText
-                        text="Your Journey Begins"
+                        text="From Beginner to Pro"
                         el="h2"
                         className="font-heading italic text-4xl md:text-5xl lg:text-6xl text-white tracking-tight"
                     />
@@ -607,27 +608,27 @@ function JourneyTimeline() {
 function Destinations() {
     const destinations = [
         {
-            name: "Hackathons",
-            tagline: "Code. Compete. Conquer.",
+            name: "Full-Stack Development",
+            tagline: "Frontend to Backend Mastery",
             img: "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?q=80&w=1600&auto=format&fit=crop",
             span: true,
         },
         {
-            name: "Workshops",
-            tagline: "Hands-on Learning",
-            img: "https://images.unsplash.com/photo-1531482615713-2afd69097998?q=80&w=1600&auto=format&fit=crop",
+            name: "AI & Machine Learning",
+            tagline: "Build Intelligent Systems",
+            img: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?q=80&w=1600&auto=format&fit=crop",
             span: false,
         },
         {
-            name: "Tech Talks",
-            tagline: "Industry Insights",
-            img: "https://images.unsplash.com/photo-1475721027785-f74eccf877e2?q=80&w=1600&auto=format&fit=crop",
+            name: "Cloud & DevOps",
+            tagline: "Deploy at Scale",
+            img: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1600&auto=format&fit=crop",
             span: false,
         },
         {
-            name: "Cultural Fests",
-            tagline: "Celebrate Together",
-            img: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=1600&auto=format&fit=crop",
+            name: "Data Science & Analytics",
+            tagline: "Turn Data into Decisions",
+            img: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1600&auto=format&fit=crop",
             span: true,
         },
     ];
@@ -639,11 +640,11 @@ function Destinations() {
                     <div>
                         <ScrollReveal>
                             <span className="font-body text-xs uppercase tracking-[0.25em] text-white/40 mb-4 block">
-                                Explore Categories
+                                Skill Tracks
                             </span>
                         </ScrollReveal>
                         <BlurText
-                            text="Events Await"
+                            text="Choose Your Path"
                             el="h2"
                             className="font-heading italic text-4xl md:text-5xl lg:text-6xl text-white tracking-tight"
                         />
@@ -653,7 +654,7 @@ function Destinations() {
                             href="#"
                             className="font-body text-sm text-white/50 hover:text-white flex items-center gap-2 transition-colors duration-300"
                         >
-                            View All Events <ArrowRight className="w-4 h-4" />
+                            View All Tracks <ArrowRight className="w-4 h-4" />
                         </a>
                     </ScrollReveal>
                 </div>
@@ -677,8 +678,8 @@ function Destinations() {
                                         {dest.tagline}
                                     </span>
                                     <h3 className="font-heading italic text-3xl text-white mb-4">{dest.name}</h3>
-                                    <Link to="/events" className="liquid-glass rounded-full px-5 py-2.5 font-body text-sm inline-flex text-white/80 hover:text-white items-center gap-2 transition-all duration-300 w-fit">
-                                        View Details <ArrowRight className="w-3.5 h-3.5" />
+                                    <Link to="/learn" className="liquid-glass rounded-full px-5 py-2.5 font-body text-sm inline-flex text-white/80 hover:text-white items-center gap-2 transition-all duration-300 w-fit">
+                                        Explore Track <ArrowRight className="w-3.5 h-3.5" />
                                     </Link>
                                 </div>
                             </div>
@@ -697,20 +698,20 @@ function FAQ() {
     const [openIndex, setOpenIndex] = useState<number | null>(null);
     const questions = [
         {
-            q: "Who can use the Event Hub?",
-            a: "All students of Sphoorthy Engineering College can sign up using their college email. Faculty advisors and club coordinators also have access to manage events and announcements.",
+            q: "Who is eligible for SIP?",
+            a: "All students of Sphoorthy Engineering College can enroll in SIP using their roll number. Whether you're a first-year or final-year student, there's a skill track designed for your level.",
         },
         {
-            q: "How do I register for an event?",
-            a: "Simply browse upcoming events, click Register, and you will receive a confirmation with a QR code. Show the QR code at the event entrance for instant check-in.",
+            q: "How do I choose a skill track?",
+            a: "After enrolling, you'll see all available tracks — Full-Stack, AI/ML, Cloud & DevOps, Data Science, and more. Each track page shows the syllabus, duration, and difficulty level to help you decide.",
         },
         {
-            q: "Can I submit my own project or event?",
-            a: "Yes! Students can submit project showcases and club heads can create events through the dashboard. All submissions go through a quick review before going live.",
+            q: "Do I get a certificate after completing a track?",
+            a: "Yes! Upon completing all modules and the final project in your track, you'll receive a verified SIP completion certificate. This certificate is shareable on LinkedIn and recognized by our partner companies.",
         },
         {
-            q: "Is the Learn Hub free for all students?",
-            a: "Absolutely. All tutorials, coding challenges, and learning resources on the platform are free and open to every registered student of the college.",
+            q: "Is SIP free for students?",
+            a: "Absolutely. SIP is completely free for all registered students. All learning materials, workshops, mentorship sessions, and certifications are provided at no cost.",
         },
     ];
 
@@ -720,7 +721,7 @@ function FAQ() {
                 <div className="text-center mb-16">
                     <ScrollReveal>
                         <span className="font-body text-xs uppercase tracking-[0.25em] text-white/40 mb-4 block">
-                            Frequently Asked
+                            Got Questions?
                         </span>
                     </ScrollReveal>
                     <BlurText

@@ -8,7 +8,7 @@ const router: IRouter = Router();
 async function requireMainAdmin(req: any, res: any): Promise<any | null> {
   const token = (req.headers.authorization || "").replace(/^Bearer\s+/i, "");
   const result = await getSessionUser(token);
-  if (!result || !result.user.is_main_admin) {
+  if (!result || !result.user.isMainAdmin) {
     res.status(403).json({ success: false, error: "Only the main admin can do this." });
     return null;
   }
@@ -19,7 +19,7 @@ router.get("/admin/admins", async (req, res) => {
   try {
     const token = (req.headers.authorization || "").replace(/^Bearer\s+/i, "");
     const result = await getSessionUser(token);
-    if (!result || !(result.user.is_admin || result.user.is_main_admin)) {
+    if (!result || !(result.user.isAdmin || result.user.isMainAdmin)) {
       return res.status(403).json({ success: false, error: "Admins only." });
     }
 
@@ -85,7 +85,7 @@ router.post("/admin/revoke-admin", async (req, res) => {
     if (!rollNumber) {
       return res.status(400).json({ success: false, error: "Roll number is required." });
     }
-    if (rollNumber === actor.roll_number) {
+    if (rollNumber === actor.rollNumber) {
       return res.status(400).json({ success: false, error: "You cannot revoke your own admin access." });
     }
 

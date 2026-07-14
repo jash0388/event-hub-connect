@@ -135,13 +135,13 @@ router.get("/auth/me", async (req, res) => {
   if (!result) {
     return res.status(401).json({ success: false, error: "Session expired." });
   }
-  return res.json({ success: true, user: { ...toPublicUser(result.user), expiresAt: result.session.expires_at } });
+  return res.json({ success: true, user: { ...result.user, expiresAt: result.session.expiresAt } });
 });
 
 router.post("/auth/logout", async (req, res) => {
   const token = (req.headers.authorization || "").replace(/^Bearer\s+/i, "");
   if (token) {
-    mockSessions.delete(token);
+    activeSessions.delete(token);
   }
   return res.json({ success: true });
 });
