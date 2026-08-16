@@ -784,6 +784,7 @@ const AdminDashboard = () => {
       case 'qrscan': await fetchRegistrations(); break;
       case 'sip_attendance': await fetchSipAttendance(); break;
       case 'test_questions': await Promise.all([fetchExamsList(), fetchExamQuestions(), fetchAccessCodesList()]); break;
+      case 'access_codes': await fetchAccessCodesList(); break;
       case 'test_results': await Promise.all([fetchExamsList(), fetchExamSubmissions()]); break;
     }
   };
@@ -2540,6 +2541,7 @@ const AdminDashboard = () => {
                   { value: 'attendance', label: 'Attendance' },
                   { value: 'sip_attendance', label: '📋 SIP Attendance' },
                   { value: 'test_questions', label: '📝 Test Questions' },
+                  { value: 'access_codes', label: '🔑 One-Time Codes' },
                   { value: 'test_results', label: '📊 Test Results' },
                   { value: 'messages', label: 'Messages' },
                 ].map((tab) => (
@@ -3902,6 +3904,123 @@ const AdminDashboard = () => {
                 })}
               </div>
 
+            </TabsContent>
+
+            {/* ==================== ONE-TIME ACCESS CODES TAB ==================== */}
+            <TabsContent value="access_codes" className="mt-0">
+              <div className="bg-card border border-border rounded-2xl p-6 shadow-sm mb-8 space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-4">
+                  <div>
+                    <h3 className="text-xl font-bold flex items-center gap-2">
+                      <span>🔑</span> One-Time Access Code Generator & Manager
+                    </h3>
+                    <p className="text-sm text-muted-foreground mt-0.5">
+                      Generate access codes for students to log in on sphntest.online without an OTP email.
+                    </p>
+                  </div>
+                  <Badge variant="outline" className="w-fit text-sm font-mono bg-yellow-500/10 text-yellow-600 border-yellow-500/20 px-3 py-1">
+                    {accessCodesList.filter(c => !c.is_used).length} Available Codes
+                  </Badge>
+                </div>
+
+                {/* Generator Form */}
+                <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                  <Input
+                    placeholder="Custom Code (e.g. SPHN2026 or leave empty for auto)"
+                    value={customAccessCodeInput}
+                    onChange={(e) => setCustomAccessCodeInput(e.target.value.toUpperCase())}
+                    className="font-mono text-base tracking-wider uppercase flex-1 rounded-xl py-5"
+                  />
+                  <Button
+                    onClick={() => handleGenerateAccessCode()}
+                    className="bg-yellow-600 hover:bg-yellow-700 text-white font-bold rounded-xl shrink-0 px-6 py-5 text-sm"
+                  >
+                    <Plus className="w-4 h-4 mr-2" /> Generate One-Time Code
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => handleGenerateAccessCode()}
+                    className="rounded-xl shrink-0 py-5 text-sm"
+                  >
+                    ⚡ Auto Code (OTC-XXXXXX)
+                  </Button>
+                </div>
+
+                {/* Access Codes Table */}
+                <div className="border rounded-xl overflow-hidden mt-6">
+                  <Table>
+                    <TableHeader className="bg-muted/50">
+                      <TableRow>
+                        <TableHead className="font-bold text-xs uppercase">Access Code</TableHead>
+                        <TableHead className="font-bold text-xs uppercase">Status</TableHead>
+                        <TableHead className="font-bold text-xs uppercase">Redeemed By Student</TableHead>
+                        <TableHead className="font-bold text-xs uppercase">Created Date</TableHead>
+                        <TableHead className="text-right font-bold text-xs uppercase">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {accessCodesList.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center py-10 text-muted-foreground text-sm italic">
+                            No access codes created yet. Click "Generate One-Time Code" above.
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        accessCodesList.map((item: any) => (
+                          <TableRow key={item.id} className="hover:bg-muted/30">
+                            <TableCell className="font-mono font-bold text-base text-yellow-600">
+                              {item.code}
+                            </TableCell>
+                            <TableCell>
+                              {item.is_used ? (
+                                <Badge variant="destructive" className="text-xs">USED</Badge>
+                              ) : (
+                                <Badge className="bg-green-600 text-white text-xs">AVAILABLE</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-xs">
+                              {item.used_by_roll ? (
+                                <div>
+                                  <p className="font-bold text-foreground font-mono">{item.used_by_roll}</p>
+                                  {item.used_by_name && <p className="text-[11px] text-muted-foreground">{item.used_by_name}</p>}
+                                </div>
+                              ) : (
+                                <span className="text-muted-foreground italic">Not used yet</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-xs text-muted-foreground font-mono">
+                              {item.created_at ? new Date(item.created_at).toLocaleDateString() : "--"}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(item.code);
+                                    toast({ description: `Copied code ${item.code} to clipboard!` });
+                                  }}
+                                  className="h-8 px-3 text-xs"
+                                >
+                                  Copy
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleDeleteAccessCode(item.id, item.code)}
+                                  className="h-8 px-3 text-xs text-red-500 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
             </TabsContent>
 
             {/* ==================== TEST RESULTS TAB ==================== */}
