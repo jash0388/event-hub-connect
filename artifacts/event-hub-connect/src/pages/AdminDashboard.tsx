@@ -204,7 +204,7 @@ const AdminDashboard = () => {
   const [examQuestionDialogOpen, setExamQuestionDialogOpen] = useState(false);
   const [editingExam, setEditingExam] = useState<any>(null);
   const [selectedExamForQuestions, setSelectedExamForQuestions] = useState<string>('');
-  const [examForm, setExamForm] = useState({ title: '', description: '', duration_minutes: 30, max_violations: 2 });
+  const [examForm, setExamForm] = useState({ title: '', description: '', duration_minutes: 30, max_violations: 2, disable_previous: false });
   const [examQuestionForm, setExamQuestionForm] = useState({ question: '', question_type: 'mcq' as string, options: ['', '', '', ''], correct_answer: '', marks: 5 });
   const [examResultsFilter, setExamResultsFilter] = useState<string>('all');
 
@@ -656,18 +656,30 @@ const AdminDashboard = () => {
     }, 15000);
 
     try {
+      const rawDesc = examForm.description || '';
+      const cleanDesc = rawDesc.replace(/\[NO_PREVIOUS\]/g, '').trim();
+      const finalDesc = examForm.disable_previous ? `${cleanDesc} [NO_PREVIOUS]`.trim() : cleanDesc;
+      const payload = {
+        title: examForm.title,
+        description: finalDesc,
+        duration_minutes: examForm.duration_minutes,
+        max_violations: examForm.max_violations,
+        disable_previous: examForm.disable_previous,
+        updated_at: new Date().toISOString(),
+      };
+
       if (editingExam) {
-        const { error } = await (supabase as any).from('exams').update({ ...examForm, updated_at: new Date().toISOString() }).eq('id', editingExam.id);
+        const { error } = await (supabase as any).from('exams').update(payload).eq('id', editingExam.id);
         if (error) throw error;
         toast({ title: 'Exam updated!' });
       } else {
-        const { error } = await (supabase as any).from('exams').insert({ ...examForm, is_active: true });
+        const { error } = await (supabase as any).from('exams').insert({ ...payload, is_active: true });
         if (error) throw error;
         toast({ title: 'Exam created!' });
       }
       setExamDialogOpen(false);
       setEditingExam(null);
-      setExamForm({ title: '', description: '', duration_minutes: 30, max_violations: 2 });
+      setExamForm({ title: '', description: '', duration_minutes: 30, max_violations: 2, disable_previous: false });
       await fetchExamsList();
     } catch (e: any) { toast({ title: 'Error', description: e.message, variant: 'destructive' }); }
     finally {
@@ -3860,10 +3872,15 @@ const AdminDashboard = () => {
                             <Badge variant={exam.is_active ? 'default' : 'secondary'}>{exam.is_active ? 'Active' : 'Inactive'}</Badge>
                           </div>
                           <p className="text-sm text-muted-foreground mb-2">{exam.description || 'No description'}</p>
-                          <div className="flex gap-4 text-xs text-muted-foreground">
+                          <div className="flex gap-4 text-xs text-muted-foreground flex-wrap">
                             <span>⏱ {exam.duration_minutes} min</span>
                             <span>⚠️ Max {exam.max_violations} violations</span>
                             <span>📝 {qCount} questions</span>
+                            {(exam.disable_previous || exam.description?.includes('[NO_PREVIOUS]')) && (
+                              <span className="text-red-500 font-bold flex items-center gap-1">
+                                🚫 No Previous Button
+                              </span>
+                            )}
                           </div>
                         </div>
                         <div className="flex gap-2">
@@ -3871,7 +3888,7 @@ const AdminDashboard = () => {
                             {exam.is_active ? <Lock className="w-3 h-3 mr-1" /> : <Unlock className="w-3 h-3 mr-1" />}
                             {exam.is_active ? 'Deactivate' : 'Activate'}
                           </Button>
-                          <Button size="sm" variant="outline" onClick={() => { setEditingExam(exam); setExamForm({ title: exam.title, description: exam.description || '', duration_minutes: exam.duration_minutes, max_violations: exam.max_violations }); setExamDialogOpen(true); }}>
+                          <Button size="sm" variant="outline" onClick={() => { setEditingExam(exam); setExamForm({ title: exam.title, description: (exam.description || '').replace(/\[NO_PREVIOUS\]/g, '').trim(), duration_minutes: exam.duration_minutes, max_violations: exam.max_violations, disable_previous: !!exam.disable_previous || (exam.description || '').includes('[NO_PREVIOUS]') }); setExamDialogOpen(true); }}>
                             <Edit className="w-3 h-3" />
                           </Button>
                           <Button size="sm" variant="destructive" onClick={() => handleDeleteExam(exam.id)}>
@@ -4154,6 +4171,21 @@ const AdminDashboard = () => {
                   <div><Label>Duration (minutes)</Label><Input type="number" value={examForm.duration_minutes} onChange={e => setExamForm({ ...examForm, duration_minutes: parseInt(e.target.value) || 30 })} /></div>
                   <div><Label>Max Violations</Label><Input type="number" value={examForm.max_violations} onChange={e => setExamForm({ ...examForm, max_violations: parseInt(e.target.value) || 2 })} /></div>
                 </div>
+                
+                {/* Disable Previous Button Toggle */}
+                <div className="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
+                  <div>
+                    <p className="text-xs font-bold text-slate-900">Disable "Previous Question" Button</p>
+                    <p className="text-[11px] text-slate-500">Lock sequential navigation (students cannot go back once answered/next clicked)</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={examForm.disable_previous || false}
+                    onChange={(e) => setExamForm({ ...examForm, disable_previous: e.target.checked })}
+                    className="w-5 h-5 accent-red-600 cursor-pointer"
+                  />
+                </div>
+
                 <Button onClick={handleSaveExam} disabled={!examForm.title.trim() || isSaving} className="w-full">
                   {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
                   {editingExam ? 'Update Exam' : 'Create Exam'}
