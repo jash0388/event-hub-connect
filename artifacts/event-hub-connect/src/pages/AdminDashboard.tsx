@@ -204,7 +204,7 @@ const AdminDashboard = () => {
   const [examQuestionDialogOpen, setExamQuestionDialogOpen] = useState(false);
   const [editingExam, setEditingExam] = useState<any>(null);
   const [selectedExamForQuestions, setSelectedExamForQuestions] = useState<string>('');
-  const [examForm, setExamForm] = useState({ title: '', description: '', duration_minutes: 30, max_violations: 2, disable_previous: false });
+  const [examForm, setExamForm] = useState({ title: '', description: '', duration_minutes: 30, max_violations: 2, difficulty: 'easy', disable_previous: false });
   const [examQuestionForm, setExamQuestionForm] = useState({ question: '', question_type: 'mcq' as string, options: ['', '', '', ''], correct_answer: '', marks: 5 });
   const [examResultsFilter, setExamResultsFilter] = useState<string>('all');
 
@@ -656,15 +656,17 @@ const AdminDashboard = () => {
     }, 15000);
 
     try {
+      const isHard = examForm.difficulty === 'hard' || examForm.disable_previous;
       const rawDesc = examForm.description || '';
-      const cleanDesc = rawDesc.replace(/\[NO_PREVIOUS\]/g, '').trim();
-      const finalDesc = examForm.disable_previous ? `${cleanDesc} [NO_PREVIOUS]`.trim() : cleanDesc;
+      const cleanDesc = rawDesc.replace(/\[DIFFICULTY:(EASY|HARD)\]/gi, '').replace(/\[NO_PREVIOUS\]/gi, '').trim();
+      const finalDesc = `${cleanDesc} [DIFFICULTY:${isHard ? 'HARD' : 'EASY'}]`.trim();
       const payload = {
         title: examForm.title,
         description: finalDesc,
         duration_minutes: examForm.duration_minutes,
         max_violations: examForm.max_violations,
-        disable_previous: examForm.disable_previous,
+        difficulty: isHard ? 'hard' : 'easy',
+        disable_previous: isHard,
         updated_at: new Date().toISOString(),
       };
 
@@ -679,7 +681,7 @@ const AdminDashboard = () => {
       }
       setExamDialogOpen(false);
       setEditingExam(null);
-      setExamForm({ title: '', description: '', duration_minutes: 30, max_violations: 2, disable_previous: false });
+      setExamForm({ title: '', description: '', duration_minutes: 30, max_violations: 2, difficulty: 'easy', disable_previous: false });
       await fetchExamsList();
     } catch (e: any) { toast({ title: 'Error', description: e.message, variant: 'destructive' }); }
     finally {
@@ -3876,9 +3878,13 @@ const AdminDashboard = () => {
                             <span>⏱ {exam.duration_minutes} min</span>
                             <span>⚠️ Max {exam.max_violations} violations</span>
                             <span>📝 {qCount} questions</span>
-                            {(exam.disable_previous || exam.description?.includes('[NO_PREVIOUS]')) && (
+                            {(exam.difficulty === 'hard' || exam.disable_previous || exam.description?.includes('[DIFFICULTY:HARD]') || exam.description?.includes('[NO_PREVIOUS]')) ? (
                               <span className="text-red-500 font-bold flex items-center gap-1">
-                                🚫 No Previous Button
+                                🔴 Hard Mode (No Previous Button)
+                              </span>
+                            ) : (
+                              <span className="text-emerald-600 font-bold flex items-center gap-1">
+                                🟢 Easy Mode (Previous Button Enabled)
                               </span>
                             )}
                           </div>
@@ -3888,7 +3894,7 @@ const AdminDashboard = () => {
                             {exam.is_active ? <Lock className="w-3 h-3 mr-1" /> : <Unlock className="w-3 h-3 mr-1" />}
                             {exam.is_active ? 'Deactivate' : 'Activate'}
                           </Button>
-                          <Button size="sm" variant="outline" onClick={() => { setEditingExam(exam); setExamForm({ title: exam.title, description: (exam.description || '').replace(/\[NO_PREVIOUS\]/g, '').trim(), duration_minutes: exam.duration_minutes, max_violations: exam.max_violations, disable_previous: !!exam.disable_previous || (exam.description || '').includes('[NO_PREVIOUS]') }); setExamDialogOpen(true); }}>
+                          <Button size="sm" variant="outline" onClick={() => { setEditingExam(exam); const isHard = exam.difficulty === 'hard' || exam.disable_previous || exam.description?.includes('[DIFFICULTY:HARD]') || exam.description?.includes('[NO_PREVIOUS]'); setExamForm({ title: exam.title, description: (exam.description || '').replace(/\[DIFFICULTY:(EASY|HARD)\]/gi, '').replace(/\[NO_PREVIOUS\]/gi, '').trim(), duration_minutes: exam.duration_minutes, max_violations: exam.max_violations, difficulty: isHard ? 'hard' : 'easy', disable_previous: isHard }); setExamDialogOpen(true); }}>
                             <Edit className="w-3 h-3" />
                           </Button>
                           <Button size="sm" variant="destructive" onClick={() => handleDeleteExam(exam.id)}>
@@ -4172,18 +4178,20 @@ const AdminDashboard = () => {
                   <div><Label>Max Violations</Label><Input type="number" value={examForm.max_violations} onChange={e => setExamForm({ ...examForm, max_violations: parseInt(e.target.value) || 2 })} /></div>
                 </div>
                 
-                {/* Disable Previous Button Toggle */}
-                <div className="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
-                  <div>
-                    <p className="text-xs font-bold text-slate-900">Disable "Previous Question" Button</p>
-                    <p className="text-[11px] text-slate-500">Lock sequential navigation (students cannot go back once answered/next clicked)</p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={examForm.disable_previous || false}
-                    onChange={(e) => setExamForm({ ...examForm, disable_previous: e.target.checked })}
-                    className="w-5 h-5 accent-red-600 cursor-pointer"
-                  />
+                {/* Exam Difficulty Mode Selector */}
+                <div className="space-y-1.5">
+                  <Label className="font-bold">Exam Mode & Navigation *</Label>
+                  <select
+                    value={examForm.difficulty || (examForm.disable_previous ? 'hard' : 'easy')}
+                    onChange={(e) => {
+                      const diff = e.target.value;
+                      setExamForm({ ...examForm, difficulty: diff, disable_previous: diff === 'hard' });
+                    }}
+                    className="w-full p-3 border rounded-xl bg-white font-medium text-sm text-slate-900 cursor-pointer border-slate-300"
+                  >
+                    <option value="easy">🟢 Easy Mode (Has "Previous Question" button — Students can check previous questions)</option>
+                    <option value="hard">🔴 Hard Mode (No "Previous Question" button — Sequential lock mode)</option>
+                  </select>
                 </div>
 
                 <Button onClick={handleSaveExam} disabled={!examForm.title.trim() || isSaving} className="w-full">
