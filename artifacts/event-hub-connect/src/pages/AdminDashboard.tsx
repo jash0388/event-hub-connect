@@ -2541,7 +2541,6 @@ const AdminDashboard = () => {
                   { value: 'attendance', label: 'Attendance' },
                   { value: 'sip_attendance', label: '📋 SIP Attendance' },
                   { value: 'test_questions', label: '📝 Test Questions' },
-                  { value: 'access_codes', label: '🔑 One-Time Codes' },
                   { value: 'test_results', label: '📊 Test Results' },
                   { value: 'messages', label: 'Messages' },
                 ].map((tab) => (
