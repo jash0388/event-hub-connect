@@ -483,18 +483,21 @@ const AdminDashboard = () => {
       const { data, error } = await (supabase as any).from('access_codes').select('*').order('created_at', { ascending: false });
       if (!error && data && data.length > 0) {
         setAccessCodesList(data);
-      } else {
-        const raw = localStorage.getItem('sphn_access_codes');
-        if (raw) setAccessCodesList(JSON.parse(raw));
-        else {
-          const defaults = [
-            { id: "1", code: "SPHN2026", is_used: false, created_at: new Date().toISOString() },
-            { id: "2", code: "DATANAUTS100", is_used: false, created_at: new Date().toISOString() },
-            { id: "3", code: "EXAM2026", is_used: false, created_at: new Date().toISOString() },
-            { id: "4", code: "OTC-749201", is_used: false, created_at: new Date().toISOString() },
-          ];
-          setAccessCodesList(defaults);
-        }
+        return;
+      }
+      // Also fetch from profiles table for otc_code_ records
+      const { data: profData } = await supabase.from('profiles').select('*').like('id', 'otc_code_%');
+      if (profData && profData.length > 0) {
+        const mapped = profData.map((p: any) => ({
+          id: p.id,
+          code: p.email,
+          is_used: p.role === 'USED',
+          used_by_roll: p.college || null,
+          used_by_name: p.name || null,
+          created_at: p.created_at || new Date().toISOString()
+        }));
+        setAccessCodesList(mapped);
+        return;
       }
     } catch {
       const raw = localStorage.getItem('sphn_access_codes');
@@ -510,20 +513,32 @@ const AdminDashboard = () => {
       is_used: false,
       created_at: new Date().toISOString(),
     };
+
+    // 1. Insert into access_codes table
     try {
-      const { error } = await (supabase as any).from('access_codes').insert([newObj]);
-      if (error) {
-        const raw = localStorage.getItem('sphn_access_codes');
-        const list = raw ? JSON.parse(raw) : [];
-        const updated = [newObj, ...list];
-        localStorage.setItem('sphn_access_codes', JSON.stringify(updated));
-      }
-    } catch {
-      const raw = localStorage.getItem('sphn_access_codes');
-      const list = raw ? JSON.parse(raw) : [];
-      const updated = [newObj, ...list];
-      localStorage.setItem('sphn_access_codes', JSON.stringify(updated));
+      await (supabase as any).from('access_codes').insert([newObj]);
+    } catch {}
+
+    // 2. ALSO save to Supabase profiles table for global cross-domain syncing
+    try {
+      await supabase.from('profiles').upsert({
+        id: `otc_code_${codeStr}`,
+        full_name: 'ONE_TIME_CODE',
+        email: codeStr,
+        role: 'AVAILABLE',
+        college: '',
+        name: '',
+      }, { onConflict: 'id' });
+    } catch (e) {
+      console.error("Error saving profile OTC:", e);
     }
+
+    // 3. Save to localStorage
+    const raw = localStorage.getItem('sphn_access_codes');
+    const list = raw ? JSON.parse(raw) : [];
+    const updated = [newObj, ...list.filter((c: any) => c.code !== codeStr)];
+    localStorage.setItem('sphn_access_codes', JSON.stringify(updated));
+
     toast({ title: "Access Code Created!", description: `One-Time Code: ${codeStr}` });
     setCustomAccessCodeInput('');
     fetchAccessCodesList();
@@ -532,6 +547,9 @@ const AdminDashboard = () => {
   const handleDeleteAccessCode = async (id: string, code: string) => {
     try {
       await (supabase as any).from('access_codes').delete().eq('id', id);
+    } catch {}
+    try {
+      await supabase.from('profiles').delete().eq('id', `otc_code_${code}`);
     } catch {}
     const raw = localStorage.getItem('sphn_access_codes');
     if (raw) {
