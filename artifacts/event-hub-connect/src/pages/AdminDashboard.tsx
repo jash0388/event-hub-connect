@@ -198,6 +198,8 @@ const AdminDashboard = () => {
   const [examsList, setExamsList] = useState<any[]>([]);
   const [examQuestions, setExamQuestions] = useState<any[]>([]);
   const [examSubmissions, setExamSubmissions] = useState<any[]>([]);
+  const [accessCodesList, setAccessCodesList] = useState<any[]>([]);
+  const [customAccessCodeInput, setCustomAccessCodeInput] = useState<string>('');
   const [examDialogOpen, setExamDialogOpen] = useState(false);
   const [examQuestionDialogOpen, setExamQuestionDialogOpen] = useState(false);
   const [editingExam, setEditingExam] = useState<any>(null);
@@ -476,6 +478,70 @@ const AdminDashboard = () => {
       console.error('Error fetching submissions:', err);
     }
   };
+  const fetchAccessCodesList = async () => {
+    try {
+      const { data, error } = await (supabase as any).from('access_codes').select('*').order('created_at', { ascending: false });
+      if (!error && data && data.length > 0) {
+        setAccessCodesList(data);
+      } else {
+        const raw = localStorage.getItem('sphn_access_codes');
+        if (raw) setAccessCodesList(JSON.parse(raw));
+        else {
+          const defaults = [
+            { id: "1", code: "SPHN2026", is_used: false, created_at: new Date().toISOString() },
+            { id: "2", code: "DATANAUTS100", is_used: false, created_at: new Date().toISOString() },
+            { id: "3", code: "EXAM2026", is_used: false, created_at: new Date().toISOString() },
+            { id: "4", code: "OTC-749201", is_used: false, created_at: new Date().toISOString() },
+          ];
+          setAccessCodesList(defaults);
+        }
+      }
+    } catch {
+      const raw = localStorage.getItem('sphn_access_codes');
+      if (raw) setAccessCodesList(JSON.parse(raw));
+    }
+  };
+
+  const handleGenerateAccessCode = async (codeToUse?: string) => {
+    const codeStr = (codeToUse || customAccessCodeInput).trim().toUpperCase() || `OTC-${Math.floor(100000 + Math.random() * 900000)}`;
+    const newObj = {
+      id: `code_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      code: codeStr,
+      is_used: false,
+      created_at: new Date().toISOString(),
+    };
+    try {
+      const { error } = await (supabase as any).from('access_codes').insert([newObj]);
+      if (error) {
+        const raw = localStorage.getItem('sphn_access_codes');
+        const list = raw ? JSON.parse(raw) : [];
+        const updated = [newObj, ...list];
+        localStorage.setItem('sphn_access_codes', JSON.stringify(updated));
+      }
+    } catch {
+      const raw = localStorage.getItem('sphn_access_codes');
+      const list = raw ? JSON.parse(raw) : [];
+      const updated = [newObj, ...list];
+      localStorage.setItem('sphn_access_codes', JSON.stringify(updated));
+    }
+    toast({ title: "Access Code Created!", description: `One-Time Code: ${codeStr}` });
+    setCustomAccessCodeInput('');
+    fetchAccessCodesList();
+  };
+
+  const handleDeleteAccessCode = async (id: string, code: string) => {
+    try {
+      await (supabase as any).from('access_codes').delete().eq('id', id);
+    } catch {}
+    const raw = localStorage.getItem('sphn_access_codes');
+    if (raw) {
+      const list = JSON.parse(raw);
+      const updated = list.filter((c: any) => c.id !== id && c.code !== code);
+      localStorage.setItem('sphn_access_codes', JSON.stringify(updated));
+    }
+    toast({ title: "Access Code Removed", description: `Code ${code} deleted.` });
+    fetchAccessCodesList();
+  };
 
   const handleDeleteExamSubmission = async (id: string) => {
     if (!confirm('Are you sure you want to allow a retest for this student? This will delete their current record permanently.')) return;
@@ -717,7 +783,7 @@ const AdminDashboard = () => {
       case 'messages': await fetchMessages(); break;
       case 'qrscan': await fetchRegistrations(); break;
       case 'sip_attendance': await fetchSipAttendance(); break;
-      case 'test_questions': await Promise.all([fetchExamsList(), fetchExamQuestions()]); break;
+      case 'test_questions': await Promise.all([fetchExamsList(), fetchExamQuestions(), fetchAccessCodesList()]); break;
       case 'test_results': await Promise.all([fetchExamsList(), fetchExamSubmissions()]); break;
     }
   };
@@ -3642,6 +3708,121 @@ const AdminDashboard = () => {
                   <Button onClick={() => { setEditingExam(null); setExamForm({ title: '', description: '', duration_minutes: 30, max_violations: 2 }); setExamDialogOpen(true); }} className="rounded-xl">
                     <Plus className="w-4 h-4 mr-2" /> Create Exam
                   </Button>
+                </div>
+              </div>
+
+              {/* ==================== ONE-TIME ACCESS CODES MANAGER ==================== */}
+              <div className="bg-card border border-border rounded-2xl p-6 shadow-sm mb-8 space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-4">
+                  <div>
+                    <h3 className="text-lg font-bold flex items-center gap-2">
+                      <span className="text-xl">🔑</span> One-Time Access Code Manager
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Generate access codes for students to log in on sphntest.online without an OTP email.
+                    </p>
+                  </div>
+                  <Badge variant="outline" className="w-fit text-xs font-mono bg-yellow-500/10 text-yellow-600 border-yellow-500/20">
+                    {accessCodesList.filter(c => !c.is_used).length} Available Codes
+                  </Badge>
+                </div>
+
+                {/* Generator Form */}
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Input
+                    placeholder="Custom Code (e.g. SPHN2026 or leave empty for auto)"
+                    value={customAccessCodeInput}
+                    onChange={(e) => setCustomAccessCodeInput(e.target.value.toUpperCase())}
+                    className="font-mono text-sm tracking-wider uppercase flex-1 rounded-xl"
+                  />
+                  <Button
+                    onClick={() => handleGenerateAccessCode()}
+                    className="bg-yellow-600 hover:bg-yellow-700 text-white font-bold rounded-xl shrink-0"
+                  >
+                    <Plus className="w-4 h-4 mr-2" /> Generate One-Time Code
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => handleGenerateAccessCode()}
+                    className="rounded-xl shrink-0"
+                  >
+                    ⚡ Auto Code (OTC-XXXXXX)
+                  </Button>
+                </div>
+
+                {/* Access Codes Table */}
+                <div className="border rounded-xl overflow-hidden mt-4">
+                  <Table>
+                    <TableHeader className="bg-muted/50">
+                      <TableRow>
+                        <TableHead className="font-bold text-xs uppercase">Access Code</TableHead>
+                        <TableHead className="font-bold text-xs uppercase">Status</TableHead>
+                        <TableHead className="font-bold text-xs uppercase">Redeemed By Student</TableHead>
+                        <TableHead className="font-bold text-xs uppercase">Created Date</TableHead>
+                        <TableHead className="text-right font-bold text-xs uppercase">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {accessCodesList.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center py-6 text-muted-foreground text-xs italic">
+                            No access codes created yet. Click "Generate One-Time Code" above.
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        accessCodesList.map((item: any) => (
+                          <TableRow key={item.id} className="hover:bg-muted/30">
+                            <TableCell className="font-mono font-bold text-sm text-yellow-600">
+                              {item.code}
+                            </TableCell>
+                            <TableCell>
+                              {item.is_used ? (
+                                <Badge variant="destructive" className="text-[10px]">USED</Badge>
+                              ) : (
+                                <Badge className="bg-green-600 text-white text-[10px]">AVAILABLE</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-xs">
+                              {item.used_by_roll ? (
+                                <div>
+                                  <p className="font-bold text-foreground font-mono">{item.used_by_roll}</p>
+                                  {item.used_by_name && <p className="text-[11px] text-muted-foreground">{item.used_by_name}</p>}
+                                </div>
+                              ) : (
+                                <span className="text-muted-foreground italic">Not used yet</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-xs text-muted-foreground font-mono">
+                              {item.created_at ? new Date(item.created_at).toLocaleDateString() : "--"}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(item.code);
+                                    toast({ description: `Copied code ${item.code} to clipboard!` });
+                                  }}
+                                  className="h-8 px-2 text-xs"
+                                >
+                                  Copy
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleDeleteAccessCode(item.id, item.code)}
+                                  className="h-8 px-2 text-xs text-red-500 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
                 </div>
               </div>
 
