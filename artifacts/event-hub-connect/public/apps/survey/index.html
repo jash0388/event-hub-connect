@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Surveys</title>
+  <meta name="description" content="Create surveys, share them with a link, and analyze the results. Open source, stored in your own Puter account." />
+  <meta name="theme-color" content="#f6f5f3" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#111110" media="(prefers-color-scheme: dark)" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Surveys" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./favicon.ico" sizes="48x48" />
+  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+  <script>
+    // Apply the saved theme before first paint to avoid a flash.
+    (() => {
+      try {
+        const t = localStorage.getItem('sv:theme');
+        if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+      } catch {}
+    })();
+  </script>
+  <!-- defer keeps the SDK ahead of the module script below (same in-order
+       queue) without blocking first paint. -->
+  <script src="/datanauts-bridge.js" defer></script>
+  <script type="module" crossorigin src="./assets/main-DBOuh71c.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/local-worker-b_12bv4b.js">
+  <link rel="modulepreload" crossorigin href="./assets/preload-helper-B5qQjz4k.js">
+  <link rel="stylesheet" crossorigin href="./assets/main-69U7ZWVW.css">
+</head>
+<body>
+  <div id="app" class="app"></div>
+</body>
+</html>

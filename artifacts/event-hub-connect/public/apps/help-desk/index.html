@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Help Desk</title>
+  <meta name="description" content="An open-source help desk: shared ticket inbox, help center, macros, automations and reports, on your own Puter cloud." />
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#15171a" media="(prefers-color-scheme: dark)" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Help Desk" />
+  <link rel="icon" href="./favicon.ico" sizes="48x48" />
+  <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="./favicon-16x16.png" />
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+  <link rel="manifest" href="./manifest.json" />
+  <script>
+    // Apply a saved theme before first paint to avoid a flash.
+    (() => {
+      try {
+        const t = localStorage.getItem('help-desk:theme');
+        if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+      } catch {}
+    })();
+  </script>
+  <style>html,body{background:#fff;height:100%;margin:0}@media (prefers-color-scheme:dark){html:not([data-theme=light]),html:not([data-theme=light]) body{background:#15171a}}html[data-theme=dark],html[data-theme=dark] body{background:#15171a}.boot-splash{justify-content:center;align-items:center;display:flex;position:fixed;inset:0}</style>
+  <script src="/datanauts-bridge.js" defer></script>
+  <script type="module" crossorigin src="./assets/main-5Ng_zeUu.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/icons-DtkBftoF.js">
+  <link rel="modulepreload" crossorigin href="./assets/popover-DcHOw2U_.js">
+  <link rel="modulepreload" crossorigin href="./assets/puter-CjEx_8Ix.js">
+  <link rel="stylesheet" crossorigin href="./assets/main-9HfAIH_g.css">
+</head>
+<body>
+  <div id="app" class="app">
+    <div class="boot-splash" aria-hidden="true">
+      <img src="./icon-192.png" width="48" height="48" alt="" />
+    </div>
+  </div>
+</body>
+</html>

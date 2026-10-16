@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Accounting</title>
+  <meta name="description" content="Double-entry bookkeeping: invoices, bills, banking, reconciliation, and financial reports, stored in your own Puter cloud." />
+  <meta name="theme-color" content="#f3f4f7" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#0e1113" media="(prefers-color-scheme: dark)" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Accounting" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" href="./favicon.ico" sizes="16x16 32x32 48x48" />
+  <link rel="icon" href="./favicon-16x16.png" type="image/png" sizes="16x16" />
+  <link rel="icon" href="./favicon-32x32.png" type="image/png" sizes="32x32" />
+  <link rel="icon" href="./favicon-48x48.png" type="image/png" sizes="48x48" />
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png" sizes="180x180" />
+  <script>
+    // Apply the saved theme before first paint so there is no flash.
+    (() => {
+      try {
+        const t = localStorage.getItem('bookkeeping:theme');
+        if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+      } catch {}
+    })();
+  </script>
+  <script src="/datanauts-bridge.js" defer onerror="window.__puterFailed = true"></script>
+  <script type="module" crossorigin src="./assets/index-Y31yui-2.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/dialog-C__E7-wU.js">
+  <link rel="modulepreload" crossorigin href="./assets/store-DkcStMoS.js">
+  <link rel="stylesheet" crossorigin href="./assets/index-YHz5iddG.css">
+</head>
+<body>
+  <div id="app"></div>
+  <noscript>Accounting needs JavaScript to run.</noscript>
+</body>
+</html>

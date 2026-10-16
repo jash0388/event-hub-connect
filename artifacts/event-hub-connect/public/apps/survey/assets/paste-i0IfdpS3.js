@@ -1,0 +1,8 @@
+import{G as e,J as t,N as n,U as r,h as i}from"./main-DBOuh71c.js";import{t as a}from"./text-import-B_8Hqq2t.js";var o=`How did you hear about us?
+- Search engine
+- A friend
+- Social media
+
+* How satisfied are you, on a scale of 1 to 5?
+
+What could we do better?`;function s(){return n({title:`Paste questions`,wide:!0,build:n=>{let s=[],c=e(`ol`,{class:`paste-preview`,"aria-live":`polite`}),l=e(`p`,{class:`field-hint`}),u=e(`textarea`,{class:`textarea paste-input`,rows:14,placeholder:o,"aria-label":`Questions to paste`,autofocus:!0}),d=e(`button`,{type:`button`,class:`btn btn-primary`,disabled:!0,onclick:()=>n(s)},`Add questions`),f=()=>{s=a(u.value).pages.flatMap(e=>e.questions),d.disabled=!s.length,d.textContent=s.length?`Add ${s.length} ${s.length===1?`question`:`questions`}`:`Add questions`,l.textContent=s.length?``:`Questions you paste show up here.`,t(c,s.map(t=>e(`li`,null,e(`span`,null,t.title||t.description||`Text`),e(`span`,{class:`chip chip-plain`},i[t.type].label))))};return u.addEventListener(`input`,r(f,150)),f(),{body:e(`div`,{class:`paste-layout`},e(`div`,{class:`field`},e(`p`,{class:`field-hint`},`One question per paragraph. Put answer choices on the lines below a question, with or without bullets. Start a line with * to make a question required.`),u),e(`div`,{class:`field`},e(`span`,{class:`field-label`},`Will be added`),l,c)),foot:[e(`button`,{type:`button`,class:`btn`,onclick:()=>n()},`Cancel`),d]}}})}export{s as openPasteQuestions};

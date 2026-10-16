@@ -4118,7 +4118,7 @@ var require_pino = __commonJS({
     function pinoBundlerAbsolutePath(p) {
       try {
         const path = __require("path");
-        const outputDir = "/Users/jashwanthsingh/.gemini/antigravity-ide/scratch/event-hub-connect-repo/artifacts/api-server/dist";
+        const outputDir = "/Users/jashwanthsingh/Documents/event-hub-connect/artifacts/api-server/dist";
         return path.resolve(outputDir, p.replace(/^\.\//, ""));
       } catch (e) {
         const f = new Function("p", "return new URL(p, import.meta.url).pathname");

@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>CSV column reference | Inventory Docs</title><meta name="description" content="Every column Inventory exports and recognizes, and the rules it reads them by." /><meta name="robots" content="index, follow, max-image-preview:large" />
+<link rel="canonical" href="https://inventory.zone/docs/csv-columns-reference/" />
+<meta property="og:type" content="article" /><meta property="og:url" content="https://inventory.zone/docs/csv-columns-reference/" /><meta property="og:title" content="CSV column reference | Inventory Docs" /><meta property="og:description" content="Every column Inventory exports and recognizes, and the rules it reads them by." /><meta property="og:site_name" content="Inventory" />
+<meta name="twitter:card" content="summary" /><meta name="twitter:title" content="CSV column reference | Inventory Docs" /><meta name="twitter:description" content="Every column Inventory exports and recognizes, and the rules it reads them by." />
+<meta name="theme-color" content="#fdfdfd" /><link rel="icon" href="/favicon.ico" /><link rel="apple-touch-icon" href="/apple-touch-icon.png" /><link rel="stylesheet" href="/assets/library-BC7o3eXq.css" />
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebPage","@id":"https://inventory.zone/docs/csv-columns-reference/","url":"https://inventory.zone/docs/csv-columns-reference/","name":"CSV column reference | Inventory Docs","description":"Every column Inventory exports and recognizes, and the rules it reads them by.","isPartOf":{"@id":"https://inventory.zone/#website"},"inLanguage":"en"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Inventory","item":"https://inventory.zone/"},{"@type":"ListItem","position":2,"name":"Documentation","item":"https://inventory.zone/docs/"},{"@type":"ListItem","position":3,"name":"CSV column reference","item":"https://inventory.zone/docs/csv-columns-reference/"}]},{"@type":"TechArticle","@id":"https://inventory.zone/docs/csv-columns-reference/#article","headline":"CSV column reference","description":"Every column Inventory exports and recognizes, and the rules it reads them by.","mainEntityOfPage":{"@id":"https://inventory.zone/docs/csv-columns-reference/"},"inLanguage":"en","author":{"@type":"Organization","name":"Puter","url":"https://puter.com"},"publisher":{"@type":"Organization","name":"Puter Technologies Inc.","url":"https://puter.com","logo":{"@type":"ImageObject","url":"https://inventory.zone/icon-512.png"}},"articleSection":"Documentation"}]}</script>
+<!-- Privacy-friendly analytics by Plausible -->
+<script async src="https://plausible.io/js/pa-2yMvoQPYNHnCQ4VVrJlNU.js"></script>
+<script>
+  window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
+  plausible.init()
+</script>
+<script>document.documentElement.classList.add('js');</script><script type="module" src="/assets/library-Btesf2DA.js"></script></head>
+<body class="site-body"><div class="landing site-public" id="landing-top"><a class="lp-skip" href="#site-main">Skip to content</a><header class="lp-header">
+  <nav class="lp-wrap lp-nav" aria-label="Main navigation">
+    <a class="lp-brand" href="/" aria-label="Inventory home"><img src="/icon-192.png" width="28" height="28" alt="" />Inventory</a>
+    <button class="lp-nav-toggle" type="button" aria-expanded="false" aria-controls="lp-primary-links" aria-label="Open navigation">Menu</button>
+    <div class="lp-nav-links" id="lp-primary-links">
+      <a href="/#features">Features</a><a href="/docs/" aria-current="page">Docs</a><a href="/guides/">Guides</a><a href="/#faq">FAQ</a>
+      <div class="lp-dropdown" data-dropdown>
+        <button type="button" class="lp-dropdown-toggle" aria-expanded="false" aria-controls="lp-more-apps-menu" aria-label="You Might Also Like: more apps from Puter">
+          <svg class="lp-dd-ico" width="15" height="15" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" focusable="false">
+            <rect x="1" y="1" width="6" height="6" rx="1.6"/>
+            <rect x="9" y="1" width="6" height="6" rx="1.6"/>
+            <rect x="1" y="9" width="6" height="6" rx="1.6"/>
+            <rect x="9" y="9" width="6" height="6" rx="1.6"/>
+          </svg>
+          <span class="lp-dd-label">More Apps</span>
+          <svg class="lp-dd-chevron" width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true" focusable="false">
+            <path d="M2.5 4.5 6 8 9.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <div class="lp-dropdown-menu" id="lp-more-apps-menu">
+          <p class="lp-dd-head">You Might Also Like</p>
+          <ul>
+            <li><a href="https://builder.puter.com">
+              <img class="lp-dd-app-ico" src="/app-icons/builder.png" alt="" width="28" height="28" loading="lazy" decoding="async">
+              <span class="lp-dd-text"><span class="lp-dd-title">AI App Builder</span><span class="lp-dd-sub">Build apps and websites with AI</span></span>
+            </a></li>
+            <li><a href="https://online-notepad.com">
+              <img class="lp-dd-app-ico" src="/app-icons/notepad.png" alt="" width="28" height="28" loading="lazy" decoding="async">
+              <span class="lp-dd-text"><span class="lp-dd-title">Notepad</span><span class="lp-dd-sub">The AI-powered online notepad</span></span>
+            </a></li>
+            <li><a href="https://voice-recorder.com">
+              <img class="lp-dd-app-ico" src="/app-icons/voice-recorder.png" alt="" width="28" height="28" loading="lazy" decoding="async">
+              <span class="lp-dd-text"><span class="lp-dd-title">Voice Recorder</span><span class="lp-dd-sub">Voice memos in your browser</span></span>
+            </a></li>
+            <li><a href="https://music-player.app">
+              <img class="lp-dd-app-ico" src="/app-icons/music-player.png" alt="" width="28" height="28" loading="lazy" decoding="async">
+              <span class="lp-dd-text"><span class="lp-dd-title">Music Player</span><span class="lp-dd-sub">Play your music anywhere</span></span>
+            </a></li>
+            <li><a href="https://memo.cloud">
+              <img class="lp-dd-app-ico" src="/app-icons/memos.png" alt="" width="28" height="28" loading="lazy" decoding="async">
+              <span class="lp-dd-text"><span class="lp-dd-title">Memos</span><span class="lp-dd-sub">AI-powered note-taking app</span></span>
+            </a></li>
+            <li><a href="https://audio-editor.app">
+              <img class="lp-dd-app-ico" src="/app-icons/audio-editor.png" alt="" width="28" height="28" loading="lazy" decoding="async">
+              <span class="lp-dd-text"><span class="lp-dd-title">Audio Editor</span><span class="lp-dd-sub">Trim &amp; edit audio online</span></span>
+            </a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <a class="lp-open" href="/#/">Open Inventory ›</a>
+  </nav>
+</header><main id="site-main" class="site-docs lp-wrap">
+    <nav class="site-breadcrumbs" aria-label="Breadcrumb"><ol><li><a href="/">Inventory</a></li><li><a href="/docs/">Documentation</a></li><li><span aria-current="page">CSV column reference</span></li></ol></nav>
+    <details class="site-mobile-navigation"><summary>Browse the library</summary><nav aria-label="Library navigation"><div class="site-sidebar-group"><a class="site-sidebar-heading" href="/docs/">Documentation</a><details class="site-nav-category" ><summary>Getting started</summary><a href="/docs/getting-started/" >Getting started with Inventory</a><a href="/docs/products-and-units/" >Products, units, and opening stock</a><a href="/docs/importing-products/" >Importing products from CSV</a><a href="/docs/the-overview-page/" >The Overview page</a><a href="/docs/product-page/" >Reading a product page</a></details><details class="site-nav-category" ><summary>Daily stock work</summary><a href="/docs/stock-movements/" >Receiving, removing, recounting, and moving stock</a><a href="/docs/locations-and-replenishment/" >Locations, shelf codes, and replenishment</a><a href="/docs/scanning-and-take-out/" >Barcode scanning and Take out</a><a href="/docs/variants-and-kits/" >Product variants and kits</a><a href="/docs/expiry-and-lots/" >Expiry dates and dated lots</a><a href="/docs/finding-products/" >Searching, filtering, and sorting</a><a href="/docs/bulk-editing-and-archiving/" >Selecting, bulk editing, and archiving</a><a href="/docs/labels-and-printing/" >Barcode labels, count sheets, and printing</a></details><details class="site-nav-category" ><summary>Planning and review</summary><a href="/docs/suppliers-and-sources/" >Suppliers and product sources</a><a href="/docs/reordering-stock/" >Reordering and receiving supplier orders</a><a href="/docs/demand-and-thresholds/" >Low-stock thresholds and days of cover</a><a href="/docs/stocktakes/" >Running and reviewing a stocktake</a><a href="/docs/reports-and-history/" >Reports and activity history</a></details><details class="site-nav-category" ><summary>Your data</summary><a href="/docs/backups-and-offline/" >Exports, backups, and working offline</a><a href="/docs/settings-and-preferences/" >Settings: currency, thresholds, and planning defaults</a><a href="/docs/where-your-data-lives/" >Where your data lives</a><a href="/docs/troubleshooting/" >Troubleshooting</a></details><details class="site-nav-category" open><summary>Reference</summary><a href="/docs/csv-columns-reference/" aria-current="page">CSV column reference</a><a href="/docs/activity-log-reference/" >Activity log reference</a><a href="/docs/keyboard-and-scanners/" >Keyboard shortcuts and scanner behaviour</a></details></div><div class="site-sidebar-group"><a class="site-sidebar-heading" href="/guides/">Guides</a><details class="site-nav-category" ><summary>Inventory fundamentals</summary><a href="/guides/inventory-basics/" >Inventory basics: what, where, and how much</a><a href="/guides/stock-value-and-profit/" >Stock value, revenue, and gross profit</a><a href="/guides/units-and-pack-sizes/" >Units, packs, and the number you count</a><a href="/guides/average-cost-explained/" >How average cost moves</a></details><details class="site-nav-category" ><summary>Working day to day</summary><a href="/guides/handling-a-delivery/" >Handling a delivery</a><a href="/guides/expiry-and-rotation/" >Rotating dated stock</a><a href="/guides/a-weekly-stock-routine/" >A weekly stock routine</a></details><details class="site-nav-category" ><summary>Planning stock</summary><a href="/guides/reorder-points/" >Reorder points and days of cover</a><a href="/guides/replenish-or-reorder/" >Replenish a shelf or buy more stock?</a><a href="/guides/dead-stock-and-slow-movers/" >Dead stock and slow movers</a><a href="/guides/kits-in-practice/" >Kits: build ahead, or sell as a kit?</a></details><details class="site-nav-category" ><summary>Keeping reliable records</summary><a href="/guides/skus-and-barcodes/" >SKUs, barcodes, and codes that keep working</a><a href="/guides/shrinkage-and-write-offs/" >Shrinkage, write-offs, and honest reasons</a><a href="/guides/stocktake-checklist/" >A practical stocktake checklist</a><a href="/guides/spreadsheet-to-inventory/" >Moving from a spreadsheet to Inventory</a></details></div></nav></details>
+    <div class="site-article-grid"><aside class="site-sidebar"><nav aria-label="Library navigation"><div class="site-sidebar-group"><a class="site-sidebar-heading" href="/docs/">Documentation</a><details class="site-nav-category" ><summary>Getting started</summary><a href="/docs/getting-started/" >Getting started with Inventory</a><a href="/docs/products-and-units/" >Products, units, and opening stock</a><a href="/docs/importing-products/" >Importing products from CSV</a><a href="/docs/the-overview-page/" >The Overview page</a><a href="/docs/product-page/" >Reading a product page</a></details><details class="site-nav-category" ><summary>Daily stock work</summary><a href="/docs/stock-movements/" >Receiving, removing, recounting, and moving stock</a><a href="/docs/locations-and-replenishment/" >Locations, shelf codes, and replenishment</a><a href="/docs/scanning-and-take-out/" >Barcode scanning and Take out</a><a href="/docs/variants-and-kits/" >Product variants and kits</a><a href="/docs/expiry-and-lots/" >Expiry dates and dated lots</a><a href="/docs/finding-products/" >Searching, filtering, and sorting</a><a href="/docs/bulk-editing-and-archiving/" >Selecting, bulk editing, and archiving</a><a href="/docs/labels-and-printing/" >Barcode labels, count sheets, and printing</a></details><details class="site-nav-category" ><summary>Planning and review</summary><a href="/docs/suppliers-and-sources/" >Suppliers and product sources</a><a href="/docs/reordering-stock/" >Reordering and receiving supplier orders</a><a href="/docs/demand-and-thresholds/" >Low-stock thresholds and days of cover</a><a href="/docs/stocktakes/" >Running and reviewing a stocktake</a><a href="/docs/reports-and-history/" >Reports and activity history</a></details><details class="site-nav-category" ><summary>Your data</summary><a href="/docs/backups-and-offline/" >Exports, backups, and working offline</a><a href="/docs/settings-and-preferences/" >Settings: currency, thresholds, and planning defaults</a><a href="/docs/where-your-data-lives/" >Where your data lives</a><a href="/docs/troubleshooting/" >Troubleshooting</a></details><details class="site-nav-category" open><summary>Reference</summary><a href="/docs/csv-columns-reference/" aria-current="page">CSV column reference</a><a href="/docs/activity-log-reference/" >Activity log reference</a><a href="/docs/keyboard-and-scanners/" >Keyboard shortcuts and scanner behaviour</a></details></div><div class="site-sidebar-group"><a class="site-sidebar-heading" href="/guides/">Guides</a><details class="site-nav-category" ><summary>Inventory fundamentals</summary><a href="/guides/inventory-basics/" >Inventory basics: what, where, and how much</a><a href="/guides/stock-value-and-profit/" >Stock value, revenue, and gross profit</a><a href="/guides/units-and-pack-sizes/" >Units, packs, and the number you count</a><a href="/guides/average-cost-explained/" >How average cost moves</a></details><details class="site-nav-category" ><summary>Working day to day</summary><a href="/guides/handling-a-delivery/" >Handling a delivery</a><a href="/guides/expiry-and-rotation/" >Rotating dated stock</a><a href="/guides/a-weekly-stock-routine/" >A weekly stock routine</a></details><details class="site-nav-category" ><summary>Planning stock</summary><a href="/guides/reorder-points/" >Reorder points and days of cover</a><a href="/guides/replenish-or-reorder/" >Replenish a shelf or buy more stock?</a><a href="/guides/dead-stock-and-slow-movers/" >Dead stock and slow movers</a><a href="/guides/kits-in-practice/" >Kits: build ahead, or sell as a kit?</a></details><details class="site-nav-category" ><summary>Keeping reliable records</summary><a href="/guides/skus-and-barcodes/" >SKUs, barcodes, and codes that keep working</a><a href="/guides/shrinkage-and-write-offs/" >Shrinkage, write-offs, and honest reasons</a><a href="/guides/stocktake-checklist/" >A practical stocktake checklist</a><a href="/guides/spreadsheet-to-inventory/" >Moving from a spreadsheet to Inventory</a></details></div></nav><div class="site-sidebar-cta"><p>Try it with sample data.</p><a href="/#/">Open Inventory <span aria-hidden="true">↗</span></a></div></aside>
+    <article class="site-article"><header class="site-article-header"><p class="lp-eyebrow">Reference</p><h1>CSV column reference</h1><p class="site-lead">Every column Inventory exports and recognizes, and the rules it reads them by.</p><div class="site-article-meta"><a href="https://puter.com">Puter</a><span aria-hidden="true">·</span><span>Product documentation</span><span aria-hidden="true">·</span><span>3 min read</span></div></header>
+    <details class="site-mobile-toc"><summary>On this page</summary><nav aria-label="On this page"><ol><li><a href="#column-list">The columns</a></li><li><a href="#how-columns-are-matched">How your headers are matched</a></li><li><a href="#breakdown-cells">Location breakdowns in one cell</a></li><li><a href="#blank-versus-absent">A blank cell and a missing column mean different things</a></li></ol></nav></details>
+    <div class="site-prose"><section aria-labelledby="column-list"><h2 id="column-list">The columns</h2><div class="site-table" tabindex="0" role="region" aria-label="Product CSV columns"><table><caption>Product CSV columns</caption><thead><tr><th scope="col">Header</th><th scope="col">Meaning</th></tr></thead><tbody><tr><th scope="row">Name</th><td>Required. A row without one is skipped with a warning.</td></tr><tr><th scope="row">SKU</th><td>Your own code. Import matches existing products on it, ignoring case.</td></tr><tr><th scope="row">Barcode</th><td>The code on the box. Keep it as text so leading zeros survive.</td></tr><tr><th scope="row">Category</th><td>Free text, used for grouping and filtering.</td></tr><tr><th scope="row">Quantity</th><td>Total on hand, in the stock unit.</td></tr><tr><th scope="row">Unit</th><td>each, kg, g, lb, oz, L, mL, m, cm, ft, or your own word.</td></tr><tr><th scope="row">Pack size</th><td>Units in one pack, when you buy in cases.</td></tr><tr><th scope="row">Pack name</th><td>What one pack is called: case, box, bundle.</td></tr><tr><th scope="row">Location</th><td>The product’s own location. A name not yet in the account is created.</td></tr><tr><th scope="row">Bin</th><td>Shelf code at that location.</td></tr><tr><th scope="row">Bins by location</th><td>Shelf codes across places, in one cell.</td></tr><tr><th scope="row">Stock by location</th><td>The per-location breakdown, in one cell.</td></tr><tr><th scope="row">Supplier</th><td>Supplier name. A name not yet in the account is created.</td></tr><tr><th scope="row">Supplier lead time (days)</th><td>Written onto the supplier record, not the product.</td></tr><tr><th scope="row">Supplier minimum order</th><td>Also written onto the supplier record.</td></tr><tr><th scope="row">Purchase cost</th><td>What one stock unit costs you.</td></tr><tr><th scope="row">Price</th><td>What you normally sell one for.</td></tr><tr><th scope="row">Low stock threshold</th><td>The alert level for this product.</td></tr><tr><th scope="row">Reorder quantity</th><td>A fixed order amount, which overrides the suggestion.</td></tr><tr><th scope="row">Notes</th><td>Free text.</td></tr><tr><th scope="row">Archived</th><td>Yes, no, true, false, 1, 0, inactive, discontinued, and similar.</td></tr></tbody></table></div><p>An export writes exactly these headers in this order, so exporting and re-importing a file changes nothing.</p></section><section aria-labelledby="how-columns-are-matched"><h2 id="how-columns-are-matched">How your headers are matched</h2><p>Import compares each header against a list of aliases for every field, ignoring case, spaces, and punctuation, so <em>Item name</em>, <em>Qty</em>, <em>On hand</em>, <em>Unit cost</em>, <em>Vendor</em>, and <em>Reorder point</em> all land where you would expect. The best alias wins rather than the leftmost column, so a file headed <em>Description, SKU, Name</em> still takes its names from Name. Each column feeds at most one field, and you can correct any mapping in the review step.</p><p>The first row is treated as a header when at least one cell matches a known alias and no cell is a bare number. Comma, semicolon, tab, and pipe delimited files are all read; exports are written with commas, quoting any field that contains one of the others.</p></section><section aria-labelledby="breakdown-cells"><h2 id="breakdown-cells">Location breakdowns in one cell</h2><p>So that an export stays one row per product, per-location detail travels in a single cell: <code>Main warehouse: 10 | Storefront: 5</code> for stock, and <code>Main warehouse: A3-12 | Storefront: B1</code> for shelf codes. Names are split on the last colon, so a place called “Aisle 3: back” still works, and a piece with no colon at all is joined to the one before it, which is what makes a name containing a pipe survive a round trip.</p><p>The label <strong>No location</strong> names the unassigned bucket. A breakdown that cannot be read is not partly applied: the row falls back to the plain Quantity column and the review step warns you, because importing half a breakdown would quietly shrink the total.</p></section><section aria-labelledby="blank-versus-absent"><h2 id="blank-versus-absent">A blank cell and a missing column mean different things</h2><p>A column the file does not have says nothing about that field, and a matched product keeps whatever it already has. A column that is present with an empty cell is the file stating a value: no price, no category, not archived. That distinction is what lets a sheet of names and prices leave costs, stock, and categories untouched.</p><p>An unreadable cell is a third case: the file tried to say something and Inventory could not read it, so the field is skipped and a warning names the spreadsheet row. Numbers accept currency symbols, thousands separators, and both decimal conventions, and money accepts accounting negatives in parentheses.</p><p>Exported text beginning with an equals sign, a plus, a minus, or an at sign is written with a leading apostrophe so that spreadsheets treat it as text rather than a formula. Import strips exactly one such apostrophe back off, so the round trip is lossless.</p></section></div>
+    <section class="site-related" aria-labelledby="related-title"><p class="lp-eyebrow">Keep exploring</p><h2 id="related-title">Continue reading</h2><a href="/docs/importing-products/"><span><small>Documentation</small>Importing products from CSV</span><span aria-hidden="true">→</span></a><a href="/guides/spreadsheet-to-inventory/"><span><small>Guides</small>Moving from a spreadsheet to Inventory</span><span aria-hidden="true">→</span></a><a href="/docs/activity-log-reference/"><span><small>Documentation</small>Activity log reference</span><span aria-hidden="true">→</span></a></section>
+    </article><aside class="site-toc"><nav aria-label="On this page"><p>On this page</p><ol><li><a href="#column-list">The columns</a></li><li><a href="#how-columns-are-matched">How your headers are matched</a></li><li><a href="#breakdown-cells">Location breakdowns in one cell</a></li><li><a href="#blank-versus-absent">A blank cell and a missing column mean different things</a></li></ol></nav><a class="site-back-top" href="#site-main">Back to top ↑</a></aside></div>
+  </main><footer class="lp-footer">
+  <div class="lp-wrap lp-foot-inner">
+    <div class="lp-foot-grid">
+      <div>
+        <h3>Inventory</h3>
+        <ul>
+          <li><a href="/#features">Inventory Management</a></li>
+          <li><a href="/docs/importing-products/">Import Products</a></li>
+          <li><a href="/docs/">Documentation</a></li>
+          <li><a href="/guides/">Guides</a></li>
+          <li><a href="/docs/reordering-stock/">Reorder Stock</a></li>
+          <li><a href="/#your-data">Privacy</a></li>
+          <li><a href="/#faq">FAQ</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3>Puter</h3>
+        <ul>
+          <li><a href="https://puter.com">Puter.com</a></li>
+          <li><a href="https://developer.puter.com">Developers</a></li>
+          <li><a href="https://docs.puter.com">Puter.js</a></li>
+          <li><a href="https://apps.puter.com">App Store</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3>You Might Also Like</h3>
+        <ul>
+          <li><a href="https://builder.puter.com">AI App Builder</a></li>
+          <li><a href="https://online-notepad.com">Notepad</a></li>
+          <li><a href="https://voice-recorder.com">Voice Recorder</a></li>
+          <li><a href="https://music-player.app">Music Player</a></li>
+          <li><a href="https://memo.cloud">Memos</a></li>
+          <li><a href="https://audio-editor.app">Audio Editor</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3>Legal</h3>
+        <ul>
+          <li><a href="https://puter.com/privacy">Privacy Policy</a></li>
+          <li><a href="https://puter.com/terms">Terms of Service</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="lp-foot-bottom">
+      <span>Copyright © Puter Technologies Inc. 2026. All rights reserved.</span>
+      <span>Inventory v1.0.0</span>
+    </div>
+  </div>
+</footer></div></body></html>

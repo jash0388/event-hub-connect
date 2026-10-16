@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Teamchat</title>
+  <meta name="description" content="Team messaging with channels, threads, and direct messages. Built on Puter." />
+  <meta name="theme-color" content="#f7f7f5" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#0f0f10" media="(prefers-color-scheme: dark)" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Teamchat" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" type="image/x-icon" href="./favicon.ico" sizes="16x16 32x32 48x48" />
+  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png" />
+  <script>
+    // Apply the saved theme before first paint to avoid a flash.
+    (() => {
+      try {
+        const t = localStorage.getItem('teamchat:theme');
+        if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+      } catch {}
+    })();
+  </script>
+  <script src="/datanauts-bridge.js" defer></script>
+  <script type="module" crossorigin src="./assets/index-Bg7I8lgG.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-D2hy3dSF.css">
+</head>
+<body>
+  <noscript>Please enable JavaScript to use Teamchat.</noscript>
+  <div id="app" class="app">
+    <div class="boot-splash" id="boot-splash" aria-hidden="true">
+      <img class="boot-mark" src="./icons/icon-192.png" width="56" height="56" alt="" />
+    </div>
+  </div>
+</body>
+</html>

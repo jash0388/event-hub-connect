@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="description" content="Property management: properties, leases, tenants, rent collection, accounting, maintenance, and reports." />
+    <title>Property Management</title>
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#151c20" media="(prefers-color-scheme: dark)" />
+    <link rel="manifest" href="./manifest.json" />
+    <link rel="icon" href="./favicon.ico" sizes="48x48" />
+    <link rel="icon" type="image/svg+xml" href="./icons/icon.svg" />
+    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+    <script>
+      // Apply a forced theme before first paint to avoid a flash.
+      try {
+        var t = localStorage.getItem('propertymgmt.theme');
+        if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+      } catch (e) {}
+    </script>
+    <script src="/datanauts-bridge.js"></script>
+    <script type="module" crossorigin src="./assets/index-BkcNl8CC.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-BqU-Zw74.css">
+  </head>
+  <body>
+    <div id="app"></div>
+    <noscript>Property Management needs JavaScript to run.</noscript>
+  </body>
+</html>

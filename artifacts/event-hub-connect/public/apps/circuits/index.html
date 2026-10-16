@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Circuits</title>
+    <meta name="description" content="Schematic capture and PCB layout in your browser. Draw schematics, lay out boards, pour copper, check design rules and export manufacturing files, stored in your own Puter cloud." />
+    <meta name="theme-color" content="#f2f2f0" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#2f2f2f" media="(prefers-color-scheme: dark)" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="./favicon-32.png" type="image/png" sizes="32x32" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" sizes="180x180" />
+    <link rel="manifest" href="./manifest.json" />
+    <script>
+      // Resolve the theme before first paint to avoid a flash.
+      (function () {
+        var root = document.documentElement, t = 'system';
+        try { t = localStorage.getItem('circuits:theme') || 'system'; } catch (e) {}
+        var dark = t === 'dark' || (t === 'system' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+        root.dataset.theme = t;
+        root.dataset.themeResolved = dark ? 'dark' : 'light';
+      })();
+    </script>
+    <script src="/datanauts-bridge.js" defer></script>
+    <script type="module" crossorigin src="./assets/index-84R54k65.js"></script>
+    <link rel="modulepreload" crossorigin href="./assets/geom-kxNHhSp4.js">
+    <link rel="modulepreload" crossorigin href="./assets/place-C1Enu13X.js">
+    <link rel="modulepreload" crossorigin href="./assets/font-C_2pcd0E.js">
+    <link rel="stylesheet" crossorigin href="./assets/index-D5b_oc8X.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to the design canvas</a>
+    <div id="app" aria-busy="true"></div>
+    <div id="live-region" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+    <noscript>Circuits needs JavaScript to run.</noscript>
+  </body>
+</html>

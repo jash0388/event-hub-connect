@@ -1,0 +1,6 @@
+function a(o){const t=[];let r=[],n="",e=0,c=!1;const i=String(o||"").replace(/^﻿/,"");for(;e<i.length;){const s=i[e];if(c){if(s==='"'){if(i[e+1]==='"'){n+='"',e+=2;continue}c=!1,e++;continue}n+=s,e++;continue}s==='"'&&n===""&&(e===0||i[e-1]===","||i[e-1]===`
+`||i[e-1]==="\r")?(c=!0,e++):s===","?(r.push(n),n="",e++):s==="\r"||s===`
+`?(r.push(n),t.push(r),r=[],n="",e+=s==="\r"&&i[e+1]===`
+`?2:1):(n+=s,e++)}return(n!==""||r.length)&&(r.push(n),t.push(r)),t.filter(s=>s.some(l=>l.trim()!==""))}const u=/^-[$€£¥₹]?\d[\d,. \u00a0\u202f]*[$€£¥₹%]?$/;function f(o){if(o==null)return"";let t=String(o);return/^[=+\-@\t\r]/.test(t)&&!u.test(t)&&(t=`'${t}`),/[",\r\n]/.test(t)?`"${t.replace(/"/g,'""')}"`:t}function d(o){return o.map(t=>t.map(f).join(",")).join(`\r
+`)+`\r
+`}function p(o,t){const r=o.map(n=>String(n).toLowerCase().replace(/[^a-z0-9]/g,""));for(const n of t){const e=r.indexOf(n.replace(/[^a-z0-9]/g,""));if(e>=0)return e}return-1}function m(o,t,r="text/csv;charset=utf-8"){const n=new Blob([t],{type:r}),e=URL.createObjectURL(n),c=document.createElement("a");c.href=e,c.download=o,document.body.append(c),c.click(),c.remove(),setTimeout(()=>URL.revokeObjectURL(e),1e3)}export{m as d,p as f,a as p,d as t};

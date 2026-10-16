@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="description" content="Childcare center management: check-in, daily activity reports, family messaging, and tuition billing." />
+    <title>Childcare</title>
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#171b21" media="(prefers-color-scheme: dark)" />
+    <link rel="manifest" href="./manifest.json" />
+    <link rel="icon" href="./favicon.ico" sizes="48x48" />
+    <link rel="icon" type="image/svg+xml" href="./icons/icon.svg" />
+    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+    <script>
+      // Apply a forced theme before first paint to avoid a flash.
+      try {
+        var t = localStorage.getItem('childcare.theme');
+        if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+      } catch (e) {}
+    </script>
+    <script src="/datanauts-bridge.js"></script>
+    <script type="module" crossorigin src="./assets/index-DJd6RqZ6.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-1YxFnuzT.css">
+  </head>
+  <body>
+    <div id="app"></div>
+    <noscript>Childcare needs JavaScript to run.</noscript>
+  </body>
+</html>

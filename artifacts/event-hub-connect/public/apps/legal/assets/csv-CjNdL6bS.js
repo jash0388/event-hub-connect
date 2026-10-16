@@ -1,0 +1,5 @@
+const l=/^[=+\-@\t\r]/;function f(n){if(n==null)return"";let e=String(n);return l.test(e)&&!/^-?\d+(\.\d+)?$/.test(e)&&(e=`'${e}`),/[",\r\n]/.test(e)?`"${e.replace(/"/g,'""')}"`:e}function u(n){return n.map(e=>e.map(f).join(",")).join(`\r
+`)+`\r
+`}function a(n){const e=[];let s=[],t="",r=!1;const i=String(n||"").replace(/^﻿/,"");for(let o=0;o<i.length;o++){const c=i[o];r?c==='"'?i[o+1]==='"'?(t+='"',o++):r=!1:t+=c:c==='"'&&t.trim()===""?r=!0:c===","?(s.push(t),t=""):c===`
+`||c==="\r"?(c==="\r"&&i[o+1]===`
+`&&o++,s.push(t),e.push(s),s=[],t=""):t+=c}return(t!==""||s.length)&&(s.push(t),e.push(s)),e.filter(o=>o.some(c=>c.trim()!==""))}function p(n){const[e,...s]=a(n);if(!e)return[];const t=e.map(r=>r.trim().toLowerCase());return s.map(r=>Object.fromEntries(t.map((i,o)=>[i,(r[o]??"").trim()])))}function d(n,e){const s=new Blob(["\uFEFF"+u(e)],{type:"text/csv;charset=utf-8"}),t=URL.createObjectURL(s),r=Object.assign(document.createElement("a"),{href:t,download:n});document.body.append(r),r.click(),r.remove(),setTimeout(()=>URL.revokeObjectURL(t),1e3)}export{p as c,d};

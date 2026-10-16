@@ -20826,27 +20826,27 @@ var require_router = __commonJS({
     var slice = Array.prototype.slice;
     var flatten = Array.prototype.flat;
     var methods = METHODS.map((method) => method.toLowerCase());
-    module.exports = Router5;
+    module.exports = Router7;
     module.exports.Route = Route;
-    function Router5(options) {
-      if (!(this instanceof Router5)) {
-        return new Router5(options);
+    function Router7(options) {
+      if (!(this instanceof Router7)) {
+        return new Router7(options);
       }
       const opts = options || {};
-      function router5(req, res, next) {
-        router5.handle(req, res, next);
+      function router7(req, res, next) {
+        router7.handle(req, res, next);
       }
-      Object.setPrototypeOf(router5, this);
-      router5.caseSensitive = opts.caseSensitive;
-      router5.mergeParams = opts.mergeParams;
-      router5.params = {};
-      router5.strict = opts.strict;
-      router5.stack = [];
-      return router5;
+      Object.setPrototypeOf(router7, this);
+      router7.caseSensitive = opts.caseSensitive;
+      router7.mergeParams = opts.mergeParams;
+      router7.params = {};
+      router7.strict = opts.strict;
+      router7.stack = [];
+      return router7;
     }
-    Router5.prototype = function() {
+    Router7.prototype = function() {
     };
-    Router5.prototype.param = function param(name, fn) {
+    Router7.prototype.param = function param(name, fn) {
       if (!name) {
         throw new TypeError("argument name is required");
       }
@@ -20866,7 +20866,7 @@ var require_router = __commonJS({
       params.push(fn);
       return this;
     };
-    Router5.prototype.handle = function handle(req, res, callback) {
+    Router7.prototype.handle = function handle(req, res, callback) {
       if (!callback) {
         throw new TypeError("argument callback is required");
       }
@@ -20993,7 +20993,7 @@ var require_router = __commonJS({
         }
       }
     };
-    Router5.prototype.use = function use(handler) {
+    Router7.prototype.use = function use(handler) {
       let offset = 0;
       let path = "/";
       if (typeof handler !== "function") {
@@ -21026,7 +21026,7 @@ var require_router = __commonJS({
       }
       return this;
     };
-    Router5.prototype.route = function route(path) {
+    Router7.prototype.route = function route(path) {
       const route2 = new Route(path);
       const layer = new Layer(path, {
         sensitive: this.caseSensitive,
@@ -21041,7 +21041,7 @@ var require_router = __commonJS({
       return route2;
     };
     methods.concat("all").forEach(function(method) {
-      Router5.prototype[method] = function(path) {
+      Router7.prototype[method] = function(path) {
         const route = this.route(path);
         route[method].apply(route, slice.call(arguments, 1));
         return this;
@@ -21224,13 +21224,13 @@ var require_application = __commonJS({
     var compileTrust = require_utils3().compileTrust;
     var resolve = __require("node:path").resolve;
     var once = require_once();
-    var Router5 = require_router();
+    var Router7 = require_router();
     var slice = Array.prototype.slice;
     var flatten = Array.prototype.flat;
     var app2 = exports = module.exports = {};
     var trustProxyDefaultSymbol = "@@symbol:trust_proxy_default";
     app2.init = function init() {
-      var router5 = null;
+      var router7 = null;
       this.cache = /* @__PURE__ */ Object.create(null);
       this.engines = /* @__PURE__ */ Object.create(null);
       this.settings = /* @__PURE__ */ Object.create(null);
@@ -21239,13 +21239,13 @@ var require_application = __commonJS({
         configurable: true,
         enumerable: true,
         get: function getrouter() {
-          if (router5 === null) {
-            router5 = new Router5({
+          if (router7 === null) {
+            router7 = new Router7({
               caseSensitive: this.enabled("case sensitive routing"),
               strict: this.enabled("strict routing")
             });
           }
-          return router5;
+          return router7;
         }
       });
     };
@@ -21316,15 +21316,15 @@ var require_application = __commonJS({
       if (fns.length === 0) {
         throw new TypeError("app.use() requires a middleware function");
       }
-      var router5 = this.router;
+      var router7 = this.router;
       fns.forEach(function(fn2) {
         if (!fn2 || !fn2.handle || !fn2.set) {
-          return router5.use(path, fn2);
+          return router7.use(path, fn2);
         }
         debug(".use app under %s", path);
         fn2.mountpath = path;
         fn2.parent = this;
-        router5.use(path, function mounted_app(req, res, next) {
+        router7.use(path, function mounted_app(req, res, next) {
           var orig = req.app;
           fn2.handle(req, res, function(err) {
             Object.setPrototypeOf(req, orig.request);
@@ -23909,7 +23909,7 @@ var require_express = __commonJS({
     var EventEmitter = __require("node:events").EventEmitter;
     var mixin = require_merge_descriptors();
     var proto = require_application();
-    var Router5 = require_router();
+    var Router7 = require_router();
     var req = require_request();
     var res = require_response();
     exports = module.exports = createApplication;
@@ -23931,8 +23931,8 @@ var require_express = __commonJS({
     exports.application = proto;
     exports.request = req;
     exports.response = res;
-    exports.Route = Router5.Route;
-    exports.Router = Router5;
+    exports.Route = Router7.Route;
+    exports.Router = Router7;
     exports.json = bodyParser.json;
     exports.raw = bodyParser.raw;
     exports.static = require_serve_static();
@@ -28328,7 +28328,7 @@ var require_pino = __commonJS({
     function pinoBundlerAbsolutePath(p) {
       try {
         const path = __require("path");
-        const outputDir = "/Users/jashwanthsingh/.gemini/antigravity-ide/scratch/event-hub-connect-repo/artifacts/api-server/dist";
+        const outputDir = "/Users/jashwanthsingh/Documents/event-hub-connect/artifacts/api-server/dist";
         return path.resolve(outputDir, p.replace(/^\.\//, ""));
       } catch (e) {
         const f = new Function("p", "return new URL(p, import.meta.url).pathname");
@@ -42175,12 +42175,12 @@ var require_main3 = __commonJS({
 });
 
 // src/app.ts
-var import_express5 = __toESM(require_express2(), 1);
+var import_express7 = __toESM(require_express2(), 1);
 var import_cors = __toESM(require_lib3(), 1);
 var import_pino_http = __toESM(require_logger(), 1);
 
 // src/routes/index.ts
-var import_express4 = __toESM(require_express2(), 1);
+var import_express6 = __toESM(require_express2(), 1);
 
 // src/routes/health.ts
 var import_express = __toESM(require_express2(), 1);
@@ -54148,15 +54148,443 @@ router3.post("/admin/revoke-admin", async (req, res) => {
 });
 var admin_default = router3;
 
-// src/routes/index.ts
+// src/routes/storage.ts
+var import_express4 = __toESM(require_express2(), 1);
 var router4 = (0, import_express4.Router)();
-router4.use(health_default);
-router4.use(auth_default);
-router4.use(admin_default);
-var routes_default = router4;
+var fileCache = /* @__PURE__ */ new Map();
+function normalizeRoll2(rollNumber) {
+  return String(rollNumber || "STUDENT_DEFAULT").trim().toUpperCase();
+}
+function normalizePath(rawPath) {
+  return String(rawPath || "untitled").trim().replace(/^\/+/, "");
+}
+function getStorageKey(rollNumber, cleanPath) {
+  return `${rollNumber}:${cleanPath}`;
+}
+router4.post("/storage/files/write", async (req, res) => {
+  try {
+    const rollNumber = normalizeRoll2(req.body?.rollNumber);
+    const cleanPath = normalizePath(req.body?.path);
+    const content = typeof req.body?.content === "object" ? JSON.stringify(req.body.content) : String(req.body?.content || "");
+    const mimeType = req.body?.mimeType || "application/octet-stream";
+    const name = cleanPath.split("/").pop() || "untitled";
+    const folder = cleanPath.includes("/") ? cleanPath.slice(0, cleanPath.lastIndexOf("/")) : "";
+    const size = Buffer.byteLength(content, "utf8");
+    const updatedAt = Date.now();
+    const key = getStorageKey(rollNumber, cleanPath);
+    const fileRecord = {
+      id: key,
+      rollNumber,
+      path: cleanPath,
+      name,
+      folder,
+      content,
+      mimeType,
+      size,
+      updatedAt
+    };
+    fileCache.set(key, fileRecord);
+    try {
+      if (supabaseAdmin) {
+        await supabaseAdmin.from("student_files").upsert({
+          id: key,
+          roll_number: rollNumber,
+          path: cleanPath,
+          name,
+          folder,
+          content,
+          mime_type: mimeType,
+          size_bytes: size,
+          updated_at: new Date(updatedAt).toISOString()
+        }).select("id").maybeSingle();
+      }
+    } catch (_) {
+    }
+    return res.json({
+      success: true,
+      file: {
+        id: fileRecord.id,
+        name: fileRecord.name,
+        path: fileRecord.path,
+        size: fileRecord.size,
+        mimeType: fileRecord.mimeType,
+        is_dir: false,
+        modified: fileRecord.updatedAt
+      }
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message || "Failed to write file" });
+  }
+});
+router4.get("/storage/files/read", async (req, res) => {
+  try {
+    const rollNumber = normalizeRoll2(req.query["rollNumber"]);
+    const cleanPath = normalizePath(req.query["path"]);
+    const key = getStorageKey(rollNumber, cleanPath);
+    let file = fileCache.get(key);
+    if (!file && supabaseAdmin) {
+      try {
+        const { data } = await supabaseAdmin.from("student_files").select("*").eq("id", key).maybeSingle();
+        if (data) {
+          file = {
+            id: data.id,
+            rollNumber: data.roll_number,
+            path: data.path,
+            name: data.name,
+            folder: data.folder,
+            content: data.content,
+            mimeType: data.mime_type,
+            size: data.size_bytes,
+            updatedAt: new Date(data.updated_at).getTime()
+          };
+          fileCache.set(key, file);
+        }
+      } catch (_) {
+      }
+    }
+    if (!file) {
+      return res.status(404).json({ success: false, error: `File not found: ${cleanPath}` });
+    }
+    return res.json({
+      success: true,
+      file: {
+        id: file.id,
+        name: file.name,
+        path: file.path,
+        content: file.content,
+        mimeType: file.mimeType,
+        size: file.size,
+        modified: file.updatedAt
+      }
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message || "Failed to read file" });
+  }
+});
+router4.get("/storage/files", async (req, res) => {
+  try {
+    const rollNumber = normalizeRoll2(req.query["rollNumber"]);
+    const folder = req.query["folder"] ? String(req.query["folder"]).trim().replace(/^\/+/, "") : null;
+    const results = [];
+    for (const file of fileCache.values()) {
+      if (file.rollNumber === rollNumber) {
+        if (!folder || file.folder === folder || file.path.startsWith(folder + "/")) {
+          results.push({
+            id: file.id,
+            name: file.name,
+            path: file.path,
+            size: file.size,
+            mimeType: file.mimeType,
+            is_dir: false,
+            modified: file.updatedAt
+          });
+        }
+      }
+    }
+    if (results.length === 0 && supabaseAdmin) {
+      try {
+        let query = supabaseAdmin.from("student_files").select("id, name, path, size_bytes, mime_type, updated_at").eq("roll_number", rollNumber);
+        if (folder) {
+          query = query.eq("folder", folder);
+        }
+        const { data } = await query;
+        if (data && data.length > 0) {
+          for (const row of data) {
+            results.push({
+              id: row.id,
+              name: row.name,
+              path: row.path,
+              size: row.size_bytes,
+              mimeType: row.mime_type,
+              is_dir: false,
+              modified: new Date(row.updated_at).getTime()
+            });
+          }
+        }
+      } catch (_) {
+      }
+    }
+    return res.json({ success: true, rollNumber, files: results });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message || "Failed to list files" });
+  }
+});
+router4.delete("/storage/files", async (req, res) => {
+  try {
+    const rollNumber = normalizeRoll2(req.query["rollNumber"] || req.body?.rollNumber);
+    const cleanPath = normalizePath(req.query["path"] || req.body?.path);
+    const key = getStorageKey(rollNumber, cleanPath);
+    fileCache.delete(key);
+    if (supabaseAdmin) {
+      try {
+        await supabaseAdmin.from("student_files").delete().eq("id", key);
+      } catch (_) {
+      }
+    }
+    return res.json({ success: true, message: `Deleted ${cleanPath}` });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message || "Failed to delete file" });
+  }
+});
+router4.post("/storage/files/rename", async (req, res) => {
+  try {
+    const rollNumber = normalizeRoll2(req.body?.rollNumber);
+    const oldPath = normalizePath(req.body?.oldPath);
+    const newName = String(req.body?.newName || "").trim();
+    if (!newName) {
+      return res.status(400).json({ success: false, error: "New name is required." });
+    }
+    const oldKey = getStorageKey(rollNumber, oldPath);
+    const existing = fileCache.get(oldKey);
+    if (!existing) {
+      return res.status(404).json({ success: false, error: "File not found" });
+    }
+    const folder = oldPath.includes("/") ? oldPath.slice(0, oldPath.lastIndexOf("/")) : "";
+    const newPath = folder ? `${folder}/${newName}` : newName;
+    const newKey = getStorageKey(rollNumber, newPath);
+    const updated = {
+      ...existing,
+      id: newKey,
+      name: newName,
+      path: newPath,
+      folder,
+      updatedAt: Date.now()
+    };
+    fileCache.delete(oldKey);
+    fileCache.set(newKey, updated);
+    return res.json({
+      success: true,
+      file: {
+        id: updated.id,
+        name: updated.name,
+        path: updated.path,
+        size: updated.size,
+        modified: updated.updatedAt
+      }
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message || "Failed to rename file" });
+  }
+});
+var storage_default = router4;
+
+// src/routes/meetings.ts
+var import_express5 = __toESM(require_express2(), 1);
+var router5 = (0, import_express5.Router)();
+var rooms = /* @__PURE__ */ new Map();
+var signalMailboxes = /* @__PURE__ */ new Map();
+var TTL_MS = 6e4;
+var LETTERS_BY_LENGTH = { 10: [3, 4, 3], 12: [4, 4, 4] };
+function normalizeCode(input) {
+  if (typeof input !== "string") return null;
+  const letters = input.trim().toLowerCase().replace(/[\s-]/g, "");
+  const groups = LETTERS_BY_LENGTH[letters.length];
+  if (!groups || /[^a-z0-9]/.test(letters)) {
+    if (letters.length >= 6) {
+      return `${letters.slice(0, 3)}-${letters.slice(3, 7)}-${letters.slice(7, 10) || "dtn"}`;
+    }
+    return null;
+  }
+  let i = 0;
+  return groups.map((len) => letters.slice(i, i += len)).join("-");
+}
+function generateRandomCode() {
+  const chars = "abcdefghijklmnopqrstuvwxyz";
+  const part = (len) => Array.from({ length: len }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+  return `${part(3)}-${part(4)}-${part(3)}`;
+}
+router5.get("/v1/health", (_req, res) => {
+  res.json({ ok: true, activeRooms: rooms.size, serverTime: Date.now() });
+});
+router5.get("/meetings/health", (_req, res) => {
+  res.json({ ok: true, activeRooms: rooms.size, serverTime: Date.now() });
+});
+router5.post("/meetings/rooms/create", (req, res) => {
+  const code = generateRandomCode();
+  const host = String(req.body?.rollNumber || "STUDENT").trim().toUpperCase();
+  const secret = `sec_${Math.random().toString(36).slice(2)}_${Date.now()}`;
+  const room = {
+    code,
+    secret,
+    host,
+    term: 1,
+    participants: 1,
+    lastHeartbeat: Date.now(),
+    createdAt: Date.now(),
+    messages: []
+  };
+  rooms.set(code, room);
+  res.json({ success: true, roomCode: code, secret, host });
+});
+router5.get(["/v1/rooms/:code", "/meetings/rooms/:code"], (req, res) => {
+  const code = normalizeCode(req.params["code"]);
+  if (!code) {
+    return res.status(400).json({ error: "Invalid room code format" });
+  }
+  const room = rooms.get(code);
+  if (!room) {
+    return res.json({ room: null });
+  }
+  const age = Date.now() - room.lastHeartbeat;
+  if (age > TTL_MS) {
+    rooms.delete(code);
+    return res.json({ room: null });
+  }
+  return res.json({
+    room: {
+      code: room.code,
+      host: room.host,
+      invite: room.invite,
+      grant: room.grant,
+      term: room.term,
+      participants: room.participants,
+      ageMs: age
+    }
+  });
+});
+router5.post(["/v1/rooms/:code", "/meetings/rooms/:code"], (req, res) => {
+  const code = normalizeCode(req.params["code"]);
+  if (!code) {
+    return res.status(400).json({ error: "Invalid room code format" });
+  }
+  let body = req.body;
+  if (typeof body === "string") {
+    try {
+      body = JSON.parse(body);
+    } catch (_) {
+      body = {};
+    }
+  }
+  const secret = String(body?.secret || "").slice(0, 128);
+  const invite = body?.invite ? String(body.invite).slice(0, 512) : void 0;
+  const grant = body?.grant ? String(body.grant).slice(0, 512) : void 0;
+  const host = String(body?.host || "Host").slice(0, 80);
+  const participants = Number(body?.participants) || 1;
+  const term = Number(body?.term) || 1;
+  const existing = rooms.get(code);
+  const now = Date.now();
+  if (existing) {
+    const age = now - existing.lastHeartbeat;
+    if (age <= TTL_MS && existing.secret !== secret) {
+      return res.status(409).json({
+        status: "held",
+        room: {
+          code: existing.code,
+          host: existing.host,
+          invite: existing.invite,
+          grant: existing.grant,
+          term: existing.term,
+          participants: existing.participants,
+          ageMs: age
+        }
+      });
+    }
+    existing.lastHeartbeat = now;
+    if (invite) existing.invite = invite;
+    if (grant) existing.grant = grant;
+    existing.host = host;
+    existing.participants = participants;
+    existing.term = Math.max(existing.term, term);
+    return res.json({
+      status: "updated",
+      room: {
+        code: existing.code,
+        host: existing.host,
+        term: existing.term,
+        participants: existing.participants
+      }
+    });
+  }
+  const newRoom = {
+    code,
+    secret: secret || `sec_${Math.random().toString(36).slice(2)}`,
+    host,
+    invite,
+    grant,
+    term,
+    participants,
+    lastHeartbeat: now,
+    createdAt: now,
+    messages: []
+  };
+  rooms.set(code, newRoom);
+  return res.json({
+    status: "claimed",
+    room: {
+      code: newRoom.code,
+      host: newRoom.host,
+      term: newRoom.term,
+      participants: newRoom.participants
+    }
+  });
+});
+router5.post(["/v1/rooms/:code/end", "/meetings/rooms/:code/end"], (req, res) => {
+  const code = normalizeCode(req.params["code"]);
+  if (code) {
+    rooms.delete(code);
+  }
+  return res.json({ ok: true });
+});
+router5.post("/meetings/rooms/:code/messages", (req, res) => {
+  const code = normalizeCode(req.params["code"]);
+  if (!code) return res.status(400).json({ error: "Invalid code" });
+  const room = rooms.get(code);
+  if (!room) return res.status(404).json({ error: "Room not found" });
+  const message = {
+    id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+    senderName: String(req.body?.senderName || "Student").slice(0, 50),
+    rollNumber: String(req.body?.rollNumber || "").slice(0, 30),
+    text: String(req.body?.text || "").slice(0, 1e3),
+    timestamp: Date.now()
+  };
+  room.messages.push(message);
+  if (room.messages.length > 200) room.messages.shift();
+  return res.json({ success: true, message });
+});
+router5.get("/meetings/rooms/:code/messages", (req, res) => {
+  const code = normalizeCode(req.params["code"]);
+  if (!code) return res.status(400).json({ error: "Invalid code" });
+  const room = rooms.get(code);
+  if (!room) return res.status(404).json({ error: "Room not found" });
+  return res.json({ success: true, messages: room.messages });
+});
+router5.post("/meetings/signal", (req, res) => {
+  const { fromPeerId, toPeerId, signalData } = req.body || {};
+  if (!fromPeerId || !toPeerId || !signalData) {
+    return res.status(400).json({ error: "Missing signaling parameters" });
+  }
+  const mailbox = signalMailboxes.get(toPeerId) || [];
+  mailbox.push({
+    fromPeerId,
+    toPeerId,
+    signalData,
+    timestamp: Date.now()
+  });
+  signalMailboxes.set(toPeerId, mailbox);
+  return res.json({ success: true });
+});
+router5.get("/meetings/signals", (req, res) => {
+  const peerId = String(req.query["peerId"] || "");
+  if (!peerId) {
+    return res.status(400).json({ error: "peerId query required" });
+  }
+  const mailbox = signalMailboxes.get(peerId) || [];
+  signalMailboxes.delete(peerId);
+  return res.json({ success: true, signals: mailbox });
+});
+var meetings_default = router5;
+
+// src/routes/index.ts
+var router6 = (0, import_express6.Router)();
+router6.use(health_default);
+router6.use(auth_default);
+router6.use(admin_default);
+router6.use(storage_default);
+router6.use(meetings_default);
+var routes_default = router6;
 
 // src/app.ts
-var app = (0, import_express5.default)();
+var app = (0, import_express7.default)();
 app.use(
   (0, import_pino_http.default)({
     logger,
@@ -54177,8 +54605,8 @@ app.use(
   })
 );
 app.use((0, import_cors.default)());
-app.use(import_express5.default.json());
-app.use(import_express5.default.urlencoded({ extended: true }));
+app.use(import_express7.default.json());
+app.use(import_express7.default.urlencoded({ extended: true }));
 app.use("/api", routes_default);
 var app_default = app;
 export {

@@ -120,7 +120,7 @@ export const DATANAUTS_APPS: DatanautsApp[] = [
     alternativeTo: 'Airtable, Notion Databases',
     iconName: 'Database',
     gradient: 'from-blue-600 to-teal-500',
-    embedPath: 'https://records.puter.com/',
+    embedPath: '/apps/records/index.html',
   },
 
   // --- CREATIVE & MEDIA ---
@@ -134,7 +134,7 @@ export const DATANAUTS_APPS: DatanautsApp[] = [
     iconName: 'Image',
     gradient: 'from-sky-500 via-blue-600 to-indigo-700',
     badge: 'Photoshop Web',
-    embedPath: 'https://photo.puter.com/',
+    embedPath: '/apps/photo-studio/index.html',
     featured: true
   },
   {
@@ -146,7 +146,7 @@ export const DATANAUTS_APPS: DatanautsApp[] = [
     alternativeTo: 'Adobe Illustrator, Figma, CorelDRAW',
     iconName: 'Compass',
     gradient: 'from-orange-500 to-amber-600',
-    embedPath: 'https://vector.puter.com/',
+    embedPath: '/apps/vector-studio/index.html',
   },
   {
     id: 'video-studio',
@@ -158,7 +158,7 @@ export const DATANAUTS_APPS: DatanautsApp[] = [
     iconName: 'Video',
     gradient: 'from-purple-600 via-pink-600 to-red-500',
     badge: 'Multi-Track',
-    embedPath: 'https://video.puter.com/',
+    embedPath: '/apps/video-studio/index.html',
     featured: true
   },
   {
@@ -170,7 +170,7 @@ export const DATANAUTS_APPS: DatanautsApp[] = [
     alternativeTo: 'Audacity, Adobe Audition',
     iconName: 'Mic',
     gradient: 'from-emerald-400 to-teal-600',
-    embedPath: 'https://audio.puter.com/',
+    embedPath: '/apps/audio-studio/index.html',
   },
   {
     id: 'music-studio',
@@ -181,7 +181,7 @@ export const DATANAUTS_APPS: DatanautsApp[] = [
     alternativeTo: 'GarageBand, FL Studio, Ableton Live',
     iconName: 'Music',
     gradient: 'from-violet-600 to-fuchsia-600',
-    embedPath: 'https://music.puter.com/',
+    embedPath: '/apps/music-studio/index.html',
   },
 
   // --- ENGINEERING & 3D ---
@@ -195,7 +195,7 @@ export const DATANAUTS_APPS: DatanautsApp[] = [
     iconName: 'Box',
     gradient: 'from-cyan-500 to-blue-600',
     badge: 'WebGL',
-    embedPath: 'https://3d.puter.com/',
+    embedPath: '/apps/3d/index.html',
     featured: true
   },
   {
@@ -207,7 +207,7 @@ export const DATANAUTS_APPS: DatanautsApp[] = [
     alternativeTo: 'AutoCAD, LibreCAD, Onshape',
     iconName: 'Maximize2',
     gradient: 'from-blue-600 to-cyan-500',
-    embedPath: 'https://cad.puter.com/',
+    embedPath: '/apps/cad/index.html',
   },
   {
     id: 'parametric',
@@ -218,7 +218,7 @@ export const DATANAUTS_APPS: DatanautsApp[] = [
     alternativeTo: 'SolidWorks, Fusion 360',
     iconName: 'Cpu',
     gradient: 'from-indigo-600 to-purple-700',
-    embedPath: 'https://parametric.puter.com/',
+    embedPath: '/apps/cad/index.html',
   },
   {
     id: 'circuits',
@@ -230,7 +230,7 @@ export const DATANAUTS_APPS: DatanautsApp[] = [
     iconName: 'Zap',
     gradient: 'from-amber-400 to-yellow-600',
     badge: 'SPICE Sim',
-    embedPath: 'https://circuits.puter.com/',
+    embedPath: '/apps/circuits/index.html',
   },
   {
     id: 'building-design',
@@ -241,7 +241,7 @@ export const DATANAUTS_APPS: DatanautsApp[] = [
     alternativeTo: 'SketchUp, Revit, Sweet Home 3D',
     iconName: 'Home',
     gradient: 'from-teal-500 to-emerald-700',
-    embedPath: 'https://building.puter.com/',
+    embedPath: '/apps/building-design/index.html',
   },
 
   // --- PRODUCTIVITY & WORK ---
@@ -254,7 +254,7 @@ export const DATANAUTS_APPS: DatanautsApp[] = [
     alternativeTo: 'Microsoft To Do, Todoist, Things 3',
     iconName: 'CheckSquare',
     gradient: 'from-emerald-500 to-teal-600',
-    embedPath: 'https://tasks.puter.com/',
+    embedPath: '/apps/tasks/index.html',
   },
   {
     id: 'projects',
@@ -266,7 +266,7 @@ export const DATANAUTS_APPS: DatanautsApp[] = [
     iconName: 'Kanban',
     gradient: 'from-blue-500 to-indigo-600',
     badge: 'Kanban',
-    embedPath: 'https://projects.puter.com/',
+    embedPath: '/apps/tasks/index.html',
     featured: true
   },
   {
@@ -278,7 +278,7 @@ export const DATANAUTS_APPS: DatanautsApp[] = [
     alternativeTo: 'Notion, Confluence, Obsidian',
     iconName: 'BookOpen',
     gradient: 'from-slate-700 to-slate-900',
-    embedPath: 'https://wiki.puter.com/',
+    embedPath: '/apps/wiki/index.html',
   },
   {
     id: 'time-tracking',
@@ -289,7 +289,7 @@ export const DATANAUTS_APPS: DatanautsApp[] = [
     alternativeTo: 'Toggl Track, Clockify',
     iconName: 'Clock',
     gradient: 'from-violet-500 to-purple-600',
-    embedPath: 'https://tt.puter.com/',
+    embedPath: '/apps/time-tracking/index.html',
   },
   {
     id: 'surveys',
@@ -300,7 +300,7 @@ export const DATANAUTS_APPS: DatanautsApp[] = [
     alternativeTo: 'Google Forms, Typeform, SurveyMonkey',
     iconName: 'ListCheck',
     gradient: 'from-teal-500 to-cyan-600',
-    embedPath: 'https://survey.puter.com/',
+    embedPath: '/apps/survey/index.html',
   },
   {
     id: 'signatures',
@@ -311,7 +311,7 @@ export const DATANAUTS_APPS: DatanautsApp[] = [
     alternativeTo: 'DocuSign, Adobe Sign',
     iconName: 'FileCheck2',
     gradient: 'from-blue-500 to-cyan-600',
-    embedPath: 'https://signatures.puter.com/',
+    embedPath: '/apps/signatures/index.html',
   },
 
   // --- COMMUNICATION ---
@@ -325,7 +325,7 @@ export const DATANAUTS_APPS: DatanautsApp[] = [
     iconName: 'Video',
     gradient: 'from-blue-500 to-cyan-500',
     badge: 'WebRTC',
-    embedPath: 'https://meetings.puter.com/',
+    embedPath: '/apps/meetings/index.html',
   },
   {
     id: 'teamchat',
@@ -336,7 +336,7 @@ export const DATANAUTS_APPS: DatanautsApp[] = [
     alternativeTo: 'Slack, Discord',
     iconName: 'MessageSquare',
     gradient: 'from-indigo-600 to-violet-700',
-    embedPath: 'https://teamchat.puter.com/',
+    embedPath: '/apps/teamchat/index.html',
   },
   {
     id: 'email',
@@ -347,7 +347,7 @@ export const DATANAUTS_APPS: DatanautsApp[] = [
     alternativeTo: 'Gmail, Microsoft Outlook',
     iconName: 'Mail',
     gradient: 'from-red-500 to-amber-600',
-    embedPath: 'https://email.puter.com/',
+    embedPath: '/apps/teamchat/index.html',
   },
   {
     id: 'contacts',
@@ -358,7 +358,7 @@ export const DATANAUTS_APPS: DatanautsApp[] = [
     alternativeTo: 'Google Contacts, Apple Contacts',
     iconName: 'Users',
     gradient: 'from-teal-500 to-emerald-600',
-    embedPath: 'https://contacts.puter.com/',
+    embedPath: '/apps/crm/index.html',
   },
   {
     id: 'calendar',
@@ -369,7 +369,7 @@ export const DATANAUTS_APPS: DatanautsApp[] = [
     alternativeTo: 'Google Calendar, Apple Calendar',
     iconName: 'Calendar',
     gradient: 'from-blue-600 to-indigo-600',
-    embedPath: 'https://calendar.puter.com/',
+    embedPath: '/apps/shifts/index.html',
   },
 
   // --- BUSINESS & FINANCE ---
@@ -382,7 +382,7 @@ export const DATANAUTS_APPS: DatanautsApp[] = [
     alternativeTo: 'QuickBooks Online, Xero, Wave',
     iconName: 'Calculator',
     gradient: 'from-emerald-600 to-teal-700',
-    embedPath: 'https://accounting.puter.com/',
+    embedPath: '/apps/accounting/index.html',
   },
   {
     id: 'invoicing',
@@ -393,7 +393,7 @@ export const DATANAUTS_APPS: DatanautsApp[] = [
     alternativeTo: 'FreshBooks, Zoho Invoice',
     iconName: 'Receipt',
     gradient: 'from-cyan-600 to-blue-700',
-    embedPath: 'https://invoicing.puter.com/',
+    embedPath: '/apps/invoicing/index.html',
   },
   {
     id: 'expenses',
@@ -404,7 +404,7 @@ export const DATANAUTS_APPS: DatanautsApp[] = [
     alternativeTo: 'Expensify, Zoho Expense',
     iconName: 'CreditCard',
     gradient: 'from-amber-500 to-red-500',
-    embedPath: 'https://expenses.puter.com/',
+    embedPath: '/apps/expense/index.html',
   },
   {
     id: 'captable',
@@ -415,7 +415,7 @@ export const DATANAUTS_APPS: DatanautsApp[] = [
     alternativeTo: 'Carta, Pulley',
     iconName: 'PieChart',
     gradient: 'from-violet-600 to-purple-800',
-    embedPath: 'https://captable.puter.com/',
+    embedPath: '/apps/cap-table/index.html',
   },
   {
     id: 'crm',
@@ -426,7 +426,7 @@ export const DATANAUTS_APPS: DatanautsApp[] = [
     alternativeTo: 'Salesforce, HubSpot, Pipedrive',
     iconName: 'BarChart3',
     gradient: 'from-blue-600 to-cyan-600',
-    embedPath: 'https://crm.puter.com/',
+    embedPath: '/apps/crm/index.html',
   },
   {
     id: 'help-desk',
@@ -437,7 +437,7 @@ export const DATANAUTS_APPS: DatanautsApp[] = [
     alternativeTo: 'Zendesk, Freshdesk, Intercom',
     iconName: 'HelpCircle',
     gradient: 'from-emerald-500 to-teal-600',
-    embedPath: 'https://help.puter.com/',
+    embedPath: '/apps/help-desk/index.html',
   },
   {
     id: 'contracts',
@@ -448,7 +448,7 @@ export const DATANAUTS_APPS: DatanautsApp[] = [
     alternativeTo: 'ContractSafe, Juro',
     iconName: 'FileSpreadsheet',
     gradient: 'from-slate-600 to-slate-800',
-    embedPath: 'https://contracts.puter.com/',
+    embedPath: '/apps/contracts/index.html',
   },
   {
     id: 'pos',
@@ -459,7 +459,7 @@ export const DATANAUTS_APPS: DatanautsApp[] = [
     alternativeTo: 'Square POS, Shopify POS',
     iconName: 'Store',
     gradient: 'from-orange-500 to-amber-600',
-    embedPath: 'https://pos.puter.com/',
+    embedPath: '/apps/pos/index.html',
   },
   {
     id: 'inventory',
@@ -470,7 +470,7 @@ export const DATANAUTS_APPS: DatanautsApp[] = [
     alternativeTo: 'Zoho Inventory, Sortly',
     iconName: 'Package',
     gradient: 'from-teal-600 to-emerald-700',
-    embedPath: 'https://inventory.puter.com/',
+    embedPath: '/apps/inventory/index.html',
   },
   {
     id: 'assets',
@@ -481,7 +481,7 @@ export const DATANAUTS_APPS: DatanautsApp[] = [
     alternativeTo: 'Asset Panda, EZOfficeInventory',
     iconName: 'HardDrive',
     gradient: 'from-indigo-600 to-blue-700',
-    embedPath: 'https://assets.puter.com/',
+    embedPath: '/apps/inventory/index.html',
   },
   {
     id: 'hiring',
@@ -492,7 +492,7 @@ export const DATANAUTS_APPS: DatanautsApp[] = [
     alternativeTo: 'Greenhouse, Lever, Workable',
     iconName: 'UserPlus',
     gradient: 'from-purple-500 to-pink-600',
-    embedPath: 'https://hiring.puter.com/',
+    embedPath: '/apps/hiring/index.html',
   },
   {
     id: 'shifts',
@@ -503,7 +503,7 @@ export const DATANAUTS_APPS: DatanautsApp[] = [
     alternativeTo: 'Deputy, When I Work, Homebase',
     iconName: 'CalendarClock',
     gradient: 'from-blue-500 to-teal-500',
-    embedPath: 'https://shifts.puter.com/',
+    embedPath: '/apps/shifts/index.html',
   },
   {
     id: 'childcare',
@@ -514,7 +514,7 @@ export const DATANAUTS_APPS: DatanautsApp[] = [
     alternativeTo: 'brightwheel, Procare',
     iconName: 'HeartHandshake',
     gradient: 'from-pink-500 to-rose-600',
-    embedPath: 'https://childcare.puter.com/',
+    embedPath: '/apps/childcare/index.html',
   },
   {
     id: 'field-service',
@@ -525,7 +525,7 @@ export const DATANAUTS_APPS: DatanautsApp[] = [
     alternativeTo: 'Jobber, ServiceTitan',
     iconName: 'Wrench',
     gradient: 'from-amber-600 to-orange-700',
-    embedPath: 'https://fieldservice.puter.com/',
+    embedPath: '/apps/field-service/index.html',
   },
   {
     id: 'legal',
@@ -536,7 +536,7 @@ export const DATANAUTS_APPS: DatanautsApp[] = [
     alternativeTo: 'Clio, MyCase',
     iconName: 'Scale',
     gradient: 'from-amber-700 to-stone-800',
-    embedPath: 'https://legal.puter.com/',
+    embedPath: '/apps/legal/index.html',
   },
   {
     id: 'fleet',
@@ -547,7 +547,7 @@ export const DATANAUTS_APPS: DatanautsApp[] = [
     alternativeTo: 'Fleetio, Samsara',
     iconName: 'Truck',
     gradient: 'from-blue-700 to-cyan-800',
-    embedPath: 'https://fleet.puter.com/',
+    embedPath: '/apps/fleet/index.html',
   },
   {
     id: 'property-management',
@@ -558,7 +558,7 @@ export const DATANAUTS_APPS: DatanautsApp[] = [
     alternativeTo: 'Buildium, AppFolio',
     iconName: 'Building2',
     gradient: 'from-slate-700 to-zinc-900',
-    embedPath: 'https://property.puter.com/',
+    embedPath: '/apps/property-management/index.html',
   },
 
   // --- DEVELOPER TOOLS ---
@@ -572,7 +572,7 @@ export const DATANAUTS_APPS: DatanautsApp[] = [
     iconName: 'Code',
     gradient: 'from-orange-500 via-amber-500 to-yellow-500',
     badge: 'Postman Web',
-    embedPath: 'https://apic.puter.com/',
+    embedPath: '/apps/api-client/index.html',
   },
 
   // --- ARCADE & GAMES ---
@@ -585,7 +585,7 @@ export const DATANAUTS_APPS: DatanautsApp[] = [
     alternativeTo: 'Chess.com, Lichess',
     iconName: 'Crown',
     gradient: 'from-stone-700 to-zinc-900',
-    embedPath: 'https://chess.puter.com/',
+    embedPath: '/apps/chess/index.html',
   },
   {
     id: 'sudoku',
@@ -596,7 +596,7 @@ export const DATANAUTS_APPS: DatanautsApp[] = [
     alternativeTo: 'Sudoku.com',
     iconName: 'Grid',
     gradient: 'from-blue-500 to-cyan-600',
-    embedPath: 'http://sudoku.puter.com/',
+    embedPath: '/apps/sudoku/index.html',
   },
   {
     id: 'solitaire',
@@ -607,6 +607,6 @@ export const DATANAUTS_APPS: DatanautsApp[] = [
     alternativeTo: 'Microsoft Solitaire',
     iconName: 'Sparkles',
     gradient: 'from-red-600 to-pink-600',
-    embedPath: 'https://solitaire.puter.com/',
+    embedPath: '/apps/solitaire/index.html',
   },
 ];

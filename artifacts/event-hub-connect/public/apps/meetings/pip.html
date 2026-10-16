@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Meeting</title>
+    <style>
+      html, body { margin: 0; height: 100%; background: #202124; }
+    </style>
+  </head>
+  <body>
+    <script>
+      // The floating half of the meeting inside the Puter desktop. Runs at
+      // the end of <body>: the meeting frame renders into this document the
+      // moment it gets the window, and needs a body to render into.
+      //
+      // The desktop opened this window for the app (puter.ui.request-
+      // PictureInPicture) because a page in an iframe can't open one itself.
+      // This page has nothing of its own: it finds the meeting's frame among
+      // the desktop's frames — the one it may read, being the same origin —
+      // and hands it this window, and ui/pip.js renders into it exactly as
+      // it renders into a Document PiP window it opened directly.
+      (function () {
+        var token = new URLSearchParams(location.search).get('token');
+        var opener = null;
+        try {
+          opener = window.parent && window.parent.opener;
+        } catch (e) {
+          /* not opened for us */
+        }
+        if (!token || !opener) return;
+        for (var i = 0; i < opener.frames.length; i++) {
+          try {
+            var attach = opener.frames[i].__pmPipAttach; // throws for another origin's frame
+            if (typeof attach === 'function' && attach(token, window)) return;
+          } catch (e) {
+            /* another origin's frame */
+          }
+        }
+      })();
+    </script>
+  </body>
+</html>

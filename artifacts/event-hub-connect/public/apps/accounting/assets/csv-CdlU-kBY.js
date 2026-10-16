@@ -1,0 +1,4 @@
+function e(e,n){let r=String(e||``).replace(/^﻿/,``),i=n||t(r),a=[],o=[],s=``,c=!1;for(let e=0;e<r.length;e++){let t=r[e];c?t===`"`?r[e+1]===`"`?(s+=`"`,e++):c=!1:s+=t:t===`"`&&s.trim()===``?(s=``,c=!0):t===i?(o.push(s),s=``):t===`
+`||t===`\r`?(t===`\r`&&r[e+1]===`
+`&&e++,o.push(s),s=``,(o.length>1||o[0]!==``)&&a.push(o),o=[]):s+=t}return(s!==``||o.length)&&(o.push(s),(o.length>1||o[0]!==``)&&a.push(o)),a.map(e=>e.map(e=>e.trim()))}function t(e){let t=e.split(/\r?\n/,1)[0]||``,n=[`,`,`;`,`	`,`|`].map(e=>[e,t.split(e).length-1]);return n.sort((e,t)=>t[1]-e[1]),n[0][1]>0?n[0][0]:`,`}function n(e){if(e==null)return``;let t=String(e),n=/^[=+\-@\t\r]/.test(t)&&!/^-?\d+(\.\d+)?$/.test(t)?`'${t}`:t;return/[",\n\r]/.test(n)?`"${n.replace(/"/g,`""`)}"`:n}function r(e){return e.map(e=>e.map(n).join(`,`)).join(`\r
+`)}export{r as n,e as t};

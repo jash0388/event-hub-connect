@@ -1,0 +1,13 @@
+import{K as y,aK as g,a as o,b as a,aR as w,h as t,o as h,i as d,J as $,n as C}from"./index-DJd6RqZ6.js";function T(){return o.demo?(a("Invitations work once you sign in and turn on staff and family access.",{type:"info"}),!1):$()?o.team?.url?!0:(h({title:"Turn on staff and family access",size:"narrow",body:t("p","Families and staff sign in with their own Puter accounts and see your school through a small server in your Puter account. Turn it on once in Settings, then invite people from here."),footer:({close:n})=>[t("button.btn",{type:"button",onClick:()=>n()},"Not now"),t("button.btn.primary",{type:"button",onClick:()=>(n(),C("/settings/access"))},"Go to settings")]}),!1):(a("Only the director or an admin can invite people.",{type:"error"}),!1)}async function f({role:n,guardianId:l,staffId:m,name:e,email:u}){if(!T())return;let p;try{p=await g(o.team.url,"invite",{role:n,guardianId:l,staffId:m,label:e})}catch(i){a(i.message||"The invitation could not be created.",{type:"error"});return}const s=w(o.team.url,p.token),r=o.settings().school.name||"our school",b=n==="parent"?`Join ${r} on Childcare`:`Join the ${r} team`,k=n==="parent"?`Hi ${e.split(" ")[0]},
+
+You can now see your child's day at ${r}: photos, meals, naps, messages, and statements. Open this link and sign in with a free Puter account:
+
+${s}
+
+The link works once and expires in 14 days.`:`Hi ${e.split(" ")[0]},
+
+Here is your link to join ${r} on Childcare. Open it and sign in with a free Puter account:
+
+${s}
+
+The link works once and expires in 14 days.`,c=t("input.input",{value:s,readonly:!0,"aria-label":"Invitation link",onFocus:i=>i.target.select()}),v=()=>Promise.resolve().then(()=>navigator.clipboard.writeText(s)).then(()=>a("Link copied"),()=>{c.focus(),c.select(),a("Press Ctrl+C (⌘C on a Mac) to copy the link.",{type:"info"})});h({title:`Invite ${e}`,body:t("div.stack",t("p",n==="parent"?`Send this link to ${e}. After signing in they will see only their own children.`:`Send this link to ${e}. They join as ${n==="admin"?"an admin":"staff"}.`),t("div.row",c,t("button.btn",{type:"button",onClick:v},d("copy",16),"Copy")),t("p.subtle.small","The link works once and expires in 14 days. Anyone with the link can use it, so send it only to this person.")),footer:({close:i})=>[u?t("a.btn",{href:`mailto:${encodeURIComponent(u)}?subject=${encodeURIComponent(b)}&body=${encodeURIComponent(k)}`},d("mail",16),"Email it"):null,t("span.spacer"),t("button.btn.primary",{type:"button",onClick:()=>i()},"Done")]})}const x=n=>f({role:"parent",guardianId:n.id,name:y(n),email:n.email}),P=(n,l="staff")=>f({role:l,staffId:n.id,name:y(n),email:n.email});export{P as a,x as i};

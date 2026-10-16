@@ -1,0 +1,26 @@
+{
+  "name": "Expenses",
+  "short_name": "Expenses",
+  "description": "Receipt capture with AI OCR, expense reports, and reconciliation. Private, fast, on every device.",
+  "id": "expenses-puter",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f8f8f6",
+  "theme_color": "#f8f8f6",
+  "categories": ["finance", "business", "productivity"],
+  "icons": [
+    { "src": "./icons/favicon-48x48.png", "sizes": "48x48", "type": "image/png", "purpose": "any" },
+    { "src": "./icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "./icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Capture receipt",
+      "short_name": "Capture",
+      "url": "./#/expenses?capture=1",
+      "icons": [{ "src": "./icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

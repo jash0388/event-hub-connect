@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Point of Sale</title>
+  <meta name="description" content="Catalog, checkout, receipts, discounts, taxes, and sales reports. Your data, your Puter cloud." />
+  <meta name="theme-color" content="#fa7454" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Point of Sale" />
+  <link rel="icon" href="./favicon.ico" sizes="48x48" />
+  <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="./favicon-16x16.png" />
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+  <link rel="manifest" href="./manifest.json" />
+  <script>
+    // Apply saved theme before first paint to avoid a flash.
+    (() => {
+      try {
+        const t = localStorage.getItem('pos:theme');
+        if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+      } catch {}
+    })();
+  </script>
+  <!-- defer keeps the SDK ahead of the module script below (same in-order
+       queue) without parser-blocking first paint of the boot splash. -->
+  <script src="/datanauts-bridge.js" defer></script>
+  <script type="module" crossorigin src="./assets/index-CMZAKqCj.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-6pz6rlVH.css">
+</head>
+<body>
+  <div id="app" class="app">
+    <div class="boot-splash" id="boot-splash" aria-hidden="true">
+      <img class="boot-mark" src="./icons/icon-192.png" width="56" height="56" alt="" />
+    </div>
+  </div>
+</body>
+</html>

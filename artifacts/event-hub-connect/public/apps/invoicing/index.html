@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Invoicing &amp; Estimates</title>
+  <meta name="description" content="Create quotes, invoices, recurring invoices, receipts, and payment links. Simple, fast, and stored in your own Puter cloud." />
+  <meta name="theme-color" content="#f4f4f6" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#0d0d10" media="(prefers-color-scheme: dark)" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Invoicing" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" href="./favicon.ico" sizes="16x16 32x32 48x48" />
+  <link rel="icon" href="./favicon-16x16.png" type="image/png" sizes="16x16" />
+  <link rel="icon" href="./favicon-32x32.png" type="image/png" sizes="32x32" />
+  <link rel="icon" href="./favicon-48x48.png" type="image/png" sizes="48x48" />
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png" sizes="180x180" />
+  <script>
+    // Apply the saved theme before first paint to avoid a flash.
+    (() => {
+      try {
+        const t = localStorage.getItem('invoicing:theme');
+        if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+      } catch {}
+    })();
+  </script>
+  <!-- defer keeps the SDK ahead of the module script below (same in-order
+       queue) without parser-blocking first paint of the boot splash. -->
+  <script src="/datanauts-bridge.js" defer></script>
+  <script type="module" crossorigin src="./assets/index-Ckf7dMda.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-CSSRh8Jj.css">
+</head>
+<body>
+  <div id="app" class="app">
+    <div class="boot-splash" id="boot-splash" aria-hidden="true">
+      <img class="boot-mark" src="./icon-192.png" alt="" width="56" height="56" decoding="async" draggable="false" />
+    </div>
+  </div>
+</body>
+</html>
