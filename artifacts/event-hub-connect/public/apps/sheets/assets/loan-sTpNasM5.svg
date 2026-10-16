@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="360" viewBox="0 0 1114.6666666666667 836"><rect width="100%" height="100%" fill="#fff"/><foreignObject x="167.33333333333337" y="28" width="780" height="808"><div xmlns="http://www.w3.org/1999/xhtml" style="width:780px;font-family:Arial,sans-serif;color:#252a32;--font:Arial,sans-serif;--ink:#252a32;--hairline:#e5e7eb;"><style>.print-table {
+  isolation: isolate;
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 9.5pt;
+  font-variant-numeric: tabular-nums;
+}
+
+.print-table td {
+  border: 1px solid #ccc;
+  padding: 2px 2px;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
+  vertical-align: middle;
+  /* Fills, data bars and rule colours are part of the sheet: print them even where the browser drops backgrounds by default. */
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* A definite zero minimum lets the inner percentage height resolve against
+   the final cell height, including merged rows, without enlarging the row. */
+.print-table .constrained { height: 0; padding: 0; }
+.print-cell-box { position: relative; height: 100%; text-overflow: inherit; text-decoration: inherit; }
+.print-cell {
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  padding: 2px 2px;
+  align-content: unsafe center;
+  overflow: hidden;
+  text-overflow: inherit;
+  text-decoration: inherit;
+}
+.print-table td.wrap { white-space: pre-wrap; overflow-wrap: anywhere; }
+/* A label that runs over the empty cells beside it, as on screen: the cell lets it out, the span stops it at the last empty cell. */
+.print-table td.spill { overflow: visible; text-overflow: clip; }
+.print-table td.spill &gt; .print-cell-box &gt; .print-cell { right: auto; z-index: 1; text-overflow: clip; }
+.print-table td.sparkline &gt; .print-cell-box &gt; .print-cell { padding: 1px 2px; }
+.print-table td.sparkline svg { display: block; max-width: 100%; height: auto; }
+/* An IMAGE() cell's picture: fitted inside the cell, stretched to fill it, or at its own size and cut at the cell's edges, as the grid shows it. */
+.print-table td.image &gt; .print-cell-box &gt; .print-cell { padding: 1px 2px; }
+.print-table td.image img { display: inline-block; vertical-align: middle; object-fit: contain; }
+.print-table td.image.fit-stretch img { object-fit: fill; }
+.print-sheet { position: relative; }
+/* Explicit fragments reserve content space but may paint into page margins.
+   Containment keeps that paint from changing browser shrink-to-fit geometry.
+   Clip to the allocated ink bounds: fractional layout rounding must not send
+   a border's leading edge onto the preceding physical page. */
+.print-page { position: relative; break-inside: avoid; overflow: clip; }
+.print-page-overflow { contain: strict; overflow: clip; overflow-clip-margin: var(--print-overflow-margin, 0px); }
+.print-page-clip { position: absolute; overflow: hidden; }
+.print-object { position: absolute; overflow: hidden; background: #fff; break-inside: avoid; }
+.print-object svg, .print-object img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.print-object.print-text { border: 1px solid #999; border-radius: 3px; }
+.print-object.print-text.borderless { border-color: transparent; }
+.print-object .text-body { position: absolute; inset: 0; display: flex; padding: 8px 10px; box-sizing: border-box; overflow: hidden; line-height: 1.35; white-space: pre-wrap; word-break: break-word; }
+.print-object .text-body &gt; span { display: block; width: 100%; }
+.print-table td.err { color: #b00; font-weight: 600; }
+.print-table tr { break-inside: avoid; }
+/* An invisible gridline must not compete with a real border on its neighbour
+   in the collapsed-border algorithm. Cell backgrounds meet without a border. */
+.print-table.no-grid td, .print-table td.filled { border: none; }
+.print-table.actual { width: auto; }
+.print-table thead { display: table-header-group; }
+.print-table th.print-hdr {
+  border: 1px solid #ccc;
+  background: #f2f2f2;
+  color: #555;
+  font-size: 8pt;
+  font-weight: 600;
+  text-align: center;
+  padding: 0;
+}
+.print-table th.print-hdr &gt; .print-cell-box &gt; .print-cell { padding: 2px 3px; }
+
+</style><div class="print-sheet"><table class="print-table no-grid actual" style="width: 780px;"><colgroup><col style="width: 160px;" /><col style="width: 130px;" /><col style="width: 120px;" /><col style="width: 120px;" /><col style="width: 120px;" /><col style="width: 130px;" /></colgroup><tbody><tr style="height: 26px;"><td style="text-align: left; font-weight: 600; font-size: 18px;" class="spill constrained"><div class="print-cell-box"><span style="width: 487.5%;" class="print-cell">Loan calculator</span></div></td><td></td><td></td><td></td><td></td><td></td></tr><tr style="height: 26px;"><td style="text-align: left; color: rgb(107, 105, 100);" class="spill constrained"><div class="print-cell-box"><span style="width: 487.5%;" class="print-cell">Change the blue cells; everything else updates.</span></div></td><td></td><td></td><td></td><td></td><td></td></tr><tr style="height: 26px;"><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr style="height: 26px;"><td style="text-align: left;">Loan amount</td><td style="text-align: right; color: rgb(10, 99, 240);">$250,000</td><td></td><td style="text-align: left; font-weight: 600;">Monthly payment</td><td style="text-align: right; font-weight: 600;">$1,580.17</td><td></td></tr><tr style="height: 26px;"><td style="text-align: left;">Annual interest rate</td><td style="text-align: right; color: rgb(10, 99, 240);">6.50%</td><td></td><td style="text-align: left;">Number of payments</td><td style="text-align: right;">360</td><td></td></tr><tr style="height: 26px;"><td style="text-align: left;">Term (years)</td><td style="text-align: right; color: rgb(10, 99, 240);">30</td><td></td><td style="text-align: left;">Total paid</td><td style="text-align: right;">$568,861.22</td><td></td></tr><tr style="height: 26px;"><td style="text-align: left;">First payment</td><td style="text-align: right; color: rgb(10, 99, 240);">Feb 1, 2026</td><td></td><td style="text-align: left;">Total interest</td><td style="text-align: right;">$318,861.22</td><td></td></tr><tr style="height: 26px;"><td></td><td></td><td></td><td style="text-align: left;">Last payment</td><td style="text-align: right;">Jan 1, 2056</td><td></td></tr><tr style="height: 26px;"><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr style="height: 26px;"><td style="text-align: left; font-weight: 600; color: rgb(30, 58, 138); background-color: rgb(238, 242, 255);" class="filled">#</td><td style="text-align: left; font-weight: 600; color: rgb(30, 58, 138); background-color: rgb(238, 242, 255);" class="filled">Date</td><td style="text-align: right; font-weight: 600; color: rgb(30, 58, 138); background-color: rgb(238, 242, 255);" class="filled">Payment</td><td style="text-align: right; font-weight: 600; color: rgb(30, 58, 138); background-color: rgb(238, 242, 255);" class="filled">Interest</td><td style="text-align: right; font-weight: 600; color: rgb(30, 58, 138); background-color: rgb(238, 242, 255);" class="filled">Principal</td><td style="text-align: right; font-weight: 600; color: rgb(30, 58, 138); background-color: rgb(238, 242, 255);" class="filled">Balance</td></tr><tr style="height: 26px;"><td style="text-align: right;">1</td><td style="text-align: right;">2026-02-01</td><td style="text-align: right;">$1,580.17</td><td style="text-align: right;">$1,354.17</td><td style="text-align: right;">$226.00</td><td style="text-align: right;">$249,774.00</td></tr><tr style="height: 26px;"><td style="text-align: right;">2</td><td style="text-align: right;">2026-03-01</td><td style="text-align: right;">$1,580.17</td><td style="text-align: right;">$1,352.94</td><td style="text-align: right;">$227.23</td><td style="text-align: right;">$249,546.77</td></tr><tr style="height: 26px;"><td style="text-align: right;">3</td><td style="text-align: right;">2026-04-01</td><td style="text-align: right;">$1,580.17</td><td style="text-align: right;">$1,351.71</td><td style="text-align: right;">$228.46</td><td style="text-align: right;">$249,318.31</td></tr><tr style="height: 26px;"><td style="text-align: right;">4</td><td style="text-align: right;">2026-05-01</td><td style="text-align: right;">$1,580.17</td><td style="text-align: right;">$1,350.47</td><td style="text-align: right;">$229.70</td><td style="text-align: right;">$249,088.61</td></tr><tr style="height: 26px;"><td style="text-align: right;">5</td><td style="text-align: right;">2026-06-01</td><td style="text-align: right;">$1,580.17</td><td style="text-align: right;">$1,349.23</td><td style="text-align: right;">$230.94</td><td style="text-align: right;">$248,857.67</td></tr><tr style="height: 26px;"><td style="text-align: right;">6</td><td style="text-align: right;">2026-07-01</td><td style="text-align: right;">$1,580.17</td><td style="text-align: right;">$1,347.98</td><td style="text-align: right;">$232.19</td><td style="text-align: right;">$248,625.48</td></tr><tr style="height: 26px;"><td style="text-align: right;">7</td><td style="text-align: right;">2026-08-01</td><td style="text-align: right;">$1,580.17</td><td style="text-align: right;">$1,346.72</td><td style="text-align: right;">$233.45</td><td style="text-align: right;">$248,392.04</td></tr><tr style="height: 26px;"><td style="text-align: right;">8</td><td style="text-align: right;">2026-09-01</td><td style="text-align: right;">$1,580.17</td><td style="text-align: right;">$1,345.46</td><td style="text-align: right;">$234.71</td><td style="text-align: right;">$248,157.32</td></tr><tr style="height: 26px;"><td style="text-align: right;">9</td><td style="text-align: right;">2026-10-01</td><td style="text-align: right;">$1,580.17</td><td style="text-align: right;">$1,344.19</td><td style="text-align: right;">$235.98</td><td style="text-align: right;">$247,921.34</td></tr><tr style="height: 26px;"><td style="text-align: right;">10</td><td style="text-align: right;">2026-11-01</td><td style="text-align: right;">$1,580.17</td><td style="text-align: right;">$1,342.91</td><td style="text-align: right;">$237.26</td><td style="text-align: right;">$247,684.07</td></tr><tr style="height: 26px;"><td style="text-align: right;">11</td><td style="text-align: right;">2026-12-01</td><td style="text-align: right;">$1,580.17</td><td style="text-align: right;">$1,341.62</td><td style="text-align: right;">$238.55</td><td style="text-align: right;">$247,445.53</td></tr><tr style="height: 26px;"><td style="text-align: right;">12</td><td style="text-align: right;">2027-01-01</td><td style="text-align: right;">$1,580.17</td><td style="text-align: right;">$1,340.33</td><td style="text-align: right;">$239.84</td><td style="text-align: right;">$247,205.69</td></tr><tr style="height: 26px;"><td style="text-align: right;">13</td><td style="text-align: right;">2027-02-01</td><td style="text-align: right;">$1,580.17</td><td style="text-align: right;">$1,339.03</td><td style="text-align: right;">$241.14</td><td style="text-align: right;">$246,964.55</td></tr><tr style="height: 26px;"><td style="text-align: right;">14</td><td style="text-align: right;">2027-03-01</td><td style="text-align: right;">$1,580.17</td><td style="text-align: right;">$1,337.72</td><td style="text-align: right;">$242.45</td><td style="text-align: right;">$246,722.10</td></tr><tr style="height: 26px;"><td style="text-align: right;">15</td><td style="text-align: right;">2027-04-01</td><td style="text-align: right;">$1,580.17</td><td style="text-align: right;">$1,336.41</td><td style="text-align: right;">$243.76</td><td style="text-align: right;">$246,478.34</td></tr><tr style="height: 26px;"><td style="text-align: right;">16</td><td style="text-align: right;">2027-05-01</td><td style="text-align: right;">$1,580.17</td><td style="text-align: right;">$1,335.09</td><td style="text-align: right;">$245.08</td><td style="text-align: right;">$246,233.26</td></tr><tr style="height: 26px;"><td style="text-align: right;">17</td><td style="text-align: right;">2027-06-01</td><td style="text-align: right;">$1,580.17</td><td style="text-align: right;">$1,333.76</td><td style="text-align: right;">$246.41</td><td style="text-align: right;">$245,986.86</td></tr><tr style="height: 26px;"><td style="text-align: right;">18</td><td style="text-align: right;">2027-07-01</td><td style="text-align: right;">$1,580.17</td><td style="text-align: right;">$1,332.43</td><td style="text-align: right;">$247.74</td><td style="text-align: right;">$245,739.12</td></tr><tr style="height: 26px;"><td style="text-align: right;">19</td><td style="text-align: right;">2027-08-01</td><td style="text-align: right;">$1,580.17</td><td style="text-align: right;">$1,331.09</td><td style="text-align: right;">$249.08</td><td style="text-align: right;">$245,490.03</td></tr><tr style="height: 26px;"><td style="text-align: right;">20</td><td style="text-align: right;">2027-09-01</td><td style="text-align: right;">$1,580.17</td><td style="text-align: right;">$1,329.74</td><td style="text-align: right;">$250.43</td><td style="text-align: right;">$245,239.60</td></tr></tbody></table></div></div></foreignObject></svg>

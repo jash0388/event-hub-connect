@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="360" viewBox="0 0 872 654"><rect width="100%" height="100%" fill="#fff"/><foreignObject x="81" y="28" width="710" height="626"><div xmlns="http://www.w3.org/1999/xhtml" style="width:710px;font-family:Arial,sans-serif;color:#252a32;--font:Arial,sans-serif;--ink:#252a32;--hairline:#e5e7eb;"><style>.print-table {
+  isolation: isolate;
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 9.5pt;
+  font-variant-numeric: tabular-nums;
+}
+
+.print-table td {
+  border: 1px solid #ccc;
+  padding: 2px 2px;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
+  vertical-align: middle;
+  /* Fills, data bars and rule colours are part of the sheet: print them even where the browser drops backgrounds by default. */
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* A definite zero minimum lets the inner percentage height resolve against
+   the final cell height, including merged rows, without enlarging the row. */
+.print-table .constrained { height: 0; padding: 0; }
+.print-cell-box { position: relative; height: 100%; text-overflow: inherit; text-decoration: inherit; }
+.print-cell {
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  padding: 2px 2px;
+  align-content: unsafe center;
+  overflow: hidden;
+  text-overflow: inherit;
+  text-decoration: inherit;
+}
+.print-table td.wrap { white-space: pre-wrap; overflow-wrap: anywhere; }
+/* A label that runs over the empty cells beside it, as on screen: the cell lets it out, the span stops it at the last empty cell. */
+.print-table td.spill { overflow: visible; text-overflow: clip; }
+.print-table td.spill &gt; .print-cell-box &gt; .print-cell { right: auto; z-index: 1; text-overflow: clip; }
+.print-table td.sparkline &gt; .print-cell-box &gt; .print-cell { padding: 1px 2px; }
+.print-table td.sparkline svg { display: block; max-width: 100%; height: auto; }
+/* An IMAGE() cell's picture: fitted inside the cell, stretched to fill it, or at its own size and cut at the cell's edges, as the grid shows it. */
+.print-table td.image &gt; .print-cell-box &gt; .print-cell { padding: 1px 2px; }
+.print-table td.image img { display: inline-block; vertical-align: middle; object-fit: contain; }
+.print-table td.image.fit-stretch img { object-fit: fill; }
+.print-sheet { position: relative; }
+/* Explicit fragments reserve content space but may paint into page margins.
+   Containment keeps that paint from changing browser shrink-to-fit geometry.
+   Clip to the allocated ink bounds: fractional layout rounding must not send
+   a border's leading edge onto the preceding physical page. */
+.print-page { position: relative; break-inside: avoid; overflow: clip; }
+.print-page-overflow { contain: strict; overflow: clip; overflow-clip-margin: var(--print-overflow-margin, 0px); }
+.print-page-clip { position: absolute; overflow: hidden; }
+.print-object { position: absolute; overflow: hidden; background: #fff; break-inside: avoid; }
+.print-object svg, .print-object img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.print-object.print-text { border: 1px solid #999; border-radius: 3px; }
+.print-object.print-text.borderless { border-color: transparent; }
+.print-object .text-body { position: absolute; inset: 0; display: flex; padding: 8px 10px; box-sizing: border-box; overflow: hidden; line-height: 1.35; white-space: pre-wrap; word-break: break-word; }
+.print-object .text-body &gt; span { display: block; width: 100%; }
+.print-table td.err { color: #b00; font-weight: 600; }
+.print-table tr { break-inside: avoid; }
+/* An invisible gridline must not compete with a real border on its neighbour
+   in the collapsed-border algorithm. Cell backgrounds meet without a border. */
+.print-table.no-grid td, .print-table td.filled { border: none; }
+.print-table.actual { width: auto; }
+.print-table thead { display: table-header-group; }
+.print-table th.print-hdr {
+  border: 1px solid #ccc;
+  background: #f2f2f2;
+  color: #555;
+  font-size: 8pt;
+  font-weight: 600;
+  text-align: center;
+  padding: 0;
+}
+.print-table th.print-hdr &gt; .print-cell-box &gt; .print-cell { padding: 2px 3px; }
+
+</style><div class="print-sheet"><table class="print-table no-grid actual" style="width: 710px;"><colgroup><col style="width: 170px;" /><col style="width: 90px;" /><col style="width: 90px;" /><col style="width: 90px;" /><col style="width: 90px;" /><col style="width: 100px;" /><col style="width: 80px;" /></colgroup><tbody><tr style="height: 26px;"><td style="text-align: left; font-weight: 600; color: rgb(30, 58, 138); background-color: rgb(238, 242, 255);" class="filled">Student</td><td style="text-align: right; font-weight: 600; color: rgb(30, 58, 138); background-color: rgb(238, 242, 255);" class="filled">Homework</td><td style="text-align: right; font-weight: 600; color: rgb(30, 58, 138); background-color: rgb(238, 242, 255);" class="filled">Quiz</td><td style="text-align: right; font-weight: 600; color: rgb(30, 58, 138); background-color: rgb(238, 242, 255);" class="filled">Midterm</td><td style="text-align: right; font-weight: 600; color: rgb(30, 58, 138); background-color: rgb(238, 242, 255);" class="filled">Final</td><td style="text-align: right; font-weight: 600; color: rgb(30, 58, 138); background-color: rgb(238, 242, 255);" class="filled">Average</td><td style="text-align: right; font-weight: 600; color: rgb(30, 58, 138); background-color: rgb(238, 242, 255);" class="filled">Grade</td></tr><tr style="height: 26px;"><td style="text-align: left; font-weight: 600; color: rgb(107, 105, 100);">Weight</td><td style="text-align: right; font-weight: 600; color: rgb(10, 99, 240);">20%</td><td style="text-align: right; font-weight: 600; color: rgb(10, 99, 240);">10%</td><td style="text-align: right; font-weight: 600; color: rgb(10, 99, 240);">30%</td><td style="text-align: right; font-weight: 600; color: rgb(10, 99, 240);">40%</td><td></td><td></td></tr><tr style="height: 26px;"><td style="text-align: left;">Ava Martin</td><td style="text-align: right; color: rgb(10, 99, 240);">92</td><td style="text-align: right; color: rgb(10, 99, 240);">88</td><td style="text-align: right; color: rgb(10, 99, 240);">79</td><td style="text-align: right; color: rgb(10, 99, 240);">85</td><td style="text-align: right; background-color: rgb(242, 243, 211);" class="filled">84.9</td><td style="text-align: center; font-weight: 600;">B</td></tr><tr style="height: 26px;"><td style="text-align: left;">Ben Okafor</td><td style="text-align: right; color: rgb(10, 99, 240);">78</td><td style="text-align: right; color: rgb(10, 99, 240);">82</td><td style="text-align: right; color: rgb(10, 99, 240);">71</td><td style="text-align: right; color: rgb(10, 99, 240);">74</td><td style="text-align: right; background-color: rgb(253, 242, 201);" class="filled">74.7</td><td style="text-align: center; font-weight: 600;">C</td></tr><tr style="height: 26px;"><td style="text-align: left;">Chloe Dubois</td><td style="text-align: right; color: rgb(10, 99, 240);">96</td><td style="text-align: right; color: rgb(10, 99, 240);">91</td><td style="text-align: right; color: rgb(10, 99, 240);">94</td><td style="text-align: right; color: rgb(10, 99, 240);">97</td><td style="text-align: right; background-color: rgb(227, 245, 225);" class="filled">95.3</td><td style="text-align: center; font-weight: 600;">A</td></tr><tr style="height: 26px;"><td style="text-align: left;">Diego Alvarez</td><td style="text-align: right; color: rgb(10, 99, 240);">65</td><td style="text-align: right; color: rgb(10, 99, 240);">70</td><td style="text-align: right; color: rgb(194, 42, 42);">58</td><td style="text-align: right; color: rgb(10, 99, 240);">62</td><td style="text-align: right; background-color: rgb(253, 235, 223);" class="filled">62.2</td><td style="text-align: center; font-weight: 600;">D</td></tr><tr style="height: 26px;"><td style="text-align: left;">Emma Schulz</td><td style="text-align: right; color: rgb(10, 99, 240);">88</td><td style="text-align: right; color: rgb(10, 99, 240);">79</td><td style="text-align: right; color: rgb(10, 99, 240);">83</td><td style="text-align: right; color: rgb(10, 99, 240);">90</td><td style="text-align: right; background-color: rgb(240, 244, 213);" class="filled">86.4</td><td style="text-align: center; font-weight: 600;">B</td></tr><tr style="height: 26px;"><td style="text-align: left;">Farah Haddad</td><td style="text-align: right; color: rgb(10, 99, 240);">71</td><td style="text-align: right; color: rgb(10, 99, 240);">64</td><td style="text-align: right; color: rgb(10, 99, 240);">69</td><td style="text-align: right; color: rgb(10, 99, 240);">73</td><td style="text-align: right; background-color: rgb(253, 240, 208);" class="filled">70.5</td><td style="text-align: center; font-weight: 600;">C</td></tr><tr style="height: 26px;"><td style="text-align: left;">Grace Kim</td><td style="text-align: right; color: rgb(10, 99, 240);">84</td><td style="text-align: right; color: rgb(10, 99, 240);">90</td><td style="text-align: right; color: rgb(10, 99, 240);">88</td><td style="text-align: right; color: rgb(10, 99, 240);">81</td><td style="text-align: right; background-color: rgb(242, 243, 210);" class="filled">84.6</td><td style="text-align: center; font-weight: 600;">B</td></tr><tr style="height: 26px;"><td style="text-align: left;">Hugo Rossi</td><td style="text-align: right; color: rgb(194, 42, 42);">59</td><td style="text-align: right; color: rgb(10, 99, 240);">61</td><td style="text-align: right; color: rgb(194, 42, 42);">52</td><td style="text-align: right; color: rgb(194, 42, 42);">57</td><td style="text-align: right; background-color: rgb(253, 232, 232);" class="filled">56.3</td><td style="text-align: center; font-weight: 600;">F</td></tr><tr style="height: 26px;"><td style="text-align: left;">Isla Murphy</td><td style="text-align: right; color: rgb(10, 99, 240);">90</td><td style="text-align: right; color: rgb(10, 99, 240);">95</td><td style="text-align: right; color: rgb(10, 99, 240);">91</td><td style="text-align: right; color: rgb(10, 99, 240);">89</td><td style="text-align: right; background-color: rgb(234, 244, 218);" class="filled">90.4</td><td style="text-align: center; font-weight: 600;">A</td></tr><tr style="height: 26px;"><td style="text-align: left;">Jamal Wright</td><td style="text-align: right; color: rgb(10, 99, 240);">82</td><td style="text-align: right; color: rgb(10, 99, 240);">77</td><td style="text-align: right; color: rgb(10, 99, 240);">80</td><td style="text-align: right; color: rgb(10, 99, 240);">84</td><td style="text-align: right; background-color: rgb(246, 243, 206);" class="filled">81.7</td><td style="text-align: center; font-weight: 600;">B</td></tr><tr style="height: 26px;"><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr style="height: 26px;"><td style="text-align: left; font-weight: 600;">Class average</td><td style="text-align: right; font-weight: 600;">80.5</td><td style="text-align: right; font-weight: 600;">79.7</td><td style="text-align: right; font-weight: 600;">76.5</td><td style="text-align: right; font-weight: 600;">79.2</td><td style="text-align: right; font-weight: 600;">78.7</td><td></td></tr><tr style="height: 26px;"><td style="text-align: left;">Highest</td><td style="text-align: right;">96.0</td><td style="text-align: right;">95.0</td><td style="text-align: right;">94.0</td><td style="text-align: right;">97.0</td><td style="text-align: right;">95.3</td><td></td></tr><tr style="height: 26px;"><td style="text-align: left;">Lowest</td><td style="text-align: right;">59.0</td><td style="text-align: right;">61.0</td><td style="text-align: right;">52.0</td><td style="text-align: right;">57.0</td><td style="text-align: right;">56.3</td><td></td></tr><tr style="height: 26px;"><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr style="height: 26px;"><td style="text-align: left; font-weight: 600;" class="spill constrained"><div class="print-cell-box"><span style="width: 417.6%;" class="print-cell">Grade counts</span></div></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr style="height: 26px;"><td style="text-align: center;">A</td><td style="text-align: right;">2</td><td></td><td></td><td></td><td></td><td></td></tr><tr style="height: 26px;"><td style="text-align: center;">B</td><td style="text-align: right;">4</td><td></td><td></td><td></td><td></td><td></td></tr><tr style="height: 26px;"><td style="text-align: center;">C</td><td style="text-align: right;">2</td><td></td><td></td><td></td><td></td><td></td></tr><tr style="height: 26px;"><td style="text-align: center;">D</td><td style="text-align: right;">1</td><td></td><td></td><td></td><td></td><td></td></tr><tr style="height: 26px;"><td style="text-align: center;">F</td><td style="text-align: right;">1</td><td></td><td></td><td></td><td></td><td></td></tr></tbody></table></div></div></foreignObject></svg>

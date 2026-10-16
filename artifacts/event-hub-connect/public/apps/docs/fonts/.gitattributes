@@ -1,0 +1,2 @@
+# Preserve the original upstream license bytes, including its whitespace.
+Karla-OFL.txt -text -whitespace

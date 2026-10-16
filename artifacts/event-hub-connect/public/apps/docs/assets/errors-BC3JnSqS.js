@@ -1,0 +1,1 @@
+var e=class extends Error{constructor(e){super(`This document contains ${e}, which this first editor version cannot edit yet. The original file has not been changed.`),this.name=`UnsupportedDocumentError`,this.feature=e}};export{e as t};

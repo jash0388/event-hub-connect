@@ -114,7 +114,7 @@ export function refreshAuthFromLocalStorage() {
       setGlobalState({
         user: mockUser,
         session: { access_token: 'roll-number-session', user: mockUser } as any,
-        isAdmin: student.roll_number?.toUpperCase() === '24N81A6758',
+        isAdmin: ['24N81A6758', '23N81A6784'].includes(student.roll_number?.toUpperCase() || ''),
         loading: false,
         error: null,
         isFirebaseUser: false,

@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="360" viewBox="0 0 664 498"><rect width="100%" height="100%" fill="#fff"/><foreignObject x="37" y="28" width="590" height="470"><div xmlns="http://www.w3.org/1999/xhtml" style="width:590px;font-family:Arial,sans-serif;color:#252a32;--font:Arial,sans-serif;--ink:#252a32;--hairline:#e5e7eb;"><style>.print-table {
+  isolation: isolate;
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 9.5pt;
+  font-variant-numeric: tabular-nums;
+}
+
+.print-table td {
+  border: 1px solid #ccc;
+  padding: 2px 2px;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
+  vertical-align: middle;
+  /* Fills, data bars and rule colours are part of the sheet: print them even where the browser drops backgrounds by default. */
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* A definite zero minimum lets the inner percentage height resolve against
+   the final cell height, including merged rows, without enlarging the row. */
+.print-table .constrained { height: 0; padding: 0; }
+.print-cell-box { position: relative; height: 100%; text-overflow: inherit; text-decoration: inherit; }
+.print-cell {
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  padding: 2px 2px;
+  align-content: unsafe center;
+  overflow: hidden;
+  text-overflow: inherit;
+  text-decoration: inherit;
+}
+.print-table td.wrap { white-space: pre-wrap; overflow-wrap: anywhere; }
+/* A label that runs over the empty cells beside it, as on screen: the cell lets it out, the span stops it at the last empty cell. */
+.print-table td.spill { overflow: visible; text-overflow: clip; }
+.print-table td.spill &gt; .print-cell-box &gt; .print-cell { right: auto; z-index: 1; text-overflow: clip; }
+.print-table td.sparkline &gt; .print-cell-box &gt; .print-cell { padding: 1px 2px; }
+.print-table td.sparkline svg { display: block; max-width: 100%; height: auto; }
+/* An IMAGE() cell's picture: fitted inside the cell, stretched to fill it, or at its own size and cut at the cell's edges, as the grid shows it. */
+.print-table td.image &gt; .print-cell-box &gt; .print-cell { padding: 1px 2px; }
+.print-table td.image img { display: inline-block; vertical-align: middle; object-fit: contain; }
+.print-table td.image.fit-stretch img { object-fit: fill; }
+.print-sheet { position: relative; }
+/* Explicit fragments reserve content space but may paint into page margins.
+   Containment keeps that paint from changing browser shrink-to-fit geometry.
+   Clip to the allocated ink bounds: fractional layout rounding must not send
+   a border's leading edge onto the preceding physical page. */
+.print-page { position: relative; break-inside: avoid; overflow: clip; }
+.print-page-overflow { contain: strict; overflow: clip; overflow-clip-margin: var(--print-overflow-margin, 0px); }
+.print-page-clip { position: absolute; overflow: hidden; }
+.print-object { position: absolute; overflow: hidden; background: #fff; break-inside: avoid; }
+.print-object svg, .print-object img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.print-object.print-text { border: 1px solid #999; border-radius: 3px; }
+.print-object.print-text.borderless { border-color: transparent; }
+.print-object .text-body { position: absolute; inset: 0; display: flex; padding: 8px 10px; box-sizing: border-box; overflow: hidden; line-height: 1.35; white-space: pre-wrap; word-break: break-word; }
+.print-object .text-body &gt; span { display: block; width: 100%; }
+.print-table td.err { color: #b00; font-weight: 600; }
+.print-table tr { break-inside: avoid; }
+/* An invisible gridline must not compete with a real border on its neighbour
+   in the collapsed-border algorithm. Cell backgrounds meet without a border. */
+.print-table.no-grid td, .print-table td.filled { border: none; }
+.print-table.actual { width: auto; }
+.print-table thead { display: table-header-group; }
+.print-table th.print-hdr {
+  border: 1px solid #ccc;
+  background: #f2f2f2;
+  color: #555;
+  font-size: 8pt;
+  font-weight: 600;
+  text-align: center;
+  padding: 0;
+}
+.print-table th.print-hdr &gt; .print-cell-box &gt; .print-cell { padding: 2px 3px; }
+
+</style><div class="print-sheet"><table class="print-table no-grid actual" style="width: 590px;"><colgroup><col style="width: 170px;" /><col style="width: 110px;" /><col style="width: 110px;" /><col style="width: 110px;" /><col style="width: 90px;" /></colgroup><tbody><tr style="height: 26px;"><td style="text-align: left; font-weight: 600;" class="spill constrained"><div class="print-cell-box"><span style="width: 347.1%;" class="print-cell">Monthly budget</span></div></td><td></td><td></td><td></td><td></td></tr><tr style="height: 26px;"><td style="text-align: left; color: rgb(107, 105, 100);" class="spill constrained"><div class="print-cell-box"><span style="width: 347.1%;" class="print-cell">Plan against what actually left the account. Edit any blue cell.</span></div></td><td></td><td></td><td></td><td></td></tr><tr style="height: 26px;"><td></td><td></td><td></td><td></td><td></td></tr><tr style="height: 26px;"><td style="text-align: left; font-weight: 600; color: rgb(30, 58, 138); background-color: rgb(238, 242, 255);" class="filled">Category</td><td style="text-align: right; font-weight: 600; color: rgb(30, 58, 138); background-color: rgb(238, 242, 255);" class="filled">Planned</td><td style="text-align: right; font-weight: 600; color: rgb(30, 58, 138); background-color: rgb(238, 242, 255);" class="filled">Actual</td><td style="text-align: right; font-weight: 600; color: rgb(30, 58, 138); background-color: rgb(238, 242, 255);" class="filled">Difference</td><td style="text-align: right; font-weight: 600; color: rgb(30, 58, 138); background-color: rgb(238, 242, 255);" class="filled">Used</td></tr><tr style="height: 26px;"><td style="text-align: left;">Rent</td><td style="text-align: right; color: rgb(10, 99, 240);">$1,500</td><td style="text-align: right;">$1,500</td><td style="text-align: right;">$0</td><td style="text-align: right;">100%</td></tr><tr style="height: 26px;"><td style="text-align: left;">Groceries</td><td style="text-align: right; color: rgb(10, 99, 240);">$450</td><td style="text-align: right;">$423</td><td style="text-align: right;">$27</td><td style="text-align: right;">94%</td></tr><tr style="height: 26px;"><td style="text-align: left;">Utilities</td><td style="text-align: right; color: rgb(10, 99, 240);">$180</td><td style="text-align: right;">$173</td><td style="text-align: right;">$7</td><td style="text-align: right;">96%</td></tr><tr style="height: 26px;"><td style="text-align: left;">Transport</td><td style="text-align: right; color: rgb(10, 99, 240);">$120</td><td style="text-align: right;">$109</td><td style="text-align: right;">$11</td><td style="text-align: right;">91%</td></tr><tr style="height: 26px;"><td style="text-align: left;">Dining out</td><td style="text-align: right; color: rgb(10, 99, 240);">$200</td><td style="text-align: right;">$93</td><td style="text-align: right;">$107</td><td style="text-align: right;">46%</td></tr><tr style="height: 26px;"><td style="text-align: left;">Subscriptions</td><td style="text-align: right; color: rgb(10, 99, 240);">$60</td><td style="text-align: right;">$28</td><td style="text-align: right;">$32</td><td style="text-align: right;">47%</td></tr><tr style="height: 26px;"><td style="text-align: left;">Savings</td><td style="text-align: right; color: rgb(10, 99, 240);">$500</td><td style="text-align: right;">$500</td><td style="text-align: right;">$0</td><td style="text-align: right;">100%</td></tr><tr style="height: 26px;"><td style="text-align: left; font-weight: 600;">Total</td><td style="text-align: right; font-weight: 600;">$3,010</td><td style="text-align: right; font-weight: 600;">$2,825</td><td style="text-align: right; font-weight: 600;">$185</td><td style="text-align: right; font-weight: 600;">94%</td></tr><tr style="height: 26px;"><td></td><td></td><td></td><td></td><td></td></tr><tr style="height: 26px;"><td style="text-align: left; font-weight: 600;">Income</td><td style="text-align: right; color: rgb(10, 99, 240);">$4,200</td><td></td><td></td><td></td></tr><tr style="height: 26px;"><td style="text-align: left;">Left over</td><td style="text-align: right;">$1,375</td><td></td><td></td><td></td></tr><tr style="height: 26px;"><td style="text-align: left;">Biggest category</td><td style="text-align: left;" class="spill constrained"><div class="print-cell-box"><span style="width: 381.8%;" class="print-cell">Rent</span></div></td><td></td><td></td><td></td></tr><tr style="height: 26px;"><td style="text-align: left;">Over budget</td><td style="text-align: left;" class="spill constrained"><div class="print-cell-box"><span style="width: 381.8%;" class="print-cell">0 of 7</span></div></td><td></td><td></td><td></td></tr></tbody></table></div></div></foreignObject></svg>

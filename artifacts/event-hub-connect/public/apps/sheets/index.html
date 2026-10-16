@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
+  <title>Datanauts Sheets</title>
+  <meta name="description" content="A fast, private AI spreadsheet. Formulas, formatting, and real .xlsx files saved to your own Puter cloud." />
+  <!-- Link previews. Crawlers need an absolute image URL. Alternate designs live beside it in public/og/
+       (sources in dev/og/). -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Puter" />
+  <meta property="og:url" content="https://spreadsheet.puter.com/" />
+  <meta property="og:title" content="Spreadsheet" />
+  <meta property="og:description" content="A fast, private AI spreadsheet. Formulas, formatting, and real .xlsx files saved to your own Puter cloud." />
+  <meta property="og:image" content="https://spreadsheet.puter.com/og/og-image-a.png" />
+  <meta property="og:image:type" content="image/png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Spreadsheet app icon on a green background. Fast, private, and AI powered. Real .xlsx files in your own cloud." />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Spreadsheet" />
+  <meta name="twitter:description" content="A fast, private AI spreadsheet. Formulas, formatting, and real .xlsx files saved to your own Puter cloud." />
+  <meta name="twitter:image" content="https://spreadsheet.puter.com/og/og-image-a.png" />
+  <meta name="twitter:image:alt" content="Spreadsheet app icon on a green background. Fast, private, and AI powered. Real .xlsx files in your own cloud." />
+  <meta name="theme-color" content="#356d49" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#28593a" media="(prefers-color-scheme: dark)" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <!-- Not black-translucent: that draws the page under the status bar and paints the clock, signal and
+       battery white, over the app's own top bar, which is --surface (#ffffff) in the default light theme.
+       "default" leaves the status bar to the system, which picks a style that reads on its own backdrop. -->
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Spreadsheet" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" href="./favicon.ico" sizes="16x16 32x32 48x48" />
+  <link rel="icon" href="./favicon-16x16.png" type="image/png" sizes="16x16" />
+  <link rel="icon" href="./favicon-32x32.png" type="image/png" sizes="32x32" />
+  <link rel="icon" href="./favicon-48x48.png" type="image/png" sizes="48x48" />
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png" sizes="180x180" />
+  <script>
+    // Apply the saved theme before first paint to avoid a flash. The browser chrome follows the
+    // saved theme too, not the OS scheme the metas are keyed by, until theme.js takes over.
+    (() => {
+      try {
+        const t = localStorage.getItem('spreadsheet:theme');
+        if (t !== 'light' && t !== 'dark') return;
+        document.documentElement.dataset.theme = t;
+        for (const m of document.querySelectorAll('meta[name="theme-color"]')) m.setAttribute('content', t === 'dark' ? '#28593a' : '#356d49');
+      } catch {}
+    })();
+  </script>
+  <!-- Privacy-friendly analytics by Plausible -->
+  <script async src="https://plausible.io/js/pa-MRQHafK7nSUP6VOpIrhR4.js"></script>
+  <script>
+    window.plausible = window.plausible || function () { (plausible.q = plausible.q || []).push(arguments); };
+    plausible.init = plausible.init || function (i) { plausible.o = i || {}; };
+    plausible.init();
+  </script>
+  <script src="/datanauts-bridge.js"></script>
+  <script type="module" crossorigin src="./assets/index-BCHkS-Pr.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/format-Ccr6i8SX.js">
+  <link rel="modulepreload" crossorigin href="./assets/refs-C1NcmHHT.js">
+  <link rel="modulepreload" crossorigin href="./assets/native-fill-B6Xn96yn.js">
+  <link rel="modulepreload" crossorigin href="./assets/xlfn-Cnf4GBlf.js">
+  <link rel="modulepreload" crossorigin href="./assets/xlsx-export-styles-munyHufi.js">
+  <link rel="modulepreload" crossorigin href="./assets/xlsx-data-model-BQyJWnWW.js">
+  <link rel="stylesheet" crossorigin href="./assets/index-CWVdPecn.css">
+</head>
+<body>
+  <!-- Glass fills for the command icons (src/styles/icons.css): top-lit gradients whose stops are the
+       --ico-* tokens, so every theme retints them. Not display:none, which would disable the gradients. -->
+  <svg class="ico-defs" width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute;width:0;height:0;overflow:hidden">
+    <defs>
+      <linearGradient id="ico-g-paper" x1="0" y1="0" x2="0" y2="1"><stop offset="0.25" style="stop-color:var(--ico-paper-top)"/><stop offset="1" style="stop-color:var(--ico-paper)"/></linearGradient>
+      <linearGradient id="ico-g-blue-soft" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--ico-glass-rim)"/><stop offset="0.3" style="stop-color:var(--ico-blue-soft-top)"/><stop offset="1" style="stop-color:var(--ico-blue-soft)"/></linearGradient>
+      <linearGradient id="ico-g-blue-solid" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--ico-blue-top)"/><stop offset="1" style="stop-color:var(--ico-blue-deep)"/></linearGradient>
+      <linearGradient id="ico-g-green-soft" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--ico-glass-rim)"/><stop offset="0.3" style="stop-color:var(--ico-green-soft-top)"/><stop offset="1" style="stop-color:var(--ico-green-soft)"/></linearGradient>
+      <linearGradient id="ico-g-green-solid" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--ico-green-top)"/><stop offset="1" style="stop-color:var(--ico-green-deep)"/></linearGradient>
+      <linearGradient id="ico-g-red-soft" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--ico-glass-rim)"/><stop offset="0.3" style="stop-color:var(--ico-red-soft-top)"/><stop offset="1" style="stop-color:var(--ico-red-soft)"/></linearGradient>
+      <linearGradient id="ico-g-red-solid" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--ico-red-top)"/><stop offset="1" style="stop-color:var(--ico-red-deep)"/></linearGradient>
+      <linearGradient id="ico-g-yellow-soft" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--ico-glass-rim)"/><stop offset="0.3" style="stop-color:var(--ico-yellow-soft-top)"/><stop offset="1" style="stop-color:var(--ico-yellow-soft)"/></linearGradient>
+      <linearGradient id="ico-g-yellow-solid" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--ico-yellow-top)"/><stop offset="1" style="stop-color:var(--ico-yellow-deep)"/></linearGradient>
+      <linearGradient id="ico-g-amber-soft" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--ico-glass-rim)"/><stop offset="0.3" style="stop-color:var(--ico-amber-soft-top)"/><stop offset="1" style="stop-color:var(--ico-amber-soft)"/></linearGradient>
+      <linearGradient id="ico-g-amber-solid" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--ico-amber-top)"/><stop offset="1" style="stop-color:var(--ico-amber-deep)"/></linearGradient>
+      <linearGradient id="ico-g-purple-soft" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--ico-glass-rim)"/><stop offset="0.3" style="stop-color:var(--ico-purple-soft-top)"/><stop offset="1" style="stop-color:var(--ico-purple-soft)"/></linearGradient>
+      <linearGradient id="ico-g-purple-solid" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--ico-purple-top)"/><stop offset="1" style="stop-color:var(--ico-purple-deep)"/></linearGradient>
+    </defs>
+  </svg>
+  <noscript>Please enable JavaScript to use Spreadsheet.</noscript>
+  <div id="app" class="app">
+    <div class="boot-splash" id="boot-splash" aria-hidden="true">
+      <div class="boot-mark">
+        <img class="app-icon" src="./assets/icon-CE_zH0Fk.png" width="56" height="56" alt="" />
+      </div>
+    </div>
+  </div>
+</body>
+</html>

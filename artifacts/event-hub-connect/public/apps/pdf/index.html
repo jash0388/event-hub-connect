@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#bf3f3f" />
+    <link rel="icon" href="./favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="./favicon-16x16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png" />
+    <link rel="manifest" href="./manifest.json" />
+    <meta
+      name="description"
+      content="Open, annotate, fill, and organize PDFs. A private PDF workspace with files in your own Puter cloud."
+    />
+    <title>Datanauts PDF Studio</title>
+    <script>
+      try {
+        const t = localStorage.getItem('pdf-editor:theme');
+        if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+      } catch {}
+      // The SDK forwards desktop commands into DOM actions. Other windows (including a
+      // website that opened this tab) must not be able to operate the editor this way.
+      const desktopMessages = new Set([
+        'click',
+        'focus',
+        'drag',
+        'drop',
+        'itemsOpened',
+        'windowWillClose',
+        'pictureInPictureClosed',
+      ]);
+      window.addEventListener(
+        'message',
+        (event) => {
+          if (
+            desktopMessages.has(event.data?.msg) &&
+            !(
+              globalThis.puter?.env === 'app' &&
+              window.parent !== window &&
+              event.source === window.parent
+            )
+          )
+            event.stopImmediatePropagation();
+        },
+        true,
+      );
+    </script>
+    <script src="/datanauts-bridge.js"></script>
+    <script type="module" crossorigin src="./assets/index-C4zgv6ok.js"></script>
+    <link rel="modulepreload" crossorigin href="./assets/rolldown-runtime-C0FnF6B9.js">
+    <link rel="modulepreload" crossorigin href="./assets/pako-C-VMkwyK.js">
+    <link rel="modulepreload" crossorigin href="./assets/es-CstY_T4E.js">
+    <link rel="modulepreload" crossorigin href="./assets/preload-helper-uBIymjUX.js">
+    <link rel="stylesheet" crossorigin href="./assets/index-Cz4yGzE0.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <!-- Glass fills for the command icons (src/glass-icons.css, copied from the Spreadsheet app): top-lit gradients whose stops are the
+         --ico-* tokens, so every theme retints them. Not display:none, which would disable the gradients. -->
+    <svg class="ico-defs" width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute;width:0;height:0;overflow:hidden">
+      <defs>
+        <linearGradient id="ico-g-paper" x1="0" y1="0" x2="0" y2="1"><stop offset="0.25" style="stop-color:var(--ico-paper-top)"/><stop offset="1" style="stop-color:var(--ico-paper)"/></linearGradient>
+        <linearGradient id="ico-g-blue-soft" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--ico-glass-rim)"/><stop offset="0.3" style="stop-color:var(--ico-blue-soft-top)"/><stop offset="1" style="stop-color:var(--ico-blue-soft)"/></linearGradient>
+        <linearGradient id="ico-g-blue-solid" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--ico-blue-top)"/><stop offset="1" style="stop-color:var(--ico-blue-deep)"/></linearGradient>
+        <linearGradient id="ico-g-green-soft" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--ico-glass-rim)"/><stop offset="0.3" style="stop-color:var(--ico-green-soft-top)"/><stop offset="1" style="stop-color:var(--ico-green-soft)"/></linearGradient>
+        <linearGradient id="ico-g-green-solid" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--ico-green-top)"/><stop offset="1" style="stop-color:var(--ico-green-deep)"/></linearGradient>
+        <linearGradient id="ico-g-red-soft" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--ico-glass-rim)"/><stop offset="0.3" style="stop-color:var(--ico-red-soft-top)"/><stop offset="1" style="stop-color:var(--ico-red-soft)"/></linearGradient>
+        <linearGradient id="ico-g-red-solid" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--ico-red-top)"/><stop offset="1" style="stop-color:var(--ico-red-deep)"/></linearGradient>
+        <linearGradient id="ico-g-yellow-soft" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--ico-glass-rim)"/><stop offset="0.3" style="stop-color:var(--ico-yellow-soft-top)"/><stop offset="1" style="stop-color:var(--ico-yellow-soft)"/></linearGradient>
+        <linearGradient id="ico-g-yellow-solid" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--ico-yellow-top)"/><stop offset="1" style="stop-color:var(--ico-yellow-deep)"/></linearGradient>
+        <linearGradient id="ico-g-amber-soft" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--ico-glass-rim)"/><stop offset="0.3" style="stop-color:var(--ico-amber-soft-top)"/><stop offset="1" style="stop-color:var(--ico-amber-soft)"/></linearGradient>
+        <linearGradient id="ico-g-amber-solid" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--ico-amber-top)"/><stop offset="1" style="stop-color:var(--ico-amber-deep)"/></linearGradient>
+        <linearGradient id="ico-g-purple-soft" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--ico-glass-rim)"/><stop offset="0.3" style="stop-color:var(--ico-purple-soft-top)"/><stop offset="1" style="stop-color:var(--ico-purple-soft)"/></linearGradient>
+        <linearGradient id="ico-g-purple-solid" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--ico-purple-top)"/><stop offset="1" style="stop-color:var(--ico-purple-deep)"/></linearGradient>
+      </defs>
+    </svg>
+    <div id="app"></div>
+    <div id="announcer" class="sr-only" role="status" aria-live="polite"></div>
+    <div id="toast" role="status" hidden></div>
+  </body>
+</html>

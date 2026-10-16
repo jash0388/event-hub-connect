@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="360" viewBox="0 0 676 507"><rect width="100%" height="100%" fill="#fff"/><foreignObject x="28" y="28" width="620" height="479"><div xmlns="http://www.w3.org/1999/xhtml" style="width:620px;font-family:Arial,sans-serif;color:#252a32;--font:Arial,sans-serif;--ink:#252a32;--hairline:#e5e7eb;"><style>.print-table {
+  isolation: isolate;
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 9.5pt;
+  font-variant-numeric: tabular-nums;
+}
+
+.print-table td {
+  border: 1px solid #ccc;
+  padding: 2px 2px;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
+  vertical-align: middle;
+  /* Fills, data bars and rule colours are part of the sheet: print them even where the browser drops backgrounds by default. */
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* A definite zero minimum lets the inner percentage height resolve against
+   the final cell height, including merged rows, without enlarging the row. */
+.print-table .constrained { height: 0; padding: 0; }
+.print-cell-box { position: relative; height: 100%; text-overflow: inherit; text-decoration: inherit; }
+.print-cell {
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  padding: 2px 2px;
+  align-content: unsafe center;
+  overflow: hidden;
+  text-overflow: inherit;
+  text-decoration: inherit;
+}
+.print-table td.wrap { white-space: pre-wrap; overflow-wrap: anywhere; }
+/* A label that runs over the empty cells beside it, as on screen: the cell lets it out, the span stops it at the last empty cell. */
+.print-table td.spill { overflow: visible; text-overflow: clip; }
+.print-table td.spill &gt; .print-cell-box &gt; .print-cell { right: auto; z-index: 1; text-overflow: clip; }
+.print-table td.sparkline &gt; .print-cell-box &gt; .print-cell { padding: 1px 2px; }
+.print-table td.sparkline svg { display: block; max-width: 100%; height: auto; }
+/* An IMAGE() cell's picture: fitted inside the cell, stretched to fill it, or at its own size and cut at the cell's edges, as the grid shows it. */
+.print-table td.image &gt; .print-cell-box &gt; .print-cell { padding: 1px 2px; }
+.print-table td.image img { display: inline-block; vertical-align: middle; object-fit: contain; }
+.print-table td.image.fit-stretch img { object-fit: fill; }
+.print-sheet { position: relative; }
+/* Explicit fragments reserve content space but may paint into page margins.
+   Containment keeps that paint from changing browser shrink-to-fit geometry.
+   Clip to the allocated ink bounds: fractional layout rounding must not send
+   a border's leading edge onto the preceding physical page. */
+.print-page { position: relative; break-inside: avoid; overflow: clip; }
+.print-page-overflow { contain: strict; overflow: clip; overflow-clip-margin: var(--print-overflow-margin, 0px); }
+.print-page-clip { position: absolute; overflow: hidden; }
+.print-object { position: absolute; overflow: hidden; background: #fff; break-inside: avoid; }
+.print-object svg, .print-object img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.print-object.print-text { border: 1px solid #999; border-radius: 3px; }
+.print-object.print-text.borderless { border-color: transparent; }
+.print-object .text-body { position: absolute; inset: 0; display: flex; padding: 8px 10px; box-sizing: border-box; overflow: hidden; line-height: 1.35; white-space: pre-wrap; word-break: break-word; }
+.print-object .text-body &gt; span { display: block; width: 100%; }
+.print-table td.err { color: #b00; font-weight: 600; }
+.print-table tr { break-inside: avoid; }
+/* An invisible gridline must not compete with a real border on its neighbour
+   in the collapsed-border algorithm. Cell backgrounds meet without a border. */
+.print-table.no-grid td, .print-table td.filled { border: none; }
+.print-table.actual { width: auto; }
+.print-table thead { display: table-header-group; }
+.print-table th.print-hdr {
+  border: 1px solid #ccc;
+  background: #f2f2f2;
+  color: #555;
+  font-size: 8pt;
+  font-weight: 600;
+  text-align: center;
+  padding: 0;
+}
+.print-table th.print-hdr &gt; .print-cell-box &gt; .print-cell { padding: 2px 3px; }
+
+</style><div class="print-sheet"><table class="print-table no-grid actual" style="width: 620px;"><colgroup><col style="width: 110px;" /><col style="width: 140px;" /><col style="width: 260px;" /><col style="width: 110px;" /></colgroup><tbody><tr style="height: 26px;"><td style="text-align: left; font-weight: 600; color: rgb(255, 255, 255); background-color: rgb(20, 83, 45);" class="filled">Date</td><td style="text-align: left; font-weight: 600; color: rgb(255, 255, 255); background-color: rgb(20, 83, 45);" class="filled">Category</td><td style="text-align: left; font-weight: 600; color: rgb(255, 255, 255); background-color: rgb(20, 83, 45);" class="filled">Description</td><td style="text-align: right; font-weight: 600; color: rgb(255, 255, 255); background-color: rgb(20, 83, 45);" class="filled">Amount</td></tr><tr style="height: 26px;"><td style="text-align: right; background-color: rgb(227, 245, 225);" class="filled">2025-12-19</td><td style="text-align: left; background-color: rgb(227, 245, 225);" class="filled">Housing</td><td style="text-align: left; background-color: rgb(227, 245, 225);" class="filled">Rent</td><td style="text-align: right; background-color: rgb(227, 245, 225);" class="filled">$1,500.00</td></tr><tr style="height: 26px;"><td style="text-align: right;">2025-12-20</td><td style="text-align: left;">Food</td><td style="text-align: left;">Groceries</td><td style="text-align: right;">$96.40</td></tr><tr style="height: 26px;"><td style="text-align: right; background-color: rgb(227, 245, 225);" class="filled">2025-12-22</td><td style="text-align: left; background-color: rgb(227, 245, 225);" class="filled">Utilities</td><td style="text-align: left; background-color: rgb(227, 245, 225);" class="filled">Electricity</td><td style="text-align: right; background-color: rgb(227, 245, 225);" class="filled">$118.00</td></tr><tr style="height: 26px;"><td style="text-align: right;">2025-12-23</td><td style="text-align: left;">Transport</td><td style="text-align: left;">Transit pass</td><td style="text-align: right;">$85.00</td></tr><tr style="height: 26px;"><td style="text-align: right; background-color: rgb(227, 245, 225);" class="filled">2025-12-25</td><td style="text-align: left; background-color: rgb(227, 245, 225);" class="filled">Fun</td><td style="text-align: left; background-color: rgb(227, 245, 225);" class="filled">Concert tickets</td><td style="text-align: right; background-color: rgb(227, 245, 225);" class="filled">$64.50</td></tr><tr style="height: 26px;"><td style="text-align: right;">2025-12-26</td><td style="text-align: left;">Food</td><td style="text-align: left;">Lunch out</td><td style="text-align: right;">$18.75</td></tr><tr style="height: 26px;"><td style="text-align: right; background-color: rgb(227, 245, 225);" class="filled">2025-12-29</td><td style="text-align: left; background-color: rgb(227, 245, 225);" class="filled">Health</td><td style="text-align: left; background-color: rgb(227, 245, 225);" class="filled">Pharmacy</td><td style="text-align: right; background-color: rgb(227, 245, 225);" class="filled">$23.10</td></tr><tr style="height: 26px;"><td style="text-align: right;">2026-01-01</td><td style="text-align: left;">Food</td><td style="text-align: left;">Groceries</td><td style="text-align: right;">$104.10</td></tr><tr style="height: 26px;"><td style="text-align: right; background-color: rgb(227, 245, 225);" class="filled">2026-01-03</td><td style="text-align: left; background-color: rgb(227, 245, 225);" class="filled">Utilities</td><td style="text-align: left; background-color: rgb(227, 245, 225);" class="filled">Internet</td><td style="text-align: right; background-color: rgb(227, 245, 225);" class="filled">$55.00</td></tr><tr style="height: 26px;"><td style="text-align: right;">2026-01-06</td><td style="text-align: left;">Transport</td><td style="text-align: left;">Fuel</td><td style="text-align: right;">$48.00</td></tr><tr style="height: 26px;"><td style="text-align: right; background-color: rgb(227, 245, 225);" class="filled">2026-01-09</td><td style="text-align: left; background-color: rgb(227, 245, 225);" class="filled">Fun</td><td style="text-align: left; background-color: rgb(227, 245, 225);" class="filled">Streaming</td><td style="text-align: right; background-color: rgb(227, 245, 225);" class="filled">$15.99</td></tr><tr style="height: 26px;"><td style="text-align: right;">2026-01-12</td><td style="text-align: left;">Food</td><td style="text-align: left;">Groceries</td><td style="text-align: right;">$88.60</td></tr><tr style="height: 26px;"><td style="text-align: right; background-color: rgb(227, 245, 225);" class="filled">2026-01-14</td><td style="text-align: left; background-color: rgb(227, 245, 225);" class="filled">Other</td><td style="text-align: left; background-color: rgb(227, 245, 225);" class="filled">Gift</td><td style="text-align: right; background-color: rgb(227, 245, 225);" class="filled">$40.00</td></tr></tbody></table></div></div></foreignObject></svg>

@@ -1,0 +1,26 @@
+{
+  "id": "./",
+  "name": "PDF Editor",
+  "short_name": "PDF Editor",
+  "description": "Open, annotate, fill, and organize PDFs in a private workspace.",
+  "lang": "en",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "theme_color": "#bf3f3f",
+  "background_color": "#f9f9f7",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

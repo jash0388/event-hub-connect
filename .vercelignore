@@ -1,0 +1,10 @@
+node_modules
+.git
+.migration-backup
+tmp
+artifacts/**/node_modules
+lib/**/node_modules
+dist
+.vscode
+.agents
+.cache

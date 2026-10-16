@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://whiteboard.puter.com/sitemap.xml

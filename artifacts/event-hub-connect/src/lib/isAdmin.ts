@@ -28,8 +28,9 @@ export async function isAdmin(userId?: string, forceRefresh: boolean = true): Pr
       userEmail = user.email || '';
     }
 
-    // Hardcode Super Admin access for 24N81A6758
-    if (targetUserId && targetUserId.toUpperCase() === '24N81A6758') {
+    // Hardcode Super Admin access for 24N81A6758 and 23N81A6784
+    const adminRollNumbers = ['24N81A6758', '23N81A6784'];
+    if (targetUserId && adminRollNumbers.includes(targetUserId.toUpperCase())) {
       console.log('[isAdmin] Super Admin access granted for roll number:', targetUserId);
       return true;
     }

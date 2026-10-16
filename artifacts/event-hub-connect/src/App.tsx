@@ -34,6 +34,7 @@ const Tasks = lazy(() => import("./pages/Tasks"));
 const ExamPage = lazy(() => import("./pages/ExamPage"));
 const DownloadApp = lazy(() => import("./pages/DownloadApp"));
 const SphnsExmTest = lazy(() => import("./pages/sphnsexm-test"));
+const DatanautsStudio = lazy(() => import("./pages/DatanautsStudio"));
 
 // Lazy load heavy UI components
 const CollegeEventsHub = lazy(() => import("@/components/ui/college-events-hub"));
@@ -104,6 +105,8 @@ const App = () => {
               <Route path="/exams" element={<ExamPage />} />
               <Route path="/download" element={<DownloadApp />} />
               <Route path="/qr-codes" element={<EventQRCodes />} />
+              <Route path="/studio" element={<DatanautsStudio />} />
+              <Route path="/apps" element={<DatanautsStudio />} />
 
               <Route path="*" element={<NotFound />} />
             </Routes>
